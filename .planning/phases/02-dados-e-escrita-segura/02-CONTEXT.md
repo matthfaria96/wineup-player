@@ -7,7 +7,7 @@
 <domain>
 ## Phase Boundary
 
-A biblioteca do usuário persiste entre sessões, é varrida e pesquisada com rapidez, e qualquer gravação de tag é protegida por backup, verificação e desfazer. Requisitos: LIB-01..07, SAFE-01..03. A UI de edição de tags (SAFE-04) e o Fixer ficam para a Fase 7; aqui a escrita segura existe e é testada, sem UI de edição.
+A biblioteca do usuário persiste entre sessões, é varrida e pesquisada com rapidez, e qualquer gravação de tag é protegida por backup, verificação e desfazer. Requisitos: LIB-01..07, SAFE-01..03, NAV-01. A UI de edição de tags (SAFE-04) e o Fixer ficam para a Fase 7; aqui a escrita segura existe e é testada, sem UI de edição.
 
 </domain>
 
@@ -29,6 +29,9 @@ A biblioteca do usuário persiste entre sessões, é varrida e pesquisada com ra
 - `TagWriter` atualiza `audio_file` (inode, mtime, tamanho) na mesma transação do journal, pois `replaceItemAt` troca o inode.
 - Identidade de arquivo persistida como `(volume_uuid, st_ino)` + tamanho + mtime via `stat`/`fts` (não `fileResourceIdentifierKey`, que fica em cache por URL).
 - Verificar espaço livre antes de backup; volume desmontado não marca a raiz inteira como `missing`.
+
+- **NAV-01 (pedido do usuário):** na primeira abertura (banco sem raízes), adicionar `~/Music` (`FileManager.default.urls(for: .musicDirectory, in: .userDomainMask)`) como raiz e iniciar a varredura automaticamente; se a pasta não existir ou estiver vazia, o app abre normalmente sem erro.
+- O modelo de dados deve suportar as visões futuras (Fase 4/5): gênero nulo vira "Sem categoria"; álbum nulo ou com uma faixa entra no álbum virtual "Singles" (consulta, nunca tag); marcações de cor por faixa e playlists precisam de tabelas próprias que serão exportadas no perfil do usuário (PROF-01/02).
 
 ### Claude's Discretion
 Demais escolhas a critério do pesquisador/planejador, guiadas pelos critérios de sucesso do ROADMAP.
