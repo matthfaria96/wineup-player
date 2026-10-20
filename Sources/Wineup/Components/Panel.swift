@@ -32,7 +32,7 @@ struct ItemsCount: View {
     @Environment(\.theme) private var theme
 
     var body: some View {
-        Text("Playlist items: \(count)")
+        Text("\(count) itens")
             .font(.system(size: 10.5))
             .foregroundStyle(theme.text)
             .lineLimit(1)

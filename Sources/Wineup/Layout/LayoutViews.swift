@@ -81,6 +81,7 @@ struct ArrangedLayout: View {
                         slot(kind)
                     }
                 }
+                .frame(minWidth: column.width == nil ? 300 : 0, maxWidth: column.width ?? .infinity)
                 .frame(width: column.width)
             }
         }
@@ -88,7 +89,9 @@ struct ArrangedLayout: View {
 
     private func slot(_ kind: PanelKind) -> some View {
         panel(kind)
+            .frame(minWidth: 0, maxWidth: .infinity)
             .frame(height: kind.fixedHeight)
+            .clipped()
             .overlay(alignment: .top) {
                 // Alça de arrasto: a barra de título do painel.
                 Color.clear

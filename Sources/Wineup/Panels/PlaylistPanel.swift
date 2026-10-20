@@ -36,7 +36,7 @@ struct PlaylistPanel: View {
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
-                .frame(width: 170)
+                .frame(minWidth: 120, maxWidth: 170)
             } else {
                 ChromeButton(action: { browser.showingGroups = true }) {
                     Label(browser.mode.title, systemImage: "chevron.left").labelStyle(.titleAndIcon)
@@ -58,6 +58,7 @@ struct PlaylistPanel: View {
             }
         }
         .font(.system(size: 12))
+        .frame(minWidth: 60)
         .padding(.horizontal, 7)
         .frame(height: 22)
         .background(RoundedRectangle(cornerRadius: 6).fill(Color.white.opacity(0.06)))
@@ -103,6 +104,7 @@ struct PlaylistPanel: View {
             ColorDots(selection: $state.markFilter)
             Spacer(minLength: 0)
             ItemsCount(count: state.tracks.count)
+                .layoutPriority(-1)
         }
         .padding(.horizontal, 10)
         .padding(.bottom, 8)

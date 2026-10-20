@@ -60,10 +60,10 @@ struct MainView: View {
                 Label("Design de exibição", systemImage: "rectangle.3.group")
                     .labelStyle(.titleAndIcon)
                     .font(.system(size: 11))
-                    .foregroundStyle(theme.mutedText)
             }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
+            .menuStyle(.button)
+            .buttonStyle(.bordered)
+            .controlSize(.small)
             .fixedSize()
         }
         .padding(.horizontal, 12)

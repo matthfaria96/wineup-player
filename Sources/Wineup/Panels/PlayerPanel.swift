@@ -56,7 +56,7 @@ struct PlayerPanel: View {
                 HStack(alignment: .bottom, spacing: 10) {
                     LevelMeter(levels: meter.levels)
                     SpectrumView(bands: meter.bands)
-                        .frame(maxWidth: 80)
+                        .frame(minWidth: 30, maxWidth: 70)
                 }
                 Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 2) {
                     GridRow {
@@ -72,10 +72,10 @@ struct PlayerPanel: View {
             }
             Spacer(minLength: 0)
             Text("-" + Clock.format(state.remainingSeconds))
-                .font(.system(size: 32, weight: .ultraLight, design: .monospaced))
+                .font(.system(size: 30, weight: .ultraLight, design: .monospaced))
                 .foregroundStyle(theme.text)
                 .lineLimit(1)
-                .fixedSize()
+                .minimumScaleFactor(0.6)
                 .layoutPriority(1)
         }
     }
