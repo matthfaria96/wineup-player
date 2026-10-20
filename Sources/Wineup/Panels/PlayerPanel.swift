@@ -55,8 +55,12 @@ struct PlayerPanel: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             VStack(alignment: .trailing, spacing: 4) {
                 // Duração total, pequena e apagada, acima do tempo restante.
-                SevenSegmentText(text: Self.lcdTotal(state.currentTrack?.duration ?? 0), digitHeight: 9,
-                                 color: Color(hex: 0xBFC8EE).opacity(0.45))
+                HStack(spacing: 4) {
+                    Text("TOTAL").font(.system(size: 8, weight: .semibold)).tracking(0.8)
+                    Text(Self.lcdTotal(state.currentTrack?.duration ?? 0))
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                }
+                .foregroundStyle(Color(hex: 0xBFC8EE).opacity(0.6))
                 SevenSegmentText(text: Self.lcdTime(state.remainingSeconds), digitHeight: 28)
             }
             .fixedSize()
