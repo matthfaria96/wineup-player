@@ -16,6 +16,12 @@ final class LibraryBrowser: ObservableObject {
     @Published private(set) var isLoading = false
     /// `true` mostra a lista de álbuns/bandas/pastas/estilos/playlists; `false` mostra as faixas abertas.
     @Published var showingGroups = false
+    /// Onde o usuário está: na biblioteca (por álbum, banda...) ou numa pasta do disco.
+    @Published var location: NavLocation = .library
+    @Published var subfolders: [URL] = []
+    @Published var favorites: [URL] = NavPlaces.loadFavorites()
+    @Published var currentGroupTitle: String?
+    var onOpenTracks: ((String, [Track]) -> Void)?
 
     /// Caminho → cor marcada pelo usuário.
     private(set) var marks: [String: MarkColor] = [:]
@@ -28,7 +34,9 @@ final class LibraryBrowser: ObservableObject {
     init(database: LibraryDatabase?) {
         self.database = database
         let defaults = UserDefaults.standard
-        mode = BrowseMode(rawValue: defaults.string(forKey: DisplayKeys.browseMode) ?? "") ?? .albums
+        let savedMode = BrowseMode(rawValue: defaults.string(forKey: DisplayKeys.browseMode) ?? "") ?? .albums
+        // "Pastas" agora é navegação no disco (barra de navegação), não uma visão da biblioteca.
+        mode = savedMode == .folders ? .albums : savedMode
         showColorTags = defaults.object(forKey: DisplayKeys.showColorTags) as? Bool ?? true
         refreshMarks()
     }
@@ -114,6 +122,8 @@ final class LibraryBrowser: ObservableObject {
         guard let database else { return }
         selected = group.kind
         showingGroups = false
+        location = .library
+        currentGroupTitle = group.title
         let kind = group.kind
         let title = group.title
         Task { [weak self] in

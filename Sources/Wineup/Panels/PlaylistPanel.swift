@@ -8,13 +8,14 @@ struct PlaylistPanel: View {
     @Environment(\.theme) private var theme
 
     var body: some View {
-        Panel(title: browser.showingGroups ? browser.mode.title : state.listTitle) {
-            VStack(spacing: 6) {
-                topBar
+        Panel(title: panelTitle) {
+            VStack(spacing: 4) {
+                NavBar(state: state, browser: browser)
+                Divider().opacity(0.4)
                 Group {
                     if !state.query.isEmpty {
                         trackList(state.searchResults)
-                    } else if browser.showingGroups {
+                    } else if browser.location == .library && browser.showingGroups {
                         LibraryGroupsView(state: state, browser: browser)
                     } else {
                         trackList(state.visibleTracks)
@@ -26,43 +27,29 @@ struct PlaylistPanel: View {
         }
     }
 
-    private var topBar: some View {
-        HStack(spacing: 6) {
-            if browser.showingGroups {
-                Picker("", selection: $browser.mode) {
-                    ForEach(BrowseMode.allCases) { mode in
-                        Image(systemName: mode.symbol).help(mode.title).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(minWidth: 120, maxWidth: 170)
-            } else {
-                ChromeButton(action: { browser.showingGroups = true }) {
-                    Label(browser.mode.title, systemImage: "chevron.left").labelStyle(.titleAndIcon)
-                }
-                .fixedSize()
-            }
-            searchField
-        }
-        .padding(.horizontal, 10)
+    private var panelTitle: String {
+        if browser.location == .library && browser.showingGroups { return browser.mode.title }
+        return state.listTitle
     }
 
-    private var searchField: some View {
-        HStack(spacing: 5) {
-            Image(systemName: "magnifyingglass").foregroundStyle(theme.mutedText)
-            TextField("Buscar", text: $state.query).textFieldStyle(.plain).foregroundStyle(theme.text)
-            if !state.query.isEmpty {
-                Image(systemName: "xmark.circle.fill").foregroundStyle(theme.mutedText)
-                    .onTapGesture { state.query = "" }
+    /// Subpastas da pasta atual, antes das músicas.
+    @ViewBuilder private var folderRows: some View {
+        if browser.currentFolder != nil, state.query.isEmpty {
+            ForEach(browser.subfolders, id: \.self) { url in
+                HStack(spacing: 8) {
+                    Image(systemName: "folder.fill").foregroundStyle(theme.accent.opacity(0.8)).frame(width: 28)
+                    Text(url.lastPathComponent).lineLimit(1)
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.system(size: 9)).foregroundStyle(theme.mutedText)
+                }
+                .font(.system(size: 13))
+                .foregroundStyle(theme.text)
+                .padding(.horizontal, 10)
+                .frame(height: 24)
+                .contentShape(Rectangle())
+                .onTapGesture { browser.goFolder(url) }
             }
         }
-        .font(.system(size: 12))
-        .frame(minWidth: 60)
-        .padding(.horizontal, 7)
-        .frame(height: 22)
-        .background(RoundedRectangle(cornerRadius: 6).fill(Color.white.opacity(0.06)))
-        .overlay(RoundedRectangle(cornerRadius: 6).stroke(theme.panelBorder, lineWidth: 1))
     }
 
     private func trackList(_ tracks: [Track]) -> some View {
@@ -80,6 +67,7 @@ struct PlaylistPanel: View {
                     .padding(8)
                 } else {
                     LazyVStack(spacing: 0) {
+                        folderRows
                         ForEach(Array(tracks.enumerated()), id: \.element.id) { offset, track in
                             TrackRow(track: track, index: offset + 1,
                                      isCurrent: track.id == state.currentID,

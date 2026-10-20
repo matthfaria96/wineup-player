@@ -62,6 +62,15 @@ final class PlayerState: ObservableObject {
         restoreEqualizer()
         syncEqualizer()
         browser.onOpen = { [weak self] title, items in self?.showGroup(title: title, items: items) }
+        browser.onOpenTracks = { [weak self] title, items in
+            guard let self else { return }
+            self.listTitle = title
+            self.tracks = items.map { t in
+                Track(id: t.id, artist: t.artist, title: t.title, duration: t.duration,
+                      mark: self.browser.mark(for: t.url), url: t.url, album: t.album, year: t.year)
+            }
+            self.selectedID = nil
+        }
     }
 
     var meter: LevelTap { audio.meter }
@@ -116,6 +125,7 @@ final class PlayerState: ObservableObject {
         let mapped = found.map(track(from:))
         usingSampleTracks = false
         listTitle = "Todas as músicas"
+        browser.currentGroupTitle = "Todas as músicas"
         tracks = mapped
         currentID = mapped.first?.id
         selectedID = nil
