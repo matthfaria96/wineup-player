@@ -72,6 +72,7 @@ Tocar a biblioteca local do usuário de forma confiável, com a interface cláss
 | EQ via AVAudioUnitEQ entre `sourceNode` e `mainMixerNode` | SFB só permite alterar o grafo nesse trecho; o mixer deve continuar ligado à saída | ✓ Good (sem crash) |
 | Não adicionar AudioKit por enquanto | Criaria um segundo motor de áudio redundante; EQ da Apple basta | — Pending |
 | Frameworks LGPL embutidos como dinâmicos em `Contents/Frameworks` | Cumpre a LGPL mantendo-os substituíveis | — Pending |
+| Sem sandbox; acesso a pastas centralizado em `LibraryRoot` (WineupCore) — fase 1 | App de distribuição direta; um ponto único facilita bookmarks e validação de caminhos | — Pending |
 | Winamp/Mixxx/Cog só como referência de estudo | Licenças proíbem reutilização (WCL) ou exigem copyleft (GPL) | ✓ Good |
 | `.planning/` versionado no git | Planejamento rastreável junto do código | — Pending |
 
