@@ -26,6 +26,11 @@ final class PlayerState: ObservableObject {
     @Published var cover: NSImage?
     @Published var lyricLines: [String] = SampleData.lyrics
     @Published var statusMessage: String?
+    /// Nome do que está na lista agora (álbum, banda, pasta, estilo ou playlist).
+    @Published var listTitle = "Playlist"
+    @Published var listStyle: ListStyle = ListStyle(rawValue: UserDefaults.standard.string(forKey: DisplayKeys.listStyle) ?? "") ?? .compact {
+        didSet { UserDefaults.standard.set(listStyle.rawValue, forKey: DisplayKeys.listStyle) }
+    }
 
     @Published var volume = 0.8 { didSet { audio.setVolume(volume) } }
     @Published var preamp = 0.0 { didSet { syncEqualizer() } }
@@ -33,11 +38,15 @@ final class PlayerState: ObservableObject {
 
     private let audio = SFBAudioEngineAdapter()
     let library = LibraryController()
+    let browser: LibraryBrowser
+    /// Última faixa tocada, para o player continuar mostrando-a quando a lista muda de grupo.
+    var lastPlayed: Track?
     private var searchTask: Task<Void, Never>?
     private var usingSampleTracks = true
     private var eqSaveTask: Task<Void, Never>?
 
     init() {
+        browser = LibraryBrowser(database: library.database)
         audio.onNowPlayingChanged = { [weak self] url in self?.nowPlayingChanged(url) }
         audio.onEndOfAudio = { [weak self] in
             self?.isPlaying = false
@@ -52,13 +61,16 @@ final class PlayerState: ObservableObject {
         audio.preventClipping = preventClipping
         restoreEqualizer()
         syncEqualizer()
+        browser.onOpen = { [weak self] title, items in self?.showGroup(title: title, items: items) }
     }
 
     var meter: LevelTap { audio.meter }
 
     var playbackRate: Double { RateMapping.rate(slider: speed) }
 
-    var currentTrack: Track? { tracks.first { $0.id == currentID } }
+    var currentTrack: Track? {
+        tracks.first { $0.id == currentID } ?? lastPlayed.flatMap { $0.id == currentID ? $0 : nil }
+    }
 
     /// Posição 1-based da faixa atual na lista.
     var currentPosition: Int? { tracks.firstIndex { $0.id == currentID }.map { $0 + 1 } }
@@ -98,16 +110,20 @@ final class PlayerState: ObservableObject {
     }
 
     private func applyLibraryTracks(_ found: [LibraryTrack]) {
+        browser.refreshMarks()
+        browser.reload()
         guard usingSampleTracks, !found.isEmpty else { return }
-        let mapped = found.map(Self.track(from:))
+        let mapped = found.map(track(from:))
+        usingSampleTracks = false
+        listTitle = "Todas as músicas"
         tracks = mapped
         currentID = mapped.first?.id
         selectedID = nil
     }
 
-    private static func track(from item: LibraryTrack) -> Track {
+    func track(from item: LibraryTrack) -> Track {
         Track(artist: item.artist, title: item.title, duration: Int(item.duration ?? 0),
-              mark: nil, url: item.url, album: item.album)
+              mark: browser.mark(for: item.url), url: item.url, album: item.album)
     }
 
     private func scheduleLibrarySearch() {
@@ -120,7 +136,7 @@ final class PlayerState: ObservableObject {
             guard !Task.isCancelled, let self else { return }
             let found = await self.library.search(needle)
             guard !Task.isCancelled else { return }
-            await MainActor.run { self.libraryResults = found.map(Self.track(from:)) }
+            await MainActor.run { self.libraryResults = found.map(self.track(from:)) }
         }
     }
 
@@ -168,6 +184,7 @@ final class PlayerState: ObservableObject {
     // MARK: Reprodução
 
     func play(_ track: Track) {
+        lastPlayed = track
         currentID = track.id
         selectedID = track.id
         progress = 0

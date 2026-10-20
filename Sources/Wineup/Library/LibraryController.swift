@@ -5,7 +5,7 @@ import WineupLibrary
 @MainActor
 final class LibraryController {
     nonisolated let isAvailable: Bool
-    private let database: LibraryDatabase?
+    nonisolated let database: LibraryDatabase?
     /// Presets de EQ no mesmo banco do app (respeita WINEUP_LIBRARY_PATH).
     nonisolated var presetStore: EqPresetStore? { database.map(EqPresetStore.init(db:)) }
     private var scanTask: Task<Void, Never>?

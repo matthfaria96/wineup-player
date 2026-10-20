@@ -9,7 +9,7 @@ struct GridLayout: View {
             HStack(spacing: 8) {
                 PlayerPanel(state: state)
                 EqualizerPanel(state: state)
-                SearchPanel(state: state)
+                LibraryPanel(state: state, browser: state.browser)
             }
             .frame(height: 262)
             HStack(spacing: 8) {
@@ -26,7 +26,10 @@ struct CompactLayout: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            PlaylistPanel(state: state)
+            VStack(spacing: 8) {
+                LibraryPanel(state: state, browser: state.browser).frame(height: 280)
+                PlaylistPanel(state: state)
+            }
             VStack(spacing: 8) {
                 PlayerPanel(state: state).frame(height: 262)
                 EqualizerPanel(state: state).frame(height: 170)
@@ -52,7 +55,7 @@ struct StudioLayout: View {
                 ArtworkPanel(state: state)
                 LyricsPanel(state: state)
             }
-            SearchPanel(state: state)
+            LibraryPanel(state: state, browser: state.browser)
                 .frame(width: 300)
         }
     }

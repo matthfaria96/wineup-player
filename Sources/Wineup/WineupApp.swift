@@ -22,8 +22,22 @@ struct WineupApp: App {
             CommandGroup(replacing: .newItem) {
                 Button("Abrir…") { state.presentOpenPanel() }
                     .keyboardShortcut("o")
+                Button("Nova playlist") { state.newPlaylist(with: nil) }
+                    .keyboardShortcut("n")
+                Divider()
+                Button("Exportar perfil…") { ProfileManager.export(state: state) }
+                Button("Importar perfil…") { ProfileManager.importProfile(state: state) }
             }
             CommandMenu("Exibição") {
+                Picker("Ver biblioteca por", selection: Binding(get: { state.browser.mode }, set: { state.browser.mode = $0 })) {
+                    ForEach(BrowseMode.allCases) { Text($0.title).tag($0) }
+                }
+                Picker("Estilo da lista", selection: Binding(get: { state.listStyle }, set: { state.listStyle = $0 })) {
+                    ForEach(ListStyle.allCases) { Text($0.title).tag($0) }
+                }
+                Toggle("Mostrar playlists de tags", isOn: Binding(get: { state.browser.showColorTags },
+                                                                set: { state.browser.showColorTags = $0 }))
+                Divider()
                 ForEach(Array(LayoutMode.allCases.enumerated()), id: \.element.id) { index, mode in
                     Button(mode.name) { layoutRaw = mode.rawValue }
                         .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: .command)

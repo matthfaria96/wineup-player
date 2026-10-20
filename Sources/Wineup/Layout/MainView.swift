@@ -48,13 +48,21 @@ struct MainView: View {
                 Picker("Tema", selection: $themeID) {
                     ForEach(Theme.all) { Text($0.name).tag($0.id) }
                 }
+                Picker("Estilo da lista", selection: $state.listStyle) {
+                    ForEach(ListStyle.allCases) { Text($0.title).tag($0) }
+                }
+                Picker("Ver biblioteca por", selection: Binding(get: { state.browser.mode }, set: { state.browser.mode = $0 })) {
+                    ForEach(BrowseMode.allCases) { Text($0.title).tag($0) }
+                }
             } label: {
-                Image(systemName: "rectangle.3.group")
+                Label("Design de exibição", systemImage: "rectangle.3.group")
+                    .labelStyle(.titleAndIcon)
+                    .font(.system(size: 11))
                     .foregroundStyle(theme.mutedText)
             }
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
-            .frame(width: 24)
+            .fixedSize()
         }
         .padding(.horizontal, 12)
         .frame(height: 28)
