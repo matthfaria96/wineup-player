@@ -25,6 +25,11 @@ A biblioteca do usuário persiste entre sessões, é varrida e pesquisada com ra
 - Integração mínima com o app: o painel Playlist/Search pode ler da biblioteca persistida via adaptador simples (sem refatorar a UI — isso é Fase 5); ⌘O/arrastar adicionam raízes à biblioteca.
 - Gate de cada plano: `./scripts/test.sh` + `swift build -c release`; ao final da fase `./scripts/build-app.sh` (testes + empacotamento + smoke).
 
+- **Decisão A1 (aceita em modo autônomo, 2026-10-20):** `TagWriter` com backend plugável por formato. FLAC, M4A/ALAC, Ogg Opus/Vorbis gravam via SFBAudioEngine `writeMetadata`; **MP3 e WAV gravam via um target ObjC++ fino sobre TagLib** (produto `taglib` do `CXXTagLib`, já dependência da SFB), porque o `writeMetadata` da SFB converte ID3v2.3→2.4, apaga datas parciais ("2019") e cria ID3v1 — viola SAFE-03. TagLib é LGPL-2.1/MPL-1.1 (MPL permite linkagem estática); registrar em THIRD_PARTY_NOTICES. O verificador pós-gravação compara **todos** os campos lidos antes/depois, não só os alterados.
+- `TagWriter` atualiza `audio_file` (inode, mtime, tamanho) na mesma transação do journal, pois `replaceItemAt` troca o inode.
+- Identidade de arquivo persistida como `(volume_uuid, st_ino)` + tamanho + mtime via `stat`/`fts` (não `fileResourceIdentifierKey`, que fica em cache por URL).
+- Verificar espaço livre antes de backup; volume desmontado não marca a raiz inteira como `missing`.
+
 ### Claude's Discretion
 Demais escolhas a critério do pesquisador/planejador, guiadas pelos critérios de sucesso do ROADMAP.
 
