@@ -4,6 +4,12 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 APP="build/Wineup Player.app"
+
+if [ "${SKIP_TESTS:-0}" != "1" ]; then
+    echo "Rodando testes do núcleo..."
+    ./scripts/test.sh
+fi
+
 swift build -c release
 BIN="$(swift build -c release --show-bin-path)/Wineup"
 
@@ -54,3 +60,8 @@ for fw in "$APP"/Contents/Frameworks/*.framework; do
 done
 codesign --force --sign - "$APP"
 echo "Pronto: $APP"
+
+./scripts/verify-app.sh "$APP"
+if [ "${SKIP_SMOKE:-0}" != "1" ]; then
+    ./scripts/smoke-playback.sh "$APP"
+fi
