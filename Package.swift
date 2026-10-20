@@ -11,8 +11,22 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "Wineup",
-            dependencies: [.product(name: "SFBAudioEngine", package: "SFBAudioEngine")],
+            dependencies: [
+                "WineupCore",
+                .product(name: "SFBAudioEngine", package: "SFBAudioEngine"),
+            ],
             path: "Sources/Wineup"
+        ),
+        // Núcleo puro (Foundation apenas): contratos e lógica testável sem UI.
+        .target(
+            name: "WineupCore",
+            path: "Sources/WineupCore",
+            swiftSettings: [.unsafeFlags(["-strict-concurrency=complete"])]
+        ),
+        .testTarget(
+            name: "WineupCoreTests",
+            dependencies: ["WineupCore"],
+            path: "Tests/WineupCoreTests"
         )
     ]
 )

@@ -49,3 +49,10 @@ Ver `.planning/research/ARCHITECTURE.md` (camadas) e `PITFALLS.md` (testes só c
 Banco, áudio real e UI ficam para as fases 2–5.
 
 </deferred>
+
+## Spike de testes (resultado)
+
+- Comando que funcionou: `swift test` (opção a), apenas com Command Line Tools, Swift 6.4, Swift Testing.
+- Saída: `Test coreVersionIsSet() passed` / `Test run with 1 test in 0 suites passed`.
+- Avisos de linker sobre caminhos de busca inexistentes em CommandLineTools/Developer são inofensivos.
+- Ponto único de entrada: `scripts/test.sh`. Plano B (runner próprio) não foi necessário.
