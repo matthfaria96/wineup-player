@@ -1,0 +1,136 @@
+# Requirements — Wineup Player
+
+**Defined:** 2026-10-20
+**Core Value:** Tocar a biblioteca local do usuário de forma confiável, com a interface clássica de painéis, e nunca danificar os arquivos dele.
+
+## v1 Requirements
+
+### Fundação (FND)
+
+- [ ] **FND-01**: O código é dividido em targets SwiftPM com um núcleo (`WineupCore`) sem dependência de UI, e o app continua abrindo e tocando como hoje
+- [ ] **FND-02**: `swift test` roda só com Command Line Tools e executa testes do núcleo em cada build
+- [ ] **FND-03**: Faixas têm identificador estável (não baseado em posição na lista)
+- [ ] **FND-04**: Um build assinado de teste valida empacotamento (rpath, frameworks embutidos) cedo no projeto
+
+### Biblioteca (LIB)
+
+- [ ] **LIB-01**: Usuário adiciona pastas de música como raízes da biblioteca e elas persistem entre sessões
+- [ ] **LIB-02**: A biblioteca é varrida de forma incremental (só arquivos novos/alterados são relidos) com progresso e cancelamento
+- [ ] **LIB-03**: Arquivos movidos, renomeados ou em disco desconectado aparecem como ausentes, sem perder playlists e histórico
+- [ ] **LIB-04**: Usuário busca por título, artista ou álbum (ignorando acentos) com resultado instantâneo em bibliotecas grandes
+- [ ] **LIB-05**: Usuário navega por artista, álbum, gênero, pasta e todas as faixas
+- [ ] **LIB-06**: O modelo distingue arquivo, gravação, faixa no lançamento, lançamento, artista, arte e letra
+- [ ] **LIB-07**: Uma biblioteca sintética de 100 mil arquivos é varrida e pesquisada sem travar a interface
+
+### Escrita segura (SAFE)
+
+- [ ] **SAFE-01**: Toda gravação de tag passa por um único gravador que faz backup antes, verifica depois e registra no diário
+- [ ] **SAFE-02**: Toda gravação pode ser desfeita a partir do diário
+- [ ] **SAFE-03**: Gravar e reler tags preserva campos desconhecidos, versão de ID3 e capas em FLAC, MP3, M4A, Ogg/Opus e WAV (testado com arquivos de exemplo)
+- [ ] **SAFE-04**: Usuário edita tags simples (título, artista, álbum, faixa, ano, gênero) de uma ou várias faixas, com prévia antes de gravar
+
+### Áudio (AUD)
+
+- [ ] **AUD-01**: Espectro e medidor de nível (VU) refletem o áudio que está tocando
+- [ ] **AUD-02**: Usuário muda a velocidade de reprodução e o tempo/letras continuam sincronizados
+- [ ] **AUD-03**: Usuário ajusta o balanço esquerda/direita
+- [ ] **AUD-04**: Equalizador de 10 bandas + preamp altera o áudio de forma verificável, com presets salvos pelo usuário
+- [ ] **AUD-05**: ReplayGain (faixa/álbum) é aplicado como ganho, sem regravar o áudio
+- [ ] **AUD-06**: Faixas consecutivas tocam sem lacuna (gapless) quando o formato permite
+- [ ] **AUD-07**: Trocar o dispositivo de saída (fones, AirPods, HDMI) não interrompe nem trava a reprodução
+
+### Reprodução e fila (PLAY)
+
+- [ ] **PLAY-01**: Usuário monta uma fila, reordena, repete (uma/todas) e embaralha
+- [ ] **PLAY-02**: Usuário cria, salva, renomeia e apaga playlists, e importa/exporta M3U/M3U8
+- [ ] **PLAY-03**: Ao reabrir o app, a fila, a faixa e a posição da última sessão são restauradas
+- [ ] **PLAY-04**: "Reproduzir tudo" de um artista evita repetir a mesma gravação lançada em single e álbum (configurável)
+
+### Discografia, capas e letras (DISC)
+
+- [ ] **DISC-01**: Página do artista mostra álbuns, EPs, singles e "Álbum desconhecido" como visões, sem reescrever tags
+- [ ] **DISC-02**: A capa exibida segue a ordem: arte do arquivo, imagem na pasta, capa do lançamento, placeholder — sem gravar nos arquivos
+- [ ] **DISC-03**: Letras embutidas e arquivos `.lrc` são exibidos, com destaque sincronizado quando houver tempo
+- [ ] **DISC-04**: Usuário reproduz tudo ou embaralha a partir da página do artista, com a ordenação ativa visível
+
+### Interface (UI)
+
+- [ ] **UI-01**: Os painéis atuais (AMP, FX, Playlist, Search, Lyrics, Capa) passam a ser alimentados pelos serviços reais
+- [ ] **UI-02**: Temas são definidos por um formato de skin próprio documentado; Grafite, Vinho e Verde viram skins embutidas
+- [ ] **UI-03**: Os controles customizados (sliders, botões, listas) funcionam com VoiceOver e teclado
+- [ ] **UI-04**: Disposição, tema e tamanho de janela persistem entre sessões
+
+### Sistema e distribuição (SYS)
+
+- [ ] **SYS-01**: Teclas de mídia, Central de Controle e tela de bloqueio controlam a reprodução e mostram a faixa atual
+- [ ] **SYS-02**: Atalhos de teclado clássicos (Z X C V B, espaço, setas) controlam o player
+- [ ] **SYS-03**: Modo mini sempre no topo
+- [ ] **SYS-04**: Script de release assina com Developer ID, notariza e gera `.dmg` que abre num Mac limpo
+- [ ] **SYS-05**: Avisos de terceiros listam versões exatas e as bibliotecas LGPL continuam substituíveis no `.app`
+
+### Library Fixer (FIX)
+
+- [ ] **FIX-01**: Usuário escolhe pastas e o Fixer diagnostica, sem gravar nada: tags ausentes/inconsistentes, capa ausente ou pequena, `.lrc` órfão, duplicatas idênticas
+- [ ] **FIX-02**: Cada correção proposta mostra origem, confiança por campo e o diff antes/depois
+- [ ] **FIX-03**: Usuário aceita tudo, escolhe correções específicas ou corrige manualmente
+- [ ] **FIX-04**: Correção de baixa confiança nunca sobrescreve um campo já preenchido
+- [ ] **FIX-05**: Usuário ignora um problema e ele não reaparece nas próximas análises
+- [ ] **FIX-06**: Um lote aplicado pode ser desfeito por inteiro
+- [ ] **FIX-07**: Duplicatas são só relatadas; remover exige confirmação e vai para a Lixeira
+
+### Provedores online (NET)
+
+- [ ] **NET-01**: Usuário liga, por provedor, consultas a MusicBrainz/Cover Art Archive; o padrão é offline
+- [ ] **NET-02**: Antes do primeiro envio, o app mostra exatamente o que será enviado e pede consentimento
+- [ ] **NET-03**: Identificação por impressão acústica (AcoustID/Chromaprint) sugere o lançamento com confiança, considerando duração e contexto do álbum
+- [ ] **NET-04**: Fixer busca capas online e permite escolher entre embutir no arquivo ou salvar ao lado
+- [ ] **NET-05**: Requisições respeitam os limites de cada serviço e podem ser interrompidas e retomadas
+
+## v2 Requirements
+
+### Skins clássicas
+
+- **WSZ-01**: Importar um subconjunto declarado de skins clássicas `.wsz`
+- **WSZ-02**: Formato de preset de EQ `.eqf`
+
+### Organização
+
+- **ORG-01**: Renomear/mover arquivos por política configurável, com prévia e desfazer
+- **ORG-02**: Detecção de versões distintas (ao vivo, remix, regravação) além de cópias idênticas
+
+### Extras
+
+- **EXT-01**: Visualizações avançadas (estilo MilkDrop)
+- **EXT-02**: Painéis destacáveis em janelas separadas
+- **EXT-03**: Atualização automática (Sparkle)
+- **EXT-04**: Busca de letras online, se houver provedor com termos compatíveis
+- **EXT-05**: Versão Windows
+
+## Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| Plugins do Winamp (DLL) | Windows-only e incompatível com o app nativo |
+| Código do Winamp, Mixxx, Cog ou componentes sem licença | WCL proíbe; GPL exige copyleft; sem licença = todos os direitos reservados |
+| Contornar licença de apps de terceiros (AMP) | Só referência de comportamento observável |
+| Streaming, podcasts, loja | Foco em biblioteca local |
+| Scrobbling ligado por padrão / telemetria | Privacidade |
+| Correção automática silenciosa e remoção automática de duplicatas | Viola o Core Value |
+| Normalização que regrava o áudio | Só ReplayGain não destrutivo |
+| "Singles" como álbum real gravado nas tags | Singles é visão virtual |
+| DJ, ripper, editor de áudio | Fora do produto |
+
+## Traceability
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| (preenchido pelo roadmap) | | |
+
+**Coverage:**
+- v1 requirements: 50 total
+- Mapped to phases: 0
+- Unmapped: 50 ⚠️
+
+---
+*Requirements defined: 2026-10-20*
+*Last updated: 2026-10-20 after initial definition*
