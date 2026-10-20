@@ -3,6 +3,12 @@ import SwiftUI
 
 /// Linha de faixa usada na playlist e na busca.
 struct TrackRow: View {
+    private var rowBackground: Color {
+        if isCurrent { return theme.currentRow.opacity(0.16) }
+        if isSelected { return theme.rowSelection }
+        return index % 2 == 0 ? Color.white.opacity(0.025) : Color.clear
+    }
+
     let track: Track
     let index: Int
     let isCurrent: Bool
@@ -38,7 +44,7 @@ struct TrackRow: View {
                     Circle().fill(mark.color).frame(width: 7, height: 7)
                 }
                 Text(Clock.format(track.duration))
-                    .font(.system(size: 11))
+                    .font(.system(size: 12))
                     .monospacedDigit()
                     .foregroundStyle(isCurrent ? theme.currentRow : theme.mutedText)
                     .frame(width: 44, alignment: .trailing)
@@ -46,9 +52,13 @@ struct TrackRow: View {
         }
         .font(.system(size: 13))
         .foregroundStyle(isCurrent ? theme.currentRow : theme.text)
-        .padding(.horizontal, 10)
-        .frame(height: detailed ? 40 : 24)
-        .background(isSelected ? theme.rowSelection : Color.clear)
+        .padding(.horizontal, 14)
+        .frame(height: detailed ? 40 : 29)
+        .background(rowBackground)
+        .overlay(alignment: .leading) {
+            if isCurrent { Rectangle().fill(theme.currentRow).frame(width: 3) }
+        }
+        .padding(.horizontal, 6)
         .contentShape(Rectangle())
     }
 }

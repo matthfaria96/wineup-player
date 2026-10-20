@@ -41,20 +41,42 @@ struct MainView: View {
     private func header(theme: Theme, compact: Bool) -> some View {
         HStack(spacing: 8) {
             Color.clear.frame(width: 64)   // espaço dos botões fechar/minimizar/maximizar
+            Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 18, height: 18)
+            if !compact {
+                Text("Wineup Player").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.text)
+            }
+            HStack(spacing: 2) {
+                Button { state.browser.goBack() } label: { Image(systemName: "chevron.left").frame(width: 22, height: 20) }
+                    .disabled(state.browser.backStack.isEmpty)
+                Button { state.browser.goForward() } label: { Image(systemName: "chevron.right").frame(width: 22, height: 20) }
+                    .disabled(state.browser.forwardStack.isEmpty)
+            }
+            .buttonStyle(.borderless)
+            .foregroundStyle(theme.mutedText)
             Button { MetadataSummary.show(state: state) } label: {
-                if compact { Image(systemName: "wand.and.stars") }
-                else { Label("Metadados", systemImage: "wand.and.stars").labelStyle(.titleAndIcon) }
+                if compact { Image(systemName: "tag") }
+                else { Label("Metadados", systemImage: "tag").labelStyle(.titleAndIcon) }
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
             .help("Metadados: verificar e corrigir as informações das músicas")
-            Spacer(minLength: 0)
-            if !compact {
-                Text("Wineup Player")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(theme.mutedText)
-                Spacer(minLength: 0)
+            Spacer(minLength: 8)
+            HStack(spacing: 6) {
+                Image(systemName: "magnifyingglass").foregroundStyle(theme.mutedText)
+                TextField(compact ? "Buscar" : "Buscar em sua biblioteca…", text: $state.query)
+                    .textFieldStyle(.plain)
+                if !state.query.isEmpty {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(theme.mutedText)
+                        .onTapGesture { state.query = "" }
+                }
             }
+            .font(.system(size: 12))
+            .padding(.horizontal, 10)
+            .frame(maxWidth: compact ? 150 : 340)
+            .frame(height: 24)
+            .background(RoundedRectangle(cornerRadius: 7).fill(Color.white.opacity(0.06)))
+            .overlay(RoundedRectangle(cornerRadius: 7).stroke(theme.panelBorder, lineWidth: 1))
+            Spacer(minLength: 8)
             Menu {
                 Picker("Layout", selection: $layoutRaw) {
                     ForEach(LayoutMode.allCases) { Text($0.name).tag($0.rawValue) }
@@ -69,8 +91,8 @@ struct MainView: View {
                     ForEach(BrowseMode.allCases) { Text($0.title).tag($0) }
                 }
             } label: {
-                if compact { Image(systemName: "rectangle.3.group") }
-                else { Label("Layout", systemImage: "rectangle.3.group").labelStyle(.titleAndIcon) }
+                if compact { Image(systemName: "square.grid.2x2") }
+                else { Label("Layout", systemImage: "square.grid.2x2").labelStyle(.titleAndIcon) }
             }
             .menuStyle(.button)
             .buttonStyle(.bordered)
@@ -81,7 +103,7 @@ struct MainView: View {
         .font(.system(size: 11))
         .padding(.leading, 12)
         .padding(.trailing, 10)
-        .frame(height: 30)
+        .frame(height: 38)
         .background(DragArea())
     }
 }

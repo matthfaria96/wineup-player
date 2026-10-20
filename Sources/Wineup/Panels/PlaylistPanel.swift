@@ -8,14 +8,17 @@ struct PlaylistPanel: View {
     @Environment(\.theme) private var theme
 
     var body: some View {
-        Panel(title: panelTitle) {
-            VStack(spacing: 4) {
-                NavBar(state: state, browser: browser)
-                Divider().opacity(0.4)
+        let nav = NavBar(state: state, browser: browser)
+        Panel(title: "") {
+            VStack(spacing: 0) {
+                nav
+                Divider().opacity(0.5)
+                titleBlock(crumbs: nav.crumbTitles)
+                if showsColumns { columnHeader }
                 Group {
                     if !state.query.isEmpty {
                         trackList(state.searchResults)
-                    } else if browser.location == .library && browser.showingGroups {
+                    } else if showingGroups {
                         LibraryGroupsView(state: state, browser: browser)
                     } else {
                         trackList(state.visibleTracks)
@@ -27,9 +30,50 @@ struct PlaylistPanel: View {
         }
     }
 
-    private var panelTitle: String {
-        if browser.location == .library && browser.showingGroups { return browser.mode.title }
-        return state.listTitle
+    private var showingGroups: Bool { browser.location == .library && browser.showingGroups && state.query.isEmpty }
+    private var showsColumns: Bool { !showingGroups && state.listStyle != .grid }
+
+    private var bigTitle: String {
+        if !state.query.isEmpty { return "Busca" }
+        return showingGroups ? browser.mode.title : state.listTitle
+    }
+
+    private func titleBlock(crumbs: [String]) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(bigTitle).font(.system(size: 24, weight: .bold)).lineLimit(1)
+                Text(state.query.isEmpty ? crumbs.joined(separator: " / ") : "Resultados para \u{201C}\(state.query)\u{201D}")
+                    .font(.system(size: 12)).foregroundStyle(theme.mutedText).lineLimit(1)
+            }
+            Spacer(minLength: 8)
+            Text(countText).font(.system(size: 12)).foregroundStyle(theme.mutedText)
+        }
+        .foregroundStyle(theme.text)
+        .padding(.horizontal, 16)
+        .padding(.top, 14)
+        .padding(.bottom, 10)
+    }
+
+    private var countText: String {
+        if showingGroups { return "\(browser.groups.count) itens" }
+        let n = state.query.isEmpty ? state.visibleTracks.count : state.searchResults.count
+        return "\(n) faixas"
+    }
+
+    private var columnHeader: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 8) {
+                Text("#").frame(width: 28, alignment: .trailing)
+                Text("Título — Artista")
+                Spacer()
+                Text("Duração").frame(width: 60, alignment: .trailing)
+            }
+            .font(.system(size: 11, weight: .medium))
+            .foregroundStyle(theme.mutedText)
+            .padding(.horizontal, 14)
+            .frame(height: 24)
+            Divider().opacity(0.4).padding(.horizontal, 10)
+        }
     }
 
     /// Subpastas da pasta atual, antes das músicas.
@@ -88,11 +132,11 @@ struct PlaylistPanel: View {
     private var footer: some View {
         HStack(spacing: 6) {
             ColorDots(selection: $state.markFilter)
+                .help("Filtrar por tag de cor")
             Spacer(minLength: 0)
-            ItemsCount(count: state.tracks.count)
-                .layoutPriority(-1)
         }
-        .padding(.horizontal, 10)
-        .padding(.bottom, 8)
+        .padding(.horizontal, 14)
+        .frame(height: 34)
+        .overlay(alignment: .top) { Divider().opacity(0.5) }
     }
 }

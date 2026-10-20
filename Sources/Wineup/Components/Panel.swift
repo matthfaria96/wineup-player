@@ -9,13 +9,15 @@ struct Panel<Content: View>: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Text(title)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(theme.mutedText)
-                .lineLimit(1)
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 10)
-                .frame(height: 24)
+            if !title.isEmpty {
+                Text(title)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(theme.mutedText)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 10)
+                    .frame(height: 24)
+            }
 
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)

@@ -2,6 +2,13 @@ import AppKit
 import Foundation
 import WineupCore
 
+/// Um passo do histórico de navegação.
+enum NavEntry: Equatable {
+    case library(BrowseMode)
+    case group(BrowseGroup)
+    case folder(URL)
+}
+
 enum NavLocation: Equatable {
     case library
     case folder(URL)
@@ -32,7 +39,39 @@ enum NavPlaces {
 extension LibraryBrowser {
     // MARK: Navegação
 
+    func record(_ entry: NavEntry) {
+        if !isReplaying, let current = currentEntry, current != entry {
+            backStack.append(current)
+            forwardStack = []
+        }
+        currentEntry = entry
+    }
+
+    func goBack() {
+        guard let previous = backStack.popLast() else { return }
+        if let current = currentEntry { forwardStack.append(current) }
+        replay(previous)
+    }
+
+    func goForward() {
+        guard let next = forwardStack.popLast() else { return }
+        if let current = currentEntry { backStack.append(current) }
+        replay(next)
+    }
+
+    private func replay(_ entry: NavEntry) {
+        isReplaying = true
+        switch entry {
+        case .library(let mode): goLibrary(mode)
+        case .group(let group): open(group)
+        case .folder(let url): goFolder(url)
+        }
+        currentEntry = entry
+        isReplaying = false
+    }
+
     func goLibrary(_ mode: BrowseMode) {
+        record(.library(mode))
         location = .library
         currentGroupTitle = nil
         showingGroups = true
@@ -40,6 +79,7 @@ extension LibraryBrowser {
     }
 
     func goFolder(_ url: URL) {
+        record(.folder(url))
         location = .folder(url)
         showingGroups = false
         currentGroupTitle = nil

@@ -7,15 +7,10 @@ struct NavBar: View {
     @Environment(\.theme) private var theme
 
     var body: some View {
-        HStack(spacing: 6) {
-            Button { browser.goUp() } label: {
-                Image(systemName: "arrow.up").frame(width: 18, height: 18)
-            }
-            .buttonStyle(.borderless)
-            .disabled(!browser.canGoUp)
-            .help("Subir um nível")
-
+        HStack(spacing: 10) {
             locationMenu
+            Divider().frame(height: 18)
+            Image(systemName: currentIcon).foregroundStyle(theme.mutedText)
             breadcrumb
             Spacer(minLength: 4)
             if browser.currentFolder != nil {
@@ -26,13 +21,15 @@ struct NavBar: View {
                 .foregroundStyle(browser.isCurrentFavorite ? Color.yellow : theme.mutedText)
                 .help(browser.isCurrentFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos")
             }
-            searchField
         }
         .font(.system(size: 12))
         .foregroundStyle(theme.text)
-        .padding(.horizontal, 10)
-        .frame(height: 28)
+        .padding(.horizontal, 12)
+        .frame(height: 40)
     }
+
+    /// Título grande, caminho e contagem acima da lista.
+    var crumbTitles: [String] { crumbs.map(\.title) }
 
     // MARK: Seletor de local
 
@@ -48,6 +45,20 @@ struct NavBar: View {
         case .folder: return "folder.fill"
         case .library: return browser.mode.symbol
         }
+    }
+
+    private var rootName: String {
+        guard let url = browser.currentFolder else { return "Biblioteca" }
+        if url.path.hasPrefix(NavPlaces.music.path) { return "Música" }
+        if url.path.hasPrefix(NavPlaces.downloads.path) { return "Downloads" }
+        return url.lastPathComponent.isEmpty ? "/" : url.lastPathComponent
+    }
+
+    private var rootIcon: String {
+        guard let url = browser.currentFolder else { return "music.note.house" }
+        if url.path.hasPrefix(NavPlaces.music.path) { return "music.note" }
+        if url.path.hasPrefix(NavPlaces.downloads.path) { return "arrow.down.circle" }
+        return "folder"
     }
 
     private var locationMenu: some View {
@@ -80,7 +91,7 @@ struct NavBar: View {
             Divider()
             Button("Escolher outra pasta…") { browser.chooseOtherFolder() }
         } label: {
-            Label(currentName, systemImage: currentIcon).labelStyle(.titleAndIcon)
+            Label(rootName, systemImage: rootIcon).labelStyle(.titleAndIcon)
         }
         .menuStyle(.button)
         .buttonStyle(.bordered)
@@ -136,9 +147,9 @@ struct NavBar: View {
         .layoutPriority(-1)
     }
 
-    private struct Crumb { let title: String; let action: () -> Void }
+    struct Crumb { let title: String; let action: () -> Void }
 
-    private var crumbs: [Crumb] {
+    var crumbs: [Crumb] {
         switch browser.location {
         case .folder(let url):
             let home = FileManager.default.homeDirectoryForCurrentUser
@@ -161,20 +172,4 @@ struct NavBar: View {
         }
     }
 
-    // MARK: Busca
-
-    private var searchField: some View {
-        HStack(spacing: 4) {
-            Image(systemName: "magnifyingglass").foregroundStyle(theme.mutedText)
-            TextField("Buscar", text: $state.query).textFieldStyle(.plain)
-            if !state.query.isEmpty {
-                Image(systemName: "xmark.circle.fill").foregroundStyle(theme.mutedText)
-                    .onTapGesture { state.query = "" }
-            }
-        }
-        .padding(.horizontal, 6)
-        .frame(width: 130, height: 22)
-        .background(RoundedRectangle(cornerRadius: 6).fill(Color.white.opacity(0.06)))
-        .overlay(RoundedRectangle(cornerRadius: 6).stroke(theme.panelBorder, lineWidth: 1))
-    }
 }

@@ -22,6 +22,11 @@ final class LibraryBrowser: ObservableObject {
     @Published var favorites: [URL] = NavPlaces.loadFavorites()
     @Published var currentGroupTitle: String?
     var onOpenTracks: ((String, [Track]) -> Void)?
+    /// Histórico para os botões voltar/avançar.
+    @Published var backStack: [NavEntry] = []
+    @Published var forwardStack: [NavEntry] = []
+    var currentEntry: NavEntry?
+    var isReplaying = false
 
     /// Caminho → cor marcada pelo usuário.
     private(set) var marks: [String: MarkColor] = [:]
@@ -124,6 +129,7 @@ final class LibraryBrowser: ObservableObject {
         showingGroups = false
         location = .library
         currentGroupTitle = group.title
+        record(.group(group))
         let kind = group.kind
         let title = group.title
         Task { [weak self] in
