@@ -46,6 +46,21 @@ let package = Package(
             path: "Sources/WineupLibrary",
             swiftSettings: [.unsafeFlags(["-strict-concurrency=complete"])]
         ),
+        // Cadeia de efeitos (velocidade, EQ, balanço/ganho) e medidor sobre AVAudioEngine.
+        .target(
+            name: "WineupAudio",
+            dependencies: [
+                "WineupCore",
+                .product(name: "SFBAudioEngine", package: "SFBAudioEngine"),
+            ],
+            path: "Sources/WineupAudio",
+            swiftSettings: [.unsafeFlags(["-strict-concurrency=complete"])]
+        ),
+        .testTarget(
+            name: "WineupAudioTests",
+            dependencies: ["WineupAudio", "WineupCore"],
+            path: "Tests/WineupAudioTests"
+        ),
         .testTarget(
             name: "WineupLibraryTests",
             dependencies: [
