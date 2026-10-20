@@ -31,13 +31,13 @@
 
 ### Áudio (AUD)
 
-- [ ] **AUD-01**: Espectro e medidor de nível (VU) refletem o áudio que está tocando
-- [ ] **AUD-02**: Usuário muda a velocidade de reprodução e o tempo/letras continuam sincronizados
-- [ ] **AUD-03**: Usuário ajusta o balanço esquerda/direita
-- [ ] **AUD-04**: Equalizador de 10 bandas + preamp altera o áudio de forma verificável, com presets salvos pelo usuário
-- [ ] **AUD-05**: ReplayGain (faixa/álbum) é aplicado como ganho, sem regravar o áudio
-- [ ] **AUD-06**: Faixas consecutivas tocam sem lacuna (gapless) quando o formato permite
-- [ ] **AUD-07**: Trocar o dispositivo de saída (fones, AirPods, HDMI) não interrompe nem trava a reprodução
+- [x] **AUD-01**: Espectro e medidor de nível (VU) refletem o áudio que está tocando
+- [x] **AUD-02**: Usuário muda a velocidade de reprodução e o tempo/letras continuam sincronizados
+- [x] **AUD-03**: Usuário ajusta o balanço esquerda/direita
+- [x] **AUD-04**: Equalizador de 10 bandas + preamp altera o áudio de forma verificável, com presets salvos pelo usuário
+- [x] **AUD-05**: ReplayGain (faixa/álbum) é aplicado como ganho, sem regravar o áudio
+- [x] **AUD-06**: Faixas consecutivas tocam sem lacuna (gapless) quando o formato permite
+- [x] **AUD-07**: Trocar o dispositivo de saída (fones, AirPods, HDMI) não interrompe nem trava a reprodução
 
 ### Reprodução e fila (PLAY)
 

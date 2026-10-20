@@ -10,7 +10,7 @@ Granularidade: standard. Cobertura: 58/58 requisitos v1.
 
 - [x] **Phase 1: Fundação e Infraestrutura de Teste** - Núcleo `WineupCore` sem UI, IDs estáveis, `swift test` com Command Line Tools e build assinado de teste (completed 2026-10-20)
 - [x] **Phase 2: Dados e Escrita Segura** - Biblioteca persistente em SQLite com varredura incremental, busca e infraestrutura de gravação de tags com backup, verificação e desfazer (completed 2026-10-20)
-- [ ] **Phase 3: Áudio Real** - Espectro/VU reais, velocidade, balanço, EQ verificável, ReplayGain, gapless e troca de dispositivo
+- [x] **Phase 3: Áudio Real** - Espectro/VU reais, velocidade, balanço, EQ verificável, ReplayGain, gapless e troca de dispositivo (completed 2026-10-20)
 - [ ] **Phase 4: Serviços de Reprodução** - Fila, playlists, restauração de sessão e resolução de capas, tocando arquivos vindos do banco
 - [ ] **Phase 5: Interface sobre Serviços Reais** - Painéis alimentados pelos serviços, navegação por discografia, letras sincronizadas, skins e acessibilidade
 - [ ] **Phase 6: Integração com o Sistema e Distribuição** - Teclas de mídia, atalhos, modo mini, release assinado e notarizado em `.dmg`
@@ -63,12 +63,12 @@ Plans:
   5. Trocar fones, AirPods ou HDMI durante a reprodução não interrompe nem trava o som
 **Plans**: 6 plans
 Plans:
-- [ ] 03-01-PLAN.md — Target WineupAudio: EffectChain (TimePitch/EQ/balanço) e LevelTap testados em render offline
-- [ ] 03-02-PLAN.md — Matemática pura em WineupCore (taxa, ReplayGain, EQ, espectro, próxima faixa) + porta AudioEngine
-- [ ] 03-03-PLAN.md — Presets de EQ persistidos em app_setting
-- [ ] 03-04-PLAN.md — SFBAudioEngineAdapter + ReplayGainReader + executável wineup-audiocheck
-- [ ] 03-05-PLAN.md — App migra para o adaptador: velocidade, balanço, volume, RG, gapless, troca de dispositivo
-- [ ] 03-06-PLAN.md — VU/espectro reais, presets e seletor de ReplayGain na UI
+- [x] 03-01-PLAN.md — Target WineupAudio: EffectChain (TimePitch/EQ/balanço) e LevelTap testados em render offline
+- [x] 03-02-PLAN.md — Matemática pura em WineupCore (taxa, ReplayGain, EQ, espectro, próxima faixa) + porta AudioEngine
+- [x] 03-03-PLAN.md — Presets de EQ persistidos em app_setting
+- [x] 03-04-PLAN.md — SFBAudioEngineAdapter + ReplayGainReader + executável wineup-audiocheck
+- [x] 03-05-PLAN.md — App migra para o adaptador: velocidade, balanço, volume, RG, gapless, troca de dispositivo
+- [x] 03-06-PLAN.md — VU/espectro reais, presets e seletor de ReplayGain na UI
 **UI hint**: yes
 **Pesquisa de fase**: sim (risco alto: tap no grafo do SFB, ordem timePitch, EQ e pan, `currentTime` com taxa, gapless com EQ)
 
@@ -147,7 +147,7 @@ Plans:
 |------|-------------------|--------|-----------|
 | 1. Fundação e Infraestrutura de Teste | 3/3 | Complete    | 2026-10-20 |
 | 2. Dados e Escrita Segura | 6/6 | Complete    | 2026-10-20 |
-| 3. Áudio Real | 0/0 | Não iniciada | - |
+| 3. Áudio Real | 6/6 | Complete    | 2026-10-20 |
 | 4. Serviços de Reprodução | 0/0 | Não iniciada | - |
 | 5. Interface sobre Serviços Reais | 0/0 | Não iniciada | - |
 | 6. Integração com o Sistema e Distribuição | 0/0 | Não iniciada | - |
