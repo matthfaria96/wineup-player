@@ -4,6 +4,9 @@ import PackageDescription
 let package = Package(
     name: "Wineup",
     platforms: [.macOS(.v14)],
+    products: [
+        .executable(name: "wineup-audiocheck", targets: ["WineupAudioCheck"]),
+    ],
     dependencies: [
         // MIT. Decoders de FLAC/MP3/Ogg/Opus/APE/DSD etc., leitura de tags e ReplayGain.
         .package(url: "https://github.com/sbooth/SFBAudioEngine", from: "0.14.0"),
@@ -55,6 +58,16 @@ let package = Package(
             ],
             path: "Sources/WineupAudio",
             swiftSettings: [.unsafeFlags(["-strict-concurrency=complete"])]
+        ),
+        // Verificação offline do caminho SFB real (release; render manual, sem som).
+        .executableTarget(
+            name: "WineupAudioCheck",
+            dependencies: [
+                "WineupAudio",
+                "WineupCore",
+                .product(name: "SFBAudioEngine", package: "SFBAudioEngine"),
+            ],
+            path: "Sources/WineupAudioCheck"
         ),
         .testTarget(
             name: "WineupAudioTests",
