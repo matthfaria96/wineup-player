@@ -1,27 +1,27 @@
 # Roadmap: Wineup Player
 
-## Visão geral
+## Overview
 
 Player de música nativo para macOS (Swift + SwiftUI) com interface clássica de painéis e o Wineup Library Fixer. O roadmap segue camadas horizontais (escolha do usuário), na ordem de dependência dos targets SwiftPM: Core, Dados, Áudio, Serviços, UI, Sistema, Fixer e Provedores online. Como o risco das camadas é entregar valor visível tarde, **toda fase termina com um build demonstrável (`swift build` + `.app`) em que o app ainda abre e toca**.
 
 Granularidade: standard. Cobertura: 51/51 requisitos v1.
 
-## Fases
+## Phases
 
-- [ ] **Fase 1: Fundação e Infraestrutura de Teste** - Núcleo `WineupCore` sem UI, IDs estáveis, `swift test` com Command Line Tools e build assinado de teste
-- [ ] **Fase 2: Dados e Escrita Segura** - Biblioteca persistente em SQLite com varredura incremental, busca e infraestrutura de gravação de tags com backup, verificação e desfazer
-- [ ] **Fase 3: Áudio Real** - Espectro/VU reais, velocidade, balanço, EQ verificável, ReplayGain, gapless e troca de dispositivo
-- [ ] **Fase 4: Serviços de Reprodução** - Fila, playlists, restauração de sessão e resolução de capas, tocando arquivos vindos do banco
-- [ ] **Fase 5: Interface sobre Serviços Reais** - Painéis alimentados pelos serviços, navegação por discografia, letras sincronizadas, skins e acessibilidade
-- [ ] **Fase 6: Integração com o Sistema e Distribuição** - Teclas de mídia, atalhos, modo mini, release assinado e notarizado em `.dmg`
-- [ ] **Fase 7: Library Fixer v1 (offline)** - Diagnóstico, prévia com confiança, aplicação em lote e desfazer, edição simples de tags
-- [ ] **Fase 8: Provedores Online e Fingerprint** - MusicBrainz, Cover Art Archive e AcoustID opcionais, com consentimento e modo offline padrão
+- [ ] **Phase 1: Fundação e Infraestrutura de Teste** - Núcleo `WineupCore` sem UI, IDs estáveis, `swift test` com Command Line Tools e build assinado de teste
+- [ ] **Phase 2: Dados e Escrita Segura** - Biblioteca persistente em SQLite com varredura incremental, busca e infraestrutura de gravação de tags com backup, verificação e desfazer
+- [ ] **Phase 3: Áudio Real** - Espectro/VU reais, velocidade, balanço, EQ verificável, ReplayGain, gapless e troca de dispositivo
+- [ ] **Phase 4: Serviços de Reprodução** - Fila, playlists, restauração de sessão e resolução de capas, tocando arquivos vindos do banco
+- [ ] **Phase 5: Interface sobre Serviços Reais** - Painéis alimentados pelos serviços, navegação por discografia, letras sincronizadas, skins e acessibilidade
+- [ ] **Phase 6: Integração com o Sistema e Distribuição** - Teclas de mídia, atalhos, modo mini, release assinado e notarizado em `.dmg`
+- [ ] **Phase 7: Library Fixer v1 (offline)** - Diagnóstico, prévia com confiança, aplicação em lote e desfazer, edição simples de tags
+- [ ] **Phase 8: Provedores Online e Fingerprint** - MusicBrainz, Cover Art Archive e AcoustID opcionais, com consentimento e modo offline padrão
 
-## Detalhes das fases
+## Phase Details
 
-### Fase 1: Fundação e Infraestrutura de Teste
+### Phase 1: Fundação e Infraestrutura de Teste
 **Goal**: O código tem um núcleo testável separado da UI e o projeto prova cedo que testa e empacota com apenas Command Line Tools
-**Depends on**: Nada (primeira fase)
+**Depends on**: Nothing (first phase)
 **Requirements**: FND-01, FND-02, FND-03, FND-04
 **Success Criteria** (what must be TRUE):
   1. O app compila dividido em targets SwiftPM (com `WineupCore` sem dependência de UI), abre e toca FLAC/M4A/WAV como hoje
@@ -31,9 +31,9 @@ Granularidade: standard. Cobertura: 51/51 requisitos v1.
 **Plans**: TBD
 **Pesquisa de fase**: não (apenas spike de `swift test`)
 
-### Fase 2: Dados e Escrita Segura
+### Phase 2: Dados e Escrita Segura
 **Goal**: A biblioteca do usuário persiste entre sessões, é varrida e pesquisada com rapidez, e qualquer gravação de tag é protegida por backup, verificação e desfazer
-**Depends on**: Fase 1
+**Depends on**: Phase 1
 **Requirements**: LIB-01, LIB-02, LIB-03, LIB-04, LIB-05, LIB-06, LIB-07, SAFE-01, SAFE-02, SAFE-03
 **Success Criteria** (what must be TRUE):
   1. Usuário adiciona pastas de música, fecha e reabre o app e as pastas e faixas continuam na biblioteca
@@ -44,9 +44,9 @@ Granularidade: standard. Cobertura: 51/51 requisitos v1.
 **Plans**: TBD
 **Pesquisa de fase**: sim (cobertura de `writeMetadata` por formato, `replaceItemAt` e inode, backup por `clonefile`, sandbox/`LibraryRoot`)
 
-### Fase 3: Áudio Real
+### Phase 3: Áudio Real
 **Goal**: O que o usuário vê e ouve reflete o áudio de verdade: medidores, velocidade, balanço, equalizador e ganho
-**Depends on**: Fase 1 (pode se sobrepor à Fase 2)
+**Depends on**: Phase 1 (pode se sobrepor à Phase 2)
 **Requirements**: AUD-01, AUD-02, AUD-03, AUD-04, AUD-05, AUD-06, AUD-07
 **Success Criteria** (what must be TRUE):
   1. Espectro e VU se movem conforme a música que toca e ficam parados em pausa ou silêncio
@@ -58,9 +58,9 @@ Granularidade: standard. Cobertura: 51/51 requisitos v1.
 **UI hint**: yes
 **Pesquisa de fase**: sim (risco alto: tap no grafo do SFB, ordem timePitch, EQ e pan, `currentTime` com taxa, gapless com EQ)
 
-### Fase 4: Serviços de Reprodução
+### Phase 4: Serviços de Reprodução
 **Goal**: A reprodução passa a funcionar sobre a biblioteca persistente, com fila, playlists e sessão restaurável
-**Depends on**: Fase 2, Fase 3
+**Depends on**: Phase 2, Phase 3
 **Requirements**: PLAY-01, PLAY-02, PLAY-03, PLAY-04, DISC-02
 **Success Criteria** (what must be TRUE):
   1. Usuário toca uma faixa vinda da biblioteca persistente de ponta a ponta, monta uma fila, reordena, repete (uma/todas) e embaralha
@@ -71,9 +71,9 @@ Granularidade: standard. Cobertura: 51/51 requisitos v1.
 **Plans**: TBD
 **Pesquisa de fase**: não
 
-### Fase 5: Interface sobre Serviços Reais
+### Phase 5: Interface sobre Serviços Reais
 **Goal**: Os painéis clássicos mostram e controlam dados reais, com navegação por discografia, letras sincronizadas, skins próprias e acessibilidade
-**Depends on**: Fase 4
+**Depends on**: Phase 4
 **Requirements**: UI-01, UI-02, UI-03, UI-04, DISC-01, DISC-03, DISC-04
 **Success Criteria** (what must be TRUE):
   1. Os painéis AMP, FX, Playlist, Search, Lyrics e Capa refletem a reprodução, a biblioteca e os medidores reais
@@ -85,9 +85,9 @@ Granularidade: standard. Cobertura: 51/51 requisitos v1.
 **UI hint**: yes
 **Pesquisa de fase**: não
 
-### Fase 6: Integração com o Sistema e Distribuição
+### Phase 6: Integração com o Sistema e Distribuição
 **Goal**: O app se comporta como cidadão do macOS e pode ser distribuído e aberto em um Mac limpo
-**Depends on**: Fase 5
+**Depends on**: Phase 5
 **Requirements**: SYS-01, SYS-02, SYS-03, SYS-04, SYS-05
 **Success Criteria** (what must be TRUE):
   1. Teclas de mídia, Central de Controle e tela de bloqueio controlam a reprodução e mostram a faixa atual
@@ -99,9 +99,9 @@ Granularidade: standard. Cobertura: 51/51 requisitos v1.
 **UI hint**: yes
 **Pesquisa de fase**: sim (`notarytool` nos CLT, Developer ID, validação de bibliotecas LGPL, MPRemoteCommandCenter em `.app` montado por script)
 
-### Fase 7: Library Fixer v1 (offline)
+### Phase 7: Library Fixer v1 (offline)
 **Goal**: Usuário corrige tags, capas e duplicatas da biblioteca com prévia, confiança explicada e desfazer, sem risco aos arquivos
-**Depends on**: Fase 2 (escrita segura), Fase 5 (UI)
+**Depends on**: Phase 2 (escrita segura), Phase 5 (UI)
 **Requirements**: SAFE-04, FIX-01, FIX-02, FIX-03, FIX-04, FIX-05, FIX-06, FIX-07
 **Success Criteria** (what must be TRUE):
   1. Usuário escolhe pastas e o Fixer diagnostica sem gravar nada: tags ausentes/inconsistentes, capa ausente ou pequena, `.lrc` órfão e duplicatas idênticas
@@ -113,9 +113,9 @@ Granularidade: standard. Cobertura: 51/51 requisitos v1.
 **UI hint**: yes
 **Pesquisa de fase**: sim (regras de diagnóstico e pesos de confiança)
 
-### Fase 8: Provedores Online e Fingerprint
+### Phase 8: Provedores Online e Fingerprint
 **Goal**: Usuário pode, por escolha própria, enriquecer a biblioteca com metadados e capas online, com privacidade e limites respeitados
-**Depends on**: Fase 7
+**Depends on**: Phase 7
 **Requirements**: NET-01, NET-02, NET-03, NET-04, NET-05
 **Success Criteria** (what must be TRUE):
   1. O app inicia offline; usuário liga, por provedor, consultas a MusicBrainz e Cover Art Archive
@@ -127,7 +127,7 @@ Granularidade: standard. Cobertura: 51/51 requisitos v1.
 **UI hint**: yes
 **Pesquisa de fase**: sim (Chromaprint com CLT e licença, termos de MusicBrainz/AcoustID/CAA)
 
-## Progresso
+## Progress
 
 | Fase | Planos concluídos | Status | Concluída |
 |------|-------------------|--------|-----------|
