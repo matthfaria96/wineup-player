@@ -9,7 +9,7 @@ enum PanelKind: String, CaseIterable, Codable {
     /// Painéis de altura fixa só trocam entre si; os flexíveis também. Assim o layout nunca quebra.
     var fixedHeight: CGFloat? {
         switch self {
-        case .player: 222
+        case .player: 228
         case .equalizer: 190
         default: nil
         }

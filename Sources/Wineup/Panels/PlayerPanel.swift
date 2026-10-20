@@ -52,17 +52,28 @@ struct PlayerPanel: View {
     private var readout: some View {
         HStack(alignment: .center, spacing: 10) {
             LevelMeter(levels: meter.levels)
-            Spacer(minLength: 0)
-            SevenSegmentText(text: Self.lcdTime(state.remainingSeconds), digitHeight: 28)
-                .layoutPriority(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .trailing, spacing: 4) {
+                // Duração total, pequena e apagada, acima do tempo restante.
+                SevenSegmentText(text: Self.lcdTotal(state.currentTrack?.duration ?? 0), digitHeight: 9,
+                                 color: Color(hex: 0xBFC8EE).opacity(0.45))
+                SevenSegmentText(text: Self.lcdTime(state.remainingSeconds), digitHeight: 28)
+            }
+            .fixedSize()
+            .layoutPriority(1)
         }
-        .frame(height: 38)
+        .frame(height: 44)
     }
 
     /// "-MM:SS" com dois dígitos de minuto, como num visor LCD.
     static func lcdTime(_ seconds: Int) -> String {
         let s = max(seconds, 0)
         return String(format: "-%02d:%02d", min(s / 60, 99), s % 60)
+    }
+
+    static func lcdTotal(_ seconds: Int) -> String {
+        let s = max(seconds, 0)
+        return String(format: "%02d:%02d", min(s / 60, 99), s % 60)
     }
 
     private var transport: some View {
