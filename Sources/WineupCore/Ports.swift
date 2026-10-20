@@ -38,14 +38,22 @@ public struct JournalEntry: Sendable, Equatable, Identifiable {
     }
 }
 
-/// Assinaturas alinhadas a `AudioEngineService` (Sources/Wineup/Audio).
+/// Implementada por SFBAudioEngineAdapter em WineupAudio.
 public protocol AudioEngine: AnyObject {
     func play(_ url: URL) throws
+    func enqueue(_ url: URL) throws
     func pause()
     func resume()
     func stop()
     func seek(toFraction fraction: Double)
     func setVolume(_ volume: Double)
+    func setRate(_ rate: Double)
+    func setBalance(_ pan: Double)
+    func setReplayGain(linear: Double)
+    func applyEqualizer(preamp: Double, bands: [Double], bypass: Bool)
+    var currentTime: TimeInterval { get }
+    var totalTime: TimeInterval { get }
+    var isPlaying: Bool { get }
 }
 
 public protocol TagIO: Sendable {
