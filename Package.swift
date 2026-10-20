@@ -58,7 +58,11 @@ let package = Package(
         ),
         .testTarget(
             name: "WineupAudioTests",
-            dependencies: ["WineupAudio", "WineupCore"],
+            dependencies: [
+                "WineupAudio",
+                "WineupCore",
+                .product(name: "SFBAudioEngine", package: "SFBAudioEngine"),
+            ],
             path: "Tests/WineupAudioTests"
         ),
         .testTarget(
