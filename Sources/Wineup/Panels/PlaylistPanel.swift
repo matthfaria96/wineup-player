@@ -41,7 +41,25 @@ struct PlaylistPanel: View {
     private func titleBlock(crumbs: [String]) -> some View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 3) {
-                Text(bigTitle).font(.system(size: 24, weight: .bold)).lineLimit(1)
+                if browser.location == .library && state.query.isEmpty {
+                    Menu {
+                        ForEach(BrowseMode.allCases.filter { $0 != .folders }) { mode in
+                            Button { browser.goLibrary(mode) } label: { Label(mode.title, systemImage: mode.symbol) }
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text(bigTitle).font(.system(size: 24, weight: .bold)).lineLimit(1)
+                            Image(systemName: "chevron.down").font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(theme.mutedText)
+                        }
+                    }
+                    .menuStyle(.borderlessButton)
+                    .menuIndicator(.hidden)
+                    .fixedSize()
+                    .help("Ver biblioteca por")
+                } else {
+                    Text(bigTitle).font(.system(size: 24, weight: .bold)).lineLimit(1)
+                }
                 Text(state.query.isEmpty ? crumbs.joined(separator: " / ") : "Resultados para \u{201C}\(state.query)\u{201D}")
                     .font(.system(size: 12)).foregroundStyle(theme.mutedText).lineLimit(1)
             }
@@ -134,6 +152,26 @@ struct PlaylistPanel: View {
             ColorDots(selection: $state.markFilter)
                 .help("Filtrar por tag de cor")
             Spacer(minLength: 0)
+            Picker("Estilo da lista", selection: $state.listStyle) {
+                Image(systemName: "list.bullet").help("Compacta").tag(ListStyle.compact)
+                Image(systemName: "list.bullet.rectangle").help("Com detalhes").tag(ListStyle.detailed)
+                Image(systemName: "square.grid.2x2").help("Grade").tag(ListStyle.grid)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .controlSize(.small)
+            .fixedSize()
+            Menu {
+                ForEach(Theme.all) { theme in
+                    Button(theme.name) { UserDefaults.standard.set(theme.id, forKey: DisplayKeys.theme) }
+                }
+            } label: {
+                Image(systemName: "paintpalette")
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .help("Tema")
         }
         .padding(.horizontal, 14)
         .frame(height: 34)

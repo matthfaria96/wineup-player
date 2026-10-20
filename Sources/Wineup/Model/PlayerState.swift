@@ -62,6 +62,9 @@ final class PlayerState: ObservableObject {
         restoreEqualizer()
         syncEqualizer()
         browser.onOpen = { [weak self] title, items in self?.showGroup(title: title, items: items) }
+        browser.onRefresh = { [weak self] in
+            Task { @MainActor in self?.library.rescan() }
+        }
         browser.onOpenTracks = { [weak self] title, items in
             guard let self else { return }
             self.listTitle = title

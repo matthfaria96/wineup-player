@@ -22,6 +22,8 @@ final class LibraryBrowser: ObservableObject {
     @Published var favorites: [URL] = NavPlaces.loadFavorites()
     @Published var currentGroupTitle: String?
     var onOpenTracks: ((String, [Track]) -> Void)?
+    /// Pedido de nova varredura da biblioteca (botão Atualizar).
+    var onRefresh: (() -> Void)?
     /// Histórico para os botões voltar/avançar.
     @Published var backStack: [NavEntry] = []
     @Published var forwardStack: [NavEntry] = []

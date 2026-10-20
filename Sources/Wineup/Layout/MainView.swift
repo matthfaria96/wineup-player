@@ -81,15 +81,8 @@ struct MainView: View {
                 Picker("Layout", selection: $layoutRaw) {
                     ForEach(LayoutMode.allCases) { Text($0.name).tag($0.rawValue) }
                 }
-                Picker("Tema", selection: $themeID) {
-                    ForEach(Theme.all) { Text($0.name).tag($0.id) }
-                }
-                Picker("Estilo da lista", selection: $state.listStyle) {
-                    ForEach(ListStyle.allCases) { Text($0.title).tag($0) }
-                }
-                Picker("Ver biblioteca por", selection: Binding(get: { state.browser.mode }, set: { state.browser.mode = $0 })) {
-                    ForEach(BrowseMode.allCases) { Text($0.title).tag($0) }
-                }
+                .pickerStyle(.inline)
+                .labelsHidden()
             } label: {
                 if compact { Image(systemName: "square.grid.2x2") }
                 else { Label("Layout", systemImage: "square.grid.2x2").labelStyle(.titleAndIcon) }

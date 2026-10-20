@@ -93,6 +93,20 @@ extension LibraryBrowser {
         }
     }
 
+    /// Recarrega o que está aberto (lista da biblioteca, grupo ou pasta).
+    func refresh() {
+        let wasReplaying = isReplaying
+        isReplaying = true
+        defer { isReplaying = wasReplaying }
+        refreshMarks()
+        switch currentEntry {
+        case .group(let group): open(group)
+        case .folder(let url): goFolder(url)
+        default: reload()
+        }
+        onRefresh?()
+    }
+
     var canGoUp: Bool {
         switch location {
         case .library: return !showingGroups

@@ -21,6 +21,10 @@ struct NavBar: View {
                 .foregroundStyle(browser.isCurrentFavorite ? Color.yellow : theme.mutedText)
                 .help(browser.isCurrentFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos")
             }
+            Button { browser.refresh() } label: { Image(systemName: "arrow.clockwise") }
+                .buttonStyle(.borderless)
+                .foregroundStyle(theme.mutedText)
+                .help("Atualizar")
         }
         .font(.system(size: 12))
         .foregroundStyle(theme.text)

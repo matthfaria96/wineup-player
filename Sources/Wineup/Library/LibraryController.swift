@@ -46,6 +46,9 @@ final class LibraryController {
         return (try? await SearchService(database: database).search(text, limit: 200)) ?? []
     }
 
+    /// Varre de novo todas as raízes (botão Atualizar).
+    func rescan() { beginScan(rootIDs: nil) }
+
     func cancelScan() {
         scanTask?.cancel()
         scanTask = nil
