@@ -14,19 +14,19 @@
 
 ### Biblioteca (LIB)
 
-- [ ] **LIB-01**: Usuário adiciona pastas de música como raízes da biblioteca e elas persistem entre sessões
-- [ ] **LIB-02**: A biblioteca é varrida de forma incremental (só arquivos novos/alterados são relidos) com progresso e cancelamento
-- [ ] **LIB-03**: Arquivos movidos, renomeados ou em disco desconectado aparecem como ausentes, sem perder playlists e histórico
-- [ ] **LIB-04**: Usuário busca por título, artista ou álbum (ignorando acentos) com resultado instantâneo em bibliotecas grandes
-- [ ] **LIB-05**: Usuário navega por artista, álbum, gênero, pasta e todas as faixas
-- [ ] **LIB-06**: O modelo distingue arquivo, gravação, faixa no lançamento, lançamento, artista, arte e letra
-- [ ] **LIB-07**: Uma biblioteca sintética de 100 mil arquivos é varrida e pesquisada sem travar a interface
+- [x] **LIB-01**: Usuário adiciona pastas de música como raízes da biblioteca e elas persistem entre sessões
+- [x] **LIB-02**: A biblioteca é varrida de forma incremental (só arquivos novos/alterados são relidos) com progresso e cancelamento
+- [x] **LIB-03**: Arquivos movidos, renomeados ou em disco desconectado aparecem como ausentes, sem perder playlists e histórico
+- [x] **LIB-04**: Usuário busca por título, artista ou álbum (ignorando acentos) com resultado instantâneo em bibliotecas grandes
+- [x] **LIB-05**: Usuário navega por artista, álbum, gênero, pasta e todas as faixas
+- [x] **LIB-06**: O modelo distingue arquivo, gravação, faixa no lançamento, lançamento, artista, arte e letra
+- [x] **LIB-07**: Uma biblioteca sintética de 100 mil arquivos é varrida e pesquisada sem travar a interface
 
 ### Escrita segura (SAFE)
 
-- [ ] **SAFE-01**: Toda gravação de tag passa por um único gravador que faz backup antes, verifica depois e registra no diário
-- [ ] **SAFE-02**: Toda gravação pode ser desfeita a partir do diário
-- [ ] **SAFE-03**: Gravar e reler tags preserva campos desconhecidos, versão de ID3 e capas em FLAC, MP3, M4A, Ogg/Opus e WAV (testado com arquivos de exemplo)
+- [x] **SAFE-01**: Toda gravação de tag passa por um único gravador que faz backup antes, verifica depois e registra no diário
+- [x] **SAFE-02**: Toda gravação pode ser desfeita a partir do diário
+- [x] **SAFE-03**: Gravar e reler tags preserva campos desconhecidos, versão de ID3 e capas em FLAC, MP3, M4A, Ogg/Opus e WAV (testado com arquivos de exemplo)
 - [ ] **SAFE-04**: Usuário edita tags simples (título, artista, álbum, faixa, ano, gênero) de uma ou várias faixas, com prévia antes de gravar
 
 ### Áudio (AUD)
@@ -55,7 +55,7 @@
 
 ### Navegação da biblioteca (NAV)
 
-- [ ] **NAV-01**: Na primeira abertura, o app adiciona e carrega automaticamente a pasta Música do usuário (`~/Music`) como raiz da biblioteca
+- [x] **NAV-01**: Na primeira abertura, o app adiciona e carrega automaticamente a pasta Música do usuário (`~/Music`) como raiz da biblioteca
 - [ ] **NAV-02**: Usuário escolhe como ver a biblioteca: por Álbum, por Banda/Artista, por Pastas, por Estilo (gênero dos metadados; faixas sem gênero ficam em "Sem categoria") ou por Playlists
 - [ ] **NAV-03**: Na visão por Álbum, faixas sem álbum e faixas de álbuns com uma única música aparecem num álbum "Singles" criado pelo app (agrupamento virtual, sem reescrever tags)
 - [ ] **NAV-04**: Na visão de Playlists aparecem as playlists do usuário e uma playlist automática por cor de tag, exibida só quando há ao menos uma faixa com aquela cor; uma opção desativa as playlists de tags

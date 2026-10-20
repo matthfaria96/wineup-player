@@ -9,7 +9,7 @@ Granularidade: standard. Cobertura: 58/58 requisitos v1.
 ## Phases
 
 - [x] **Phase 1: Fundação e Infraestrutura de Teste** - Núcleo `WineupCore` sem UI, IDs estáveis, `swift test` com Command Line Tools e build assinado de teste (completed 2026-10-20)
-- [ ] **Phase 2: Dados e Escrita Segura** - Biblioteca persistente em SQLite com varredura incremental, busca e infraestrutura de gravação de tags com backup, verificação e desfazer
+- [x] **Phase 2: Dados e Escrita Segura** - Biblioteca persistente em SQLite com varredura incremental, busca e infraestrutura de gravação de tags com backup, verificação e desfazer (completed 2026-10-20)
 - [ ] **Phase 3: Áudio Real** - Espectro/VU reais, velocidade, balanço, EQ verificável, ReplayGain, gapless e troca de dispositivo
 - [ ] **Phase 4: Serviços de Reprodução** - Fila, playlists, restauração de sessão e resolução de capas, tocando arquivos vindos do banco
 - [ ] **Phase 5: Interface sobre Serviços Reais** - Painéis alimentados pelos serviços, navegação por discografia, letras sincronizadas, skins e acessibilidade
@@ -41,14 +41,14 @@ Granularidade: standard. Cobertura: 58/58 requisitos v1.
   3. Arquivo movido, renomeado ou em disco desconectado aparece como ausente sem perder playlists e histórico
   4. Busca por título, artista ou álbum ignora acentos e responde instantaneamente em uma biblioteca sintética de 100 mil arquivos, sem travar a interface
   5. Gravar e reler tags em FLAC, MP3, M4A, Ogg/Opus e WAV preserva campos desconhecidos, versão de ID3 e capas; cada gravação tem backup, verificação e pode ser desfeita a partir do diário (validado por testes com arquivos de exemplo)
-**Plans:** 6 plans
+**Plans:** 6/6 plans complete
 Plans:
-- [ ] 02-01-PLAN.md — GRDB/TagLib no pacote, esquema v1 (LIB-06, marcações, playlists), raízes persistentes e CatalogWriter
-- [ ] 02-02-PLAN.md — Scanner incremental, movidos/ausentes, escala de varredura
-- [ ] 02-03-PLAN.md — Busca FTS sem acento, navegação (Sem categoria, Singles), escala 100k
-- [ ] 02-04-PLAN.md — Backends de tags (SFB + TagLib ID3) e testes de preservação por formato
-- [ ] 02-05-PLAN.md — TagWriter seguro (backup, verificação, journal) e undo
-- [ ] 02-06-PLAN.md — NAV-01 (~/Music), integração no app e gate build-app
+- [x] 02-01-PLAN.md — GRDB/TagLib no pacote, esquema v1 (LIB-06, marcações, playlists), raízes persistentes e CatalogWriter
+- [x] 02-02-PLAN.md — Scanner incremental, movidos/ausentes, escala de varredura
+- [x] 02-03-PLAN.md — Busca FTS sem acento, navegação (Sem categoria, Singles), escala 100k
+- [x] 02-04-PLAN.md — Backends de tags (SFB + TagLib ID3) e testes de preservação por formato
+- [x] 02-05-PLAN.md — TagWriter seguro (backup, verificação, journal) e undo
+- [x] 02-06-PLAN.md — NAV-01 (~/Music), integração no app e gate build-app
 **Pesquisa de fase**: sim (cobertura de `writeMetadata` por formato, `replaceItemAt` e inode, backup por `clonefile`, sandbox/`LibraryRoot`)
 
 ### Phase 3: Áudio Real
@@ -139,7 +139,7 @@ Plans:
 | Fase | Planos concluídos | Status | Concluída |
 |------|-------------------|--------|-----------|
 | 1. Fundação e Infraestrutura de Teste | 3/3 | Complete    | 2026-10-20 |
-| 2. Dados e Escrita Segura | 0/0 | Não iniciada | - |
+| 2. Dados e Escrita Segura | 6/6 | Complete    | 2026-10-20 |
 | 3. Áudio Real | 0/0 | Não iniciada | - |
 | 4. Serviços de Reprodução | 0/0 | Não iniciada | - |
 | 5. Interface sobre Serviços Reais | 0/0 | Não iniciada | - |
