@@ -1,62 +1,51 @@
 import SwiftUI
 
-/// Os três arranjos de painéis, copiados da disposição dos prints de referência.
-struct GridLayout: View {
+/// Padrão: playlist alta à esquerda; player, equalizador e capa à direita.
+struct StandardLayout: View {
     @ObservedObject var state: PlayerState
 
     var body: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 8) {
-                PlayerPanel(state: state)
-                EqualizerPanel(state: state)
-                LibraryPanel(state: state, browser: state.browser)
-            }
-            .frame(height: 262)
-            HStack(spacing: 8) {
-                PlaylistPanel(state: state)
-                LyricsPanel(state: state)
+        HStack(spacing: 8) {
+            PlaylistPanel(state: state, browser: state.browser)
+            VStack(spacing: 8) {
+                PlayerPanel(state: state).frame(height: 262)
+                EqualizerPanel(state: state).frame(height: 190)
                 ArtworkPanel(state: state)
             }
+            .frame(width: 380)
         }
     }
 }
 
+/// Compacto: uma coluna, como o player clássico (player, equalizador, playlist).
 struct CompactLayout: View {
     @ObservedObject var state: PlayerState
 
     var body: some View {
-        HStack(spacing: 8) {
-            VStack(spacing: 8) {
-                LibraryPanel(state: state, browser: state.browser).frame(height: 280)
-                PlaylistPanel(state: state)
-            }
-            VStack(spacing: 8) {
-                PlayerPanel(state: state).frame(height: 262)
-                EqualizerPanel(state: state).frame(height: 170)
-                ArtworkPanel(state: state)
-            }
-            .frame(width: 350)
+        VStack(spacing: 8) {
+            PlayerPanel(state: state).frame(height: 262)
+            EqualizerPanel(state: state).frame(height: 190)
+            PlaylistPanel(state: state, browser: state.browser)
         }
+        .frame(maxWidth: 520)
+        .frame(maxWidth: .infinity)
     }
 }
 
-struct StudioLayout: View {
+/// Completo: todos os painéis, inclusive letras.
+struct FullLayout: View {
     @ObservedObject var state: PlayerState
 
     var body: some View {
         HStack(spacing: 8) {
+            PlaylistPanel(state: state, browser: state.browser)
             VStack(spacing: 8) {
                 PlayerPanel(state: state).frame(height: 262)
-                EqualizerPanel(state: state).frame(height: 170)
-                PlaylistPanel(state: state)
-            }
-            .frame(width: 350)
-            VStack(spacing: 8) {
-                ArtworkPanel(state: state)
+                EqualizerPanel(state: state).frame(height: 190)
                 LyricsPanel(state: state)
             }
-            LibraryPanel(state: state, browser: state.browser)
-                .frame(width: 300)
+            .frame(width: 380)
+            ArtworkPanel(state: state).frame(width: 320)
         }
     }
 }

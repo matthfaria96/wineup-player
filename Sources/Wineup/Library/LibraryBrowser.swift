@@ -14,6 +14,8 @@ final class LibraryBrowser: ObservableObject {
     @Published var selected: BrowseGroup.Kind?
     @Published private(set) var playlists: [UserPlaylist] = []
     @Published private(set) var isLoading = false
+    /// `true` mostra a lista de álbuns/bandas/pastas/estilos/playlists; `false` mostra as faixas abertas.
+    @Published var showingGroups = false
 
     /// Caminho → cor marcada pelo usuário.
     private(set) var marks: [String: MarkColor] = [:]
@@ -111,6 +113,7 @@ final class LibraryBrowser: ObservableObject {
     func open(_ group: BrowseGroup) {
         guard let database else { return }
         selected = group.kind
+        showingGroups = false
         let kind = group.kind
         let title = group.title
         Task { [weak self] in

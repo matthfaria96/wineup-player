@@ -14,9 +14,9 @@ struct MainView: View {
             header(theme: theme)
             Group {
                 switch layout {
-                case .grid: GridLayout(state: state)
+                case .standard: StandardLayout(state: state)
                 case .compact: CompactLayout(state: state)
-                case .studio: StudioLayout(state: state)
+                case .full: FullLayout(state: state)
                 }
             }
             .padding([.horizontal, .bottom], 8)

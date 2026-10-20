@@ -12,7 +12,6 @@ struct EqualizerPanel: View {
         Panel(title: "FX") {
             VStack(spacing: 8) {
                 controls
-                presetBar
                 sliders
             }
             .padding(.horizontal, 12)
@@ -40,29 +39,31 @@ struct EqualizerPanel: View {
             .labelsHidden()
             .frame(maxWidth: .infinity)
             ChromeButton("Reset") { state.apply(preset: "Flat"); state.preamp = 0 }
-                .frame(width: 58)
+                .frame(width: 52)
+            presetBar
         }
     }
 
+    /// Presets e ReplayGain num menu compacto, para não apertar os sliders.
     private var presetBar: some View {
-        HStack(spacing: 6) {
-            ChromeButton("Salvar") { dialogs.nameInput = ""; dialogs.showSave = true }.frame(width: 60)
-            ChromeButton("Renomear") { dialogs.nameInput = state.preset; dialogs.showRename = true }
-                .frame(width: 76).disabled(!state.isUserPreset)
-            ChromeButton("Apagar") { dialogs.showDelete = true }.frame(width: 60).disabled(!state.isUserPreset)
-            Spacer(minLength: 0)
+        Menu {
+            Button("Salvar preset…") { dialogs.nameInput = ""; dialogs.showSave = true }
+            Button("Renomear preset…") { dialogs.nameInput = state.preset; dialogs.showRename = true }
+                .disabled(!state.isUserPreset)
+            Button("Apagar preset") { dialogs.showDelete = true }.disabled(!state.isUserPreset)
+            Divider()
             Picker("ReplayGain", selection: $state.replayGainMode) {
-                Text("RG: Desligado").tag(ReplayGainMode.off)
-                Text("RG: Faixa").tag(ReplayGainMode.track)
-                Text("RG: Álbum").tag(ReplayGainMode.album)
+                Text("Desligado").tag(ReplayGainMode.off)
+                Text("Por faixa").tag(ReplayGainMode.track)
+                Text("Por álbum").tag(ReplayGainMode.album)
             }
-            .labelsHidden()
-            .frame(width: 120)
             Toggle("Evitar clipping", isOn: $state.preventClipping)
-                .toggleStyle(.checkbox)
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(theme.text)
+        } label: {
+            Image(systemName: "slider.horizontal.3").foregroundStyle(theme.text)
         }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
         .alert("Salvar preset", isPresented: $dialogs.showSave) {
             TextField("Nome", text: $dialogs.nameInput)
             Button("Salvar") { state.savePreset(named: dialogs.nameInput) }

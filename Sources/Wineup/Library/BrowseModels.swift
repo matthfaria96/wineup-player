@@ -84,7 +84,7 @@ extension MarkColor {
 
 /// Chaves de preferências de exibição (UserDefaults), também levadas no perfil do usuário.
 enum DisplayKeys {
-    static let layout = "layoutMode"
+    static let layout = "layoutMode.v2"
     static let theme = "themeID"
     static let browseMode = "browseMode"
     static let listStyle = "listStyle"

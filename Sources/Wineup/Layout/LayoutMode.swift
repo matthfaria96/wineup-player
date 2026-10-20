@@ -1,45 +1,35 @@
 import Foundation
 
 enum LayoutMode: String, CaseIterable, Identifiable {
-    case grid, compact, studio
+    case standard, compact, full
 
     var id: String { rawValue }
 
     var name: String {
         switch self {
-        case .grid: "Grade"
+        case .standard: "Padrão"
         case .compact: "Compacto"
-        case .studio: "Estúdio"
+        case .full: "Completo"
         }
     }
 
     var detail: String {
         switch self {
-        case .grid: "Todos os painéis lado a lado"
-        case .compact: "Playlist grande + player à direita"
-        case .studio: "Coluna do player, capa, letras e busca"
+        case .standard: "Playlist à esquerda; player, equalizador e capa à direita"
+        case .compact: "Player, equalizador e playlist numa coluna"
+        case .full: "Todos os painéis, com letras"
         }
     }
 
-    var defaultSize: (width: Double, height: Double) {
+    var minSize: (width: Double, height: Double) {
         switch self {
-        case .grid: (1180, 720)
-        case .compact: (700, 700)
-        case .studio: (1040, 700)
+        case .standard: (820, 640)
+        case .compact: (430, 760)
+        case .full: (1060, 640)
         }
     }
 
     static func named(_ raw: String) -> LayoutMode {
-        LayoutMode(rawValue: raw) ?? .grid
-    }
-}
-
-extension LayoutMode {
-    var minSize: (width: Double, height: Double) {
-        switch self {
-        case .grid: (1060, 640)
-        case .compact: (700, 660)
-        case .studio: (1000, 660)
-        }
+        LayoutMode(rawValue: raw) ?? .standard
     }
 }

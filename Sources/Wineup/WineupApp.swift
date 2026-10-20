@@ -3,7 +3,7 @@ import SwiftUI
 @main
 struct WineupApp: App {
     @StateObject private var state = PlayerState()
-    @AppStorage("layoutMode") private var layoutRaw = LayoutMode.grid.rawValue
+    @AppStorage("layoutMode.v2") private var layoutRaw = LayoutMode.standard.rawValue
     @AppStorage("themeID") private var themeID = Theme.graphite.id
     @Environment(\.openWindow) private var openWindow
 
@@ -14,7 +14,7 @@ struct WineupApp: App {
                 .task { await state.startLibrary() }
         }
         .windowStyle(.hiddenTitleBar)
-        .defaultSize(width: 1180, height: 720)
+        .defaultSize(width: 1000, height: 720)
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button("Sobre o Wineup Player") { openWindow(id: "about") }

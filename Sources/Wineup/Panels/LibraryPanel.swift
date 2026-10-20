@@ -2,50 +2,18 @@ import AppKit
 import SwiftUI
 import WineupCore
 
-/// Biblioteca: visão por Álbuns, Bandas, Pastas, Estilos ou Playlists, mais a busca.
-struct LibraryPanel: View {
+/// Lista de álbuns/bandas/pastas/estilos/playlists, embutida no painel Playlist.
+struct LibraryGroupsView: View {
     @ObservedObject var state: PlayerState
     @ObservedObject var browser: LibraryBrowser
     @Environment(\.theme) private var theme
 
     var body: some View {
-        Panel(title: "Biblioteca") {
-            VStack(spacing: 6) {
-                Picker("", selection: $browser.mode) {
-                    ForEach(BrowseMode.allCases) { mode in
-                        Label(mode.title, systemImage: mode.symbol).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                field
-                if !state.query.isEmpty {
-                    results
-                } else {
-                    if browser.mode == .playlists { playlistBar }
-                    groupList
-                }
-            }
-            .padding(.horizontal, 8)
-            .padding(.bottom, 8)
+        VStack(spacing: 6) {
+            if browser.mode == .playlists { playlistBar.padding(.horizontal, 10) }
+            groupList
         }
         .onAppear { browser.reload() }
-    }
-
-    private var field: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "magnifyingglass").foregroundStyle(theme.mutedText)
-            TextField("Buscar", text: $state.query).textFieldStyle(.plain).foregroundStyle(theme.text)
-            if !state.query.isEmpty {
-                Image(systemName: "xmark.circle.fill").foregroundStyle(theme.mutedText)
-                    .onTapGesture { state.query = "" }
-            }
-        }
-        .font(.system(size: 13))
-        .padding(.horizontal, 8)
-        .frame(height: 26)
-        .background(RoundedRectangle(cornerRadius: 7).fill(Color.white.opacity(0.06)))
-        .overlay(RoundedRectangle(cornerRadius: 7).stroke(theme.panelBorder, lineWidth: 1))
     }
 
     private var playlistBar: some View {
@@ -93,7 +61,7 @@ struct LibraryPanel: View {
             Text("\(group.count)").font(.system(size: 11)).monospacedDigit().foregroundStyle(theme.mutedText)
         }
         .foregroundStyle(theme.text)
-        .padding(.horizontal, 6)
+        .padding(.horizontal, 10)
         .frame(height: group.subtitle.isEmpty ? 26 : 36)
         .background(browser.selected == group.kind ? theme.rowSelection : Color.clear)
     }
@@ -122,18 +90,6 @@ struct LibraryPanel: View {
         }
     }
 
-    private var results: some View {
-        ScrollView {
-            LazyVStack(spacing: 0) {
-                ForEach(Array(state.searchResults.enumerated()), id: \.element.id) { offset, track in
-                    TrackRow(track: track, index: offset + 1, isCurrent: track.id == state.currentID,
-                             isSelected: track.id == state.selectedID, showsDuration: false)
-                        .onTapGesture(count: 2) { state.play(track) }
-                        .onTapGesture { state.selectedID = track.id }
-                }
-            }
-        }
-    }
 }
 
 /// Caixa de texto simples (AppKit), sem depender de @State.
