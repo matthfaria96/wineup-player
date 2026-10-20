@@ -11,6 +11,7 @@ struct WineupApp: App {
         WindowGroup("Wineup Player") {
             MainView(state: state, layoutRaw: $layoutRaw, themeID: $themeID)
                 .onOpenURL { state.load(urls: [$0]) }
+                .task { await state.startLibrary() }
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1180, height: 720)

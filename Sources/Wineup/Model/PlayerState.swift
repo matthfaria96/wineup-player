@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import WineupCore
+import WineupLibrary
 
 /// Estado do player. Faixas com `url` tocam de verdade; as de exemplo (sem url) só animam a interface.
 final class PlayerState: ObservableObject {
@@ -13,7 +14,8 @@ final class PlayerState: ObservableObject {
     @Published var speed = 0.5
     @Published var eqBypass = false { didSet { syncEqualizer() } }
     @Published var preset = "Custom"
-    @Published var query = ""
+    @Published var query = "" { didSet { scheduleLibrarySearch() } }
+    @Published var libraryResults: [Track] = []
     @Published var markFilter: MarkColor?
     @Published var lyricsScale = 1.0
     @Published var cover: NSImage?
@@ -25,6 +27,9 @@ final class PlayerState: ObservableObject {
     @Published var bands: [Double] = SampleData.presets["Custom"] ?? [] { didSet { syncEqualizer() } }
 
     private let audio = AudioEngineService()
+    let library = LibraryController()
+    private var searchTask: Task<Void, Never>?
+    private var usingSampleTracks = true
 
     init() {
         audio.onEndOfAudio = { [weak self] in self?.step(by: 1) }
@@ -46,6 +51,7 @@ final class PlayerState: ObservableObject {
     var searchResults: [Track] {
         let needle = query.trimmingCharacters(in: .whitespaces)
         guard !needle.isEmpty else { return [] }
+        if library.isAvailable { return libraryResults }
         return tracks.filter { $0.displayName.localizedCaseInsensitiveContains(needle) }
     }
 
@@ -61,7 +67,52 @@ final class PlayerState: ObservableObject {
 
     // MARK: Biblioteca
 
+    func startLibrary() async {
+        await library.start(
+            onTracks: { [weak self] found in self?.applyLibraryTracks(found) },
+            onStatus: { [weak self] message in self?.statusMessage = message })
+    }
+
+    private func applyLibraryTracks(_ found: [LibraryTrack]) {
+        guard usingSampleTracks, !found.isEmpty else { return }
+        let mapped = found.map(Self.track(from:))
+        tracks = mapped
+        currentID = mapped.first?.id
+        selectedID = nil
+    }
+
+    private static func track(from item: LibraryTrack) -> Track {
+        Track(artist: item.artist, title: item.title, duration: Int(item.duration ?? 0),
+              mark: nil, url: item.url, album: item.album)
+    }
+
+    private func scheduleLibrarySearch() {
+        searchTask?.cancel()
+        let needle = query.trimmingCharacters(in: .whitespaces)
+        guard library.isAvailable else { return }
+        guard !needle.isEmpty else { libraryResults = []; return }
+        searchTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 150_000_000)
+            guard !Task.isCancelled, let self else { return }
+            let found = await self.library.search(needle)
+            guard !Task.isCancelled else { return }
+            await MainActor.run { self.libraryResults = found.map(Self.track(from:)) }
+        }
+    }
+
     func load(urls: [URL]) {
+        let folders = urls.filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true }
+        if library.isAvailable, !folders.isEmpty {
+            Task { await library.addFolders(folders) }
+            let files = urls.filter { !folders.contains($0) }
+            if files.isEmpty { return }
+            loadFiles(files)
+            return
+        }
+        loadFiles(urls)
+    }
+
+    private func loadFiles(_ urls: [URL]) {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let loaded = TrackLoader.tracks(from: urls)
             DispatchQueue.main.async {
@@ -71,6 +122,7 @@ final class PlayerState: ObservableObject {
                     return
                 }
                 self.stop()
+                self.usingSampleTracks = false
                 self.tracks = loaded
                 self.currentID = loaded.first?.id
                 self.selectedID = nil

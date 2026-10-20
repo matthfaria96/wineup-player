@@ -10,7 +10,9 @@ PATTERN="Wineup Player.app/Contents/MacOS/Wineup"
 fail() { echo "ERRO: $1" >&2; exit 1; }
 
 TMP="$(mktemp -d)"
-trap 'pkill -f "$PATTERN" || true; rm -rf "$TMP"' EXIT
+LIB_TMP="$(mktemp -d)"
+export WINEUP_LIBRARY_PATH="$LIB_TMP/library.sqlite"
+trap 'rm -rf "$LIB_TMP"; pkill -f "$PATTERN" || true; rm -rf "$TMP"' EXIT
 
 python3 -I -c '
 import sys, wave, math, struct
@@ -23,11 +25,11 @@ afconvert -f flac -d flac "$TMP/sine.wav" "$TMP/sine.flac"
 afconvert -f m4af -d aac "$TMP/sine.wav" "$TMP/sine.m4a"
 
 for f in sine.flac sine.m4a sine.wav; do
-    BEFORE=$(find ~/Library/Logs/DiagnosticReports -maxdepth 1 -name "Wineup-*.ips" 2>/dev/null | wc -l | tr -d " ")
-    open -a "$APP_ABS" "$TMP/$f"
+    BEFORE=$({ find ~/Library/Logs/DiagnosticReports -maxdepth 1 -name "Wineup-*.ips" 2>/dev/null || true; } | wc -l | tr -d " ")
+    open --env WINEUP_LIBRARY_PATH="$WINEUP_LIBRARY_PATH" -a "$APP_ABS" "$TMP/$f"
     sleep 5
     pgrep -f "$PATTERN" >/dev/null || fail "app morreu tocando $f"
-    AFTER=$(find ~/Library/Logs/DiagnosticReports -maxdepth 1 -name "Wineup-*.ips" 2>/dev/null | wc -l | tr -d " ")
+    AFTER=$({ find ~/Library/Logs/DiagnosticReports -maxdepth 1 -name "Wineup-*.ips" 2>/dev/null || true; } | wc -l | tr -d " ")
     [ "$AFTER" -eq "$BEFORE" ] || fail "crash report novo ao tocar $f"
     pkill -f "$PATTERN" || true
     sleep 1
