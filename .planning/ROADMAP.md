@@ -61,7 +61,14 @@ Plans:
   3. O equalizador de 10 bandas com preamp altera o áudio de forma verificável (render offline) e presets salvos voltam após reabrir o app
   4. ReplayGain de faixa/álbum muda o volume sem regravar o arquivo, e faixas consecutivas compatíveis tocam sem lacuna
   5. Trocar fones, AirPods ou HDMI durante a reprodução não interrompe nem trava o som
-**Plans**: TBD
+**Plans**: 6 plans
+Plans:
+- [ ] 03-01-PLAN.md — Target WineupAudio: EffectChain (TimePitch/EQ/balanço) e LevelTap testados em render offline
+- [ ] 03-02-PLAN.md — Matemática pura em WineupCore (taxa, ReplayGain, EQ, espectro, próxima faixa) + porta AudioEngine
+- [ ] 03-03-PLAN.md — Presets de EQ persistidos em app_setting
+- [ ] 03-04-PLAN.md — SFBAudioEngineAdapter + ReplayGainReader + executável wineup-audiocheck
+- [ ] 03-05-PLAN.md — App migra para o adaptador: velocidade, balanço, volume, RG, gapless, troca de dispositivo
+- [ ] 03-06-PLAN.md — VU/espectro reais, presets e seletor de ReplayGain na UI
 **UI hint**: yes
 **Pesquisa de fase**: sim (risco alto: tap no grafo do SFB, ordem timePitch, EQ e pan, `currentTime` com taxa, gapless com EQ)
 
