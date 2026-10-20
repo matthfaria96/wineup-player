@@ -52,17 +52,17 @@ struct PlayerPanel: View {
     private var readout: some View {
         HStack(alignment: .center, spacing: 10) {
             LevelMeter(levels: meter.levels)
-            SpectrumView(bands: meter.bands)
-                .frame(minWidth: 30, maxWidth: 80)
             Spacer(minLength: 0)
-            Text("-" + Clock.format(state.remainingSeconds))
-                .font(.system(size: 30, weight: .ultraLight, design: .monospaced))
-                .foregroundStyle(theme.text)
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
+            SevenSegmentText(text: Self.lcdTime(state.remainingSeconds), digitHeight: 28)
                 .layoutPriority(1)
         }
         .frame(height: 38)
+    }
+
+    /// "-MM:SS" com dois dígitos de minuto, como num visor LCD.
+    static func lcdTime(_ seconds: Int) -> String {
+        let s = max(seconds, 0)
+        return String(format: "-%02d:%02d", min(s / 60, 99), s % 60)
     }
 
     private var transport: some View {

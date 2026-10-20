@@ -1,9 +1,14 @@
 import SwiftUI
 
-/// Dois medidores de nível em blocos alimentados pelo `MeterModel` (níveis 0...1 por canal).
+/// Medidor clássico: duas fileiras de barrinhas pré-desenhadas que acendem conforme o nível
+/// (creme) e ficam vermelhas no fim (pico). Barras apagadas continuam visíveis.
 struct LevelMeter: View {
     let levels: [Double]
-    private let segments = 12
+    var segments = 22
+    var redSegments = 3
+
+    private let lit = Color(hex: 0xF3E2B8)
+    private let peak = Color(hex: 0xE5322D)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
@@ -15,9 +20,12 @@ struct LevelMeter: View {
     private func row(level: Double) -> some View {
         HStack(spacing: 2) {
             ForEach(0..<segments, id: \.self) { index in
-                RoundedRectangle(cornerRadius: 1.5)
-                    .fill(Color.white.opacity(Double(index) / Double(segments) < level ? 0.95 : 0.18))
-                    .frame(width: 9, height: 14)
+                let isPeak = index >= segments - redSegments
+                let on = Double(index) / Double(segments) < level
+                let color = isPeak ? peak : lit
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(color.opacity(on ? 1 : 0.14))
+                    .frame(width: 4, height: 14)
             }
         }
     }
