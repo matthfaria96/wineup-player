@@ -1,15 +1,18 @@
 import SwiftUI
+import WineupCore
 
 struct EqualizerPanel: View {
     @ObservedObject var state: PlayerState
 
     @Environment(\.theme) private var theme
+    @StateObject private var dialogs = PresetDialogs()
     private let labels = ["60", "170", "310", "600", "1K", "2K", "5K", "8K", "12K", "16K"]
 
     var body: some View {
         Panel(title: "FX") {
             VStack(spacing: 8) {
                 controls
+                presetBar
                 sliders
             }
             .padding(.horizontal, 12)
@@ -32,12 +35,47 @@ struct EqualizerPanel: View {
             }
             .frame(width: 84)
             Picker("", selection: Binding(get: { state.preset }, set: { state.apply(preset: $0) })) {
-                ForEach(SampleData.presetNames, id: \.self) { Text($0).tag($0) }
+                ForEach((state.presets.map(\.name) + ["Custom"]), id: \.self) { Text($0).tag($0) }
             }
             .labelsHidden()
             .frame(maxWidth: .infinity)
             ChromeButton("Reset") { state.apply(preset: "Flat"); state.preamp = 0 }
                 .frame(width: 58)
+        }
+    }
+
+    private var presetBar: some View {
+        HStack(spacing: 6) {
+            ChromeButton("Salvar") { dialogs.nameInput = ""; dialogs.showSave = true }.frame(width: 60)
+            ChromeButton("Renomear") { dialogs.nameInput = state.preset; dialogs.showRename = true }
+                .frame(width: 76).disabled(!state.isUserPreset)
+            ChromeButton("Apagar") { dialogs.showDelete = true }.frame(width: 60).disabled(!state.isUserPreset)
+            Spacer(minLength: 0)
+            Picker("ReplayGain", selection: $state.replayGainMode) {
+                Text("RG: Desligado").tag(ReplayGainMode.off)
+                Text("RG: Faixa").tag(ReplayGainMode.track)
+                Text("RG: Álbum").tag(ReplayGainMode.album)
+            }
+            .labelsHidden()
+            .frame(width: 120)
+            Toggle("Evitar clipping", isOn: $state.preventClipping)
+                .toggleStyle(.checkbox)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(theme.text)
+        }
+        .alert("Salvar preset", isPresented: $dialogs.showSave) {
+            TextField("Nome", text: $dialogs.nameInput)
+            Button("Salvar") { state.savePreset(named: dialogs.nameInput) }
+            Button("Cancelar", role: .cancel) {}
+        }
+        .alert("Renomear preset", isPresented: $dialogs.showRename) {
+            TextField("Nome", text: $dialogs.nameInput)
+            Button("Renomear") { state.renamePreset(state.preset, to: dialogs.nameInput) }
+            Button("Cancelar", role: .cancel) {}
+        }
+        .alert("Apagar preset \"\(state.preset)\"?", isPresented: $dialogs.showDelete) {
+            Button("Apagar", role: .destructive) { state.deletePreset(state.preset) }
+            Button("Cancelar", role: .cancel) {}
         }
     }
 
@@ -80,4 +118,12 @@ struct EqualizerPanel: View {
             }
         )
     }
+}
+
+/// Estado dos diálogos de preset (ObservableObject: o macro @State não está disponível só com CLT).
+final class PresetDialogs: ObservableObject {
+    @Published var nameInput = ""
+    @Published var showSave = false
+    @Published var showRename = false
+    @Published var showDelete = false
 }

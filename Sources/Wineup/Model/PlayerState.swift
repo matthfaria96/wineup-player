@@ -18,6 +18,7 @@ final class PlayerState: ObservableObject {
     @Published var outputSampleRate: Double?
     @Published var eqBypass = false { didSet { syncEqualizer() } }
     @Published var preset = "Custom"
+    @Published var presets: [EqPreset] = EqPreset.builtIns
     @Published var query = "" { didSet { scheduleLibrarySearch() } }
     @Published var libraryResults: [Track] = []
     @Published var markFilter: MarkColor?
@@ -34,6 +35,7 @@ final class PlayerState: ObservableObject {
     let library = LibraryController()
     private var searchTask: Task<Void, Never>?
     private var usingSampleTracks = true
+    private var eqSaveTask: Task<Void, Never>?
 
     init() {
         audio.onNowPlayingChanged = { [weak self] url in self?.nowPlayingChanged(url) }
@@ -48,6 +50,7 @@ final class PlayerState: ObservableObject {
         audio.setBalance(RateMapping.pan(balance: balance))
         audio.replayGainMode = replayGainMode
         audio.preventClipping = preventClipping
+        restoreEqualizer()
         syncEqualizer()
     }
 
@@ -242,7 +245,79 @@ final class PlayerState: ObservableObject {
 
     func apply(preset name: String) {
         preset = name
-        bands = SampleData.presets[name] ?? bands
+        guard let found = presets.first(where: { $0.name == name }) else { return }
+        preamp = found.preamp
+        bands = found.bands
+    }
+
+    var isUserPreset: Bool { !EqPreset.isBuiltInName(preset) && presets.contains { $0.name == preset } }
+
+    func savePreset(named name: String) {
+        guard let store = library.presetStore else { statusMessage = "Biblioteca indisponível para salvar presets."; return }
+        guard let valid = EqPreset.validated(name: name, preamp: preamp, bands: bands) else {
+            statusMessage = "Nome de preset inválido (1 a \(EqPreset.maxNameLength) caracteres)."
+            return
+        }
+        do {
+            try store.save(valid)
+            reloadPresets(store)
+            preset = valid.name
+            syncEqualizer()
+        } catch { statusMessage = Self.presetMessage(error) }
+    }
+
+    func renamePreset(_ old: String, to new: String) {
+        guard let store = library.presetStore else { return }
+        do {
+            try store.rename(from: old, to: new)
+            reloadPresets(store)
+            if preset == old { preset = new.trimmingCharacters(in: .whitespacesAndNewlines) }
+            syncEqualizer()
+        } catch { statusMessage = Self.presetMessage(error) }
+    }
+
+    func deletePreset(_ name: String) {
+        guard let store = library.presetStore else { return }
+        do {
+            try store.delete(name: name)
+            reloadPresets(store)
+            if preset == name { preset = "Custom" }
+            syncEqualizer()
+        } catch { statusMessage = Self.presetMessage(error) }
+    }
+
+    private func reloadPresets(_ store: EqPresetStore) {
+        presets = (try? store.allPresets()) ?? EqPreset.builtIns
+    }
+
+    private static func presetMessage(_ error: Error) -> String {
+        switch error as? EqPresetStoreError {
+        case .duplicateName: return "Já existe um preset com esse nome."
+        case .reservedName: return "Esse nome é reservado a um preset embutido."
+        case .notFound: return "Preset não encontrado."
+        default: return "Não foi possível salvar o preset."
+        }
+    }
+
+    private func restoreEqualizer() {
+        guard let store = library.presetStore else { return }
+        reloadPresets(store)
+        guard let saved = store.loadCurrent() else { return }
+        preamp = saved.preamp
+        bands = saved.bands
+        eqBypass = saved.bypass
+        preset = saved.presetName ?? "Custom"
+    }
+
+    private func persistEqualizer() {
+        guard let store = library.presetStore else { return }
+        let state = EqState(preamp: preamp, bands: bands, bypass: eqBypass, presetName: preset)
+        eqSaveTask?.cancel()
+        eqSaveTask = Task.detached {
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            guard !Task.isCancelled else { return }
+            store.saveCurrent(state)
+        }
     }
 
     // MARK: Privado
@@ -268,6 +343,7 @@ final class PlayerState: ObservableObject {
 
     private func syncEqualizer() {
         audio.applyEqualizer(preamp: preamp, bands: bands, bypass: eqBypass)
+        persistEqualizer()
     }
 
     private func refreshDetails(for track: Track) {
