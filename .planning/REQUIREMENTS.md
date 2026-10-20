@@ -7,10 +7,10 @@
 
 ### Fundação (FND)
 
-- [ ] **FND-01**: O código é dividido em targets SwiftPM com um núcleo (`WineupCore`) sem dependência de UI, e o app continua abrindo e tocando como hoje
-- [ ] **FND-02**: `swift test` roda só com Command Line Tools e executa testes do núcleo em cada build
-- [ ] **FND-03**: Faixas têm identificador estável (não baseado em posição na lista)
-- [ ] **FND-04**: Um build assinado de teste valida empacotamento (rpath, frameworks embutidos) cedo no projeto
+- [x] **FND-01**: O código é dividido em targets SwiftPM com um núcleo (`WineupCore`) sem dependência de UI, e o app continua abrindo e tocando como hoje
+- [x] **FND-02**: `swift test` roda só com Command Line Tools e executa testes do núcleo em cada build
+- [x] **FND-03**: Faixas têm identificador estável (não baseado em posição na lista)
+- [x] **FND-04**: Um build assinado de teste valida empacotamento (rpath, frameworks embutidos) cedo no projeto
 
 ### Biblioteca (LIB)
 

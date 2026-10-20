@@ -8,7 +8,7 @@ Granularidade: standard. Cobertura: 51/51 requisitos v1.
 
 ## Phases
 
-- [ ] **Phase 1: Fundação e Infraestrutura de Teste** - Núcleo `WineupCore` sem UI, IDs estáveis, `swift test` com Command Line Tools e build assinado de teste
+- [x] **Phase 1: Fundação e Infraestrutura de Teste** - Núcleo `WineupCore` sem UI, IDs estáveis, `swift test` com Command Line Tools e build assinado de teste (completed 2026-10-20)
 - [ ] **Phase 2: Dados e Escrita Segura** - Biblioteca persistente em SQLite com varredura incremental, busca e infraestrutura de gravação de tags com backup, verificação e desfazer
 - [ ] **Phase 3: Áudio Real** - Espectro/VU reais, velocidade, balanço, EQ verificável, ReplayGain, gapless e troca de dispositivo
 - [ ] **Phase 4: Serviços de Reprodução** - Fila, playlists, restauração de sessão e resolução de capas, tocando arquivos vindos do banco
@@ -131,7 +131,7 @@ Granularidade: standard. Cobertura: 51/51 requisitos v1.
 
 | Fase | Planos concluídos | Status | Concluída |
 |------|-------------------|--------|-----------|
-| 1. Fundação e Infraestrutura de Teste | 0/0 | Não iniciada | - |
+| 1. Fundação e Infraestrutura de Teste | 3/3 | Complete    | 2026-10-20 |
 | 2. Dados e Escrita Segura | 0/0 | Não iniciada | - |
 | 3. Áudio Real | 0/0 | Não iniciada | - |
 | 4. Serviços de Reprodução | 0/0 | Não iniciada | - |
