@@ -18,7 +18,9 @@ struct Panel<Content: View>: View {
                 .frame(height: 24)
 
             content
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(theme.panelFill)
         .clipShape(RoundedRectangle(cornerRadius: 9))
         .overlay(RoundedRectangle(cornerRadius: 9).stroke(theme.panelBorder, lineWidth: 1))
