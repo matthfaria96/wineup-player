@@ -12,10 +12,11 @@ struct MainView: View {
         let layout = LayoutMode.named(layoutRaw)
 
         VStack(spacing: 6) {
-            header(theme: theme)
+            header(theme: theme, compact: layout == .compact)
             ArrangedLayout(state: state, mode: layout, columns: $model.columns)
                 .padding([.horizontal, .bottom], 8)
         }
+        .ignoresSafeArea(.container, edges: .top)
         .environment(\.theme, theme)
         .background(
             LinearGradient(colors: [theme.windowTop, theme.windowBottom], startPoint: .top, endPoint: .bottom)
@@ -36,13 +37,24 @@ struct MainView: View {
         }
     }
 
-    private func header(theme: Theme) -> some View {
-        HStack {
-            Spacer()
-            Text("Wineup Player")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(theme.mutedText)
-            Spacer()
+    /// Barra no nível dos botões da janela: Metadados à esquerda, layout no extremo direito.
+    private func header(theme: Theme, compact: Bool) -> some View {
+        HStack(spacing: 8) {
+            Color.clear.frame(width: 64)   // espaço dos botões fechar/minimizar/maximizar
+            Button { MetadataSummary.show(state: state) } label: {
+                if compact { Image(systemName: "wand.and.stars") }
+                else { Label("Metadados", systemImage: "wand.and.stars").labelStyle(.titleAndIcon) }
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .help("Metadados: verificar e corrigir as informações das músicas")
+            Spacer(minLength: 0)
+            if !compact {
+                Text("Wineup Player")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(theme.mutedText)
+                Spacer(minLength: 0)
+            }
             Menu {
                 Picker("Layout", selection: $layoutRaw) {
                     ForEach(LayoutMode.allCases) { Text($0.name).tag($0.rawValue) }
@@ -57,17 +69,19 @@ struct MainView: View {
                     ForEach(BrowseMode.allCases) { Text($0.title).tag($0) }
                 }
             } label: {
-                Label("Design de exibição", systemImage: "rectangle.3.group")
-                    .labelStyle(.titleAndIcon)
-                    .font(.system(size: 11))
+                if compact { Image(systemName: "rectangle.3.group") }
+                else { Label("Layout", systemImage: "rectangle.3.group").labelStyle(.titleAndIcon) }
             }
             .menuStyle(.button)
             .buttonStyle(.bordered)
             .controlSize(.small)
             .fixedSize()
+            .help("Layout e design de exibição")
         }
-        .padding(.horizontal, 12)
-        .frame(height: 28)
+        .font(.system(size: 11))
+        .padding(.leading, 12)
+        .padding(.trailing, 10)
+        .frame(height: 30)
         .background(DragArea())
     }
 }

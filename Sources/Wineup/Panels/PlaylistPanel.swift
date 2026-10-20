@@ -99,8 +99,6 @@ struct PlaylistPanel: View {
 
     private var footer: some View {
         HStack(spacing: 6) {
-            ChromeButton("Del") { state.deleteSelected() }.frame(width: 38)
-            ChromeButton("Random") { state.playRandom() }.frame(width: 66)
             ColorDots(selection: $state.markFilter)
             Spacer(minLength: 0)
             ItemsCount(count: state.tracks.count)

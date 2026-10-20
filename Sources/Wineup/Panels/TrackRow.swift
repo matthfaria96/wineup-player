@@ -24,19 +24,23 @@ struct TrackRow: View {
                         .font(.system(size: 11)).foregroundStyle(theme.mutedText).lineLimit(1)
                 }
             } else {
-                Text("\(index). \(track.displayName)")
+                Text("\(index)")
+                    .font(.system(size: 11)).monospacedDigit()
+                    .foregroundStyle(isCurrent ? theme.currentRow : theme.mutedText)
+                    .frame(width: 28, alignment: .trailing)
+                Text(track.displayName)
                     .lineLimit(1)
                     .truncationMode(.tail)
             }
             Spacer(minLength: 4)
             if showsDuration {
                 if let mark = track.mark {
-                    Image(systemName: "heart.fill")
-                        .font(.system(size: 14))
-                        .foregroundStyle(mark.color)
+                    Circle().fill(mark.color).frame(width: 7, height: 7)
                 }
                 Text(Clock.format(track.duration))
+                    .font(.system(size: 11))
                     .monospacedDigit()
+                    .foregroundStyle(isCurrent ? theme.currentRow : theme.mutedText)
                     .frame(width: 44, alignment: .trailing)
             }
         }
@@ -77,6 +81,7 @@ struct TrackMenu: View {
 
     var body: some View {
         Button("Tocar") { state.play(track) }
+        Button("Remover da lista") { state.selectedID = track.id; state.deleteSelected() }
         Menu("Tag de cor") {
             ForEach(MarkColor.allCases) { color in
                 Button(color.displayName) { state.setMark(color, on: track) }
