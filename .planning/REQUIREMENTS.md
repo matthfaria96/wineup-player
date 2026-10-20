@@ -124,12 +124,62 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (preenchido pelo roadmap) | | |
+| FND-01 | Fase 1 | Pendente |
+| FND-02 | Fase 1 | Pendente |
+| FND-03 | Fase 1 | Pendente |
+| FND-04 | Fase 1 | Pendente |
+| LIB-01 | Fase 2 | Pendente |
+| LIB-02 | Fase 2 | Pendente |
+| LIB-03 | Fase 2 | Pendente |
+| LIB-04 | Fase 2 | Pendente |
+| LIB-05 | Fase 2 | Pendente |
+| LIB-06 | Fase 2 | Pendente |
+| LIB-07 | Fase 2 | Pendente |
+| SAFE-01 | Fase 2 | Pendente |
+| SAFE-02 | Fase 2 | Pendente |
+| SAFE-03 | Fase 2 | Pendente |
+| SAFE-04 | Fase 7 | Pendente |
+| AUD-01 | Fase 3 | Pendente |
+| AUD-02 | Fase 3 | Pendente |
+| AUD-03 | Fase 3 | Pendente |
+| AUD-04 | Fase 3 | Pendente |
+| AUD-05 | Fase 3 | Pendente |
+| AUD-06 | Fase 3 | Pendente |
+| AUD-07 | Fase 3 | Pendente |
+| PLAY-01 | Fase 4 | Pendente |
+| PLAY-02 | Fase 4 | Pendente |
+| PLAY-03 | Fase 4 | Pendente |
+| PLAY-04 | Fase 4 | Pendente |
+| DISC-01 | Fase 5 | Pendente |
+| DISC-02 | Fase 4 | Pendente |
+| DISC-03 | Fase 5 | Pendente |
+| DISC-04 | Fase 5 | Pendente |
+| UI-01 | Fase 5 | Pendente |
+| UI-02 | Fase 5 | Pendente |
+| UI-03 | Fase 5 | Pendente |
+| UI-04 | Fase 5 | Pendente |
+| SYS-01 | Fase 6 | Pendente |
+| SYS-02 | Fase 6 | Pendente |
+| SYS-03 | Fase 6 | Pendente |
+| SYS-04 | Fase 6 | Pendente |
+| SYS-05 | Fase 6 | Pendente |
+| FIX-01 | Fase 7 | Pendente |
+| FIX-02 | Fase 7 | Pendente |
+| FIX-03 | Fase 7 | Pendente |
+| FIX-04 | Fase 7 | Pendente |
+| FIX-05 | Fase 7 | Pendente |
+| FIX-06 | Fase 7 | Pendente |
+| FIX-07 | Fase 7 | Pendente |
+| NET-01 | Fase 8 | Pendente |
+| NET-02 | Fase 8 | Pendente |
+| NET-03 | Fase 8 | Pendente |
+| NET-04 | Fase 8 | Pendente |
+| NET-05 | Fase 8 | Pendente |
 
 **Coverage:**
-- v1 requirements: 50 total
-- Mapped to phases: 0
-- Unmapped: 50 ⚠️
+- v1 requirements: 51 total
+- Mapped to phases: 51
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-10-20*
