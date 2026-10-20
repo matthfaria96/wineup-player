@@ -42,4 +42,63 @@ struct ScannerTests {
             #expect((files.first?.size ?? 0) > 0 && (files.first?.inode ?? 0) > 0)
         }
     }
+
+    private func makeLibrary(_ dir: URL, count: Int) throws -> (LibraryDatabase, URL, UUID) {
+        let db = try makeTempDatabase(in: dir)
+        let music = dir.appendingPathComponent("Music", isDirectory: true)
+        try FileManager.default.createDirectory(at: music, withIntermediateDirectories: true)
+        for i in 0..<count {
+            try WAVFixture.write(to: music.appendingPathComponent("t\(i).wav"), seconds: 0.02)
+        }
+        return (db, music, try LibraryRootStore(db: db).addRoot(music).id)
+    }
+
+    @Test func incrementalScanRereadsOnlyChanges() async throws {
+        try await withTempDir { dir in
+            let (db, music, id) = try makeLibrary(dir, count: 3)
+            let scanner = Scanner(database: db)
+            let p1 = try await scanner.scan(rootID: id, progress: { _ in })
+            #expect(p1.enumerated == 3 && p1.read == 3 && p1.finished)
+            let p2 = try await scanner.scan(rootID: id, progress: { _ in })
+            #expect(p2.enumerated == 3 && p2.read == 0)
+            try WAVFixture.write(to: music.appendingPathComponent("t1.wav"), seconds: 0.2)
+            let p3 = try await scanner.scan(rootID: id, progress: { _ in })
+            #expect(p3.read == 1)
+            let n = try await db.pool.read { try Int.fetchOne($0, sql: "SELECT COUNT(*) FROM audio_file") }
+            #expect(n == 3)
+        }
+    }
+
+    @Test func streamEmitsProgress() async throws {
+        try await withTempDir { dir in
+            let (db, _, id) = try makeLibrary(dir, count: 3)
+            var last: ScanProgress?
+            for try await p in Scanner(database: db).scan(rootID: id) { last = p }
+            #expect(last?.finished == true && last?.read == 3)
+        }
+    }
+
+    @Test func cancellationLeavesConsistentDatabase() async throws {
+        try await withTempDir { dir in
+            let (db, _, id) = try makeLibrary(dir, count: 200)
+            let scanner = Scanner(database: db, batchSize: 50)
+            let task = Task {
+                try await scanner.scan(rootID: id, progress: { p in
+                    if p.read >= 50 { withUnsafeCurrentTask { $0?.cancel() } }
+                })
+            }
+            await #expect(throws: CancellationError.self) { try await task.value }
+            let partial = try await db.pool.read { try Int.fetchOne($0, sql: "SELECT COUNT(*) FROM audio_file") }!
+            #expect(partial >= 50 && partial < 200)
+            let bad = try await db.pool.read { try Int.fetchOne($0, sql: """
+                SELECT COUNT(*) FROM audio_file a LEFT JOIN release_track r ON r.audio_file_id = a.id
+                WHERE r.id IS NULL
+                """) }
+            #expect(bad == 0)
+            let p = try await scanner.scan(rootID: id, progress: { _ in })
+            #expect(p.read == 200 - partial)
+            let total = try await db.pool.read { try Int.fetchOne($0, sql: "SELECT COUNT(*) FROM audio_file") }
+            #expect(total == 200)
+        }
+    }
 }
