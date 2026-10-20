@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Moldura de painel: barra de título com bolinha, borda fina e cantos arredondados.
+/// Moldura de painel: barra de título centralizada, borda fina e cantos arredondados.
 struct Panel<Content: View>: View {
     let title: String
     @ViewBuilder var content: Content
@@ -9,19 +9,13 @@ struct Panel<Content: View>: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ZStack {
-                Text(title)
-                    .font(.system(size: 12))
-                    .foregroundStyle(theme.mutedText)
-                HStack {
-                    Circle()
-                        .fill(theme.mutedText.opacity(0.55))
-                        .frame(width: 10, height: 10)
-                    Spacer()
-                }
-            }
-            .padding(.horizontal, 10)
-            .frame(height: 24)
+            Text(title)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(theme.mutedText)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 10)
+                .frame(height: 24)
 
             content
         }

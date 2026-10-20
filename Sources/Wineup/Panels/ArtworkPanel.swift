@@ -8,7 +8,7 @@ struct ArtworkPanel: View {
     @Environment(\.theme) private var theme
 
     var body: some View {
-        Panel(title: "") {
+        Panel(title: "Capa") {
             ZStack(alignment: .bottomLeading) {
                 LinearGradient(
                     colors: [theme.artworkTint.opacity(0.9), theme.artworkTint.opacity(0.35)],

@@ -5,6 +5,7 @@ struct MainView: View {
     @ObservedObject var state: PlayerState
     @Binding var layoutRaw: String
     @Binding var themeID: String
+    @StateObject private var model = MainViewModel()
 
     var body: some View {
         let theme = Theme.named(themeID)
@@ -12,14 +13,8 @@ struct MainView: View {
 
         VStack(spacing: 6) {
             header(theme: theme)
-            Group {
-                switch layout {
-                case .standard: StandardLayout(state: state)
-                case .compact: CompactLayout(state: state)
-                case .full: FullLayout(state: state)
-                }
-            }
-            .padding([.horizontal, .bottom], 8)
+            ArrangedLayout(state: state, mode: layout, columns: $model.columns)
+                .padding([.horizontal, .bottom], 8)
         }
         .environment(\.theme, theme)
         .background(
@@ -27,6 +22,13 @@ struct MainView: View {
                 .ignoresSafeArea()
         )
         .frame(minWidth: layout.minSize.width, minHeight: layout.minSize.height)
+        .background(WindowAccessor(onWindow: { model.window = $0 }))
+        .onAppear { model.columns = layout.columns(); resizeWindow(for: layout) }
+        .onChange(of: layoutRaw) { _, raw in
+            let mode = LayoutMode.named(raw)
+            model.columns = mode.columns()
+            resizeWindow(for: mode)
+        }
         .preferredColorScheme(.dark)
         .dropDestination(for: URL.self) { urls, _ in
             state.load(urls: urls)
@@ -67,6 +69,42 @@ struct MainView: View {
         .padding(.horizontal, 12)
         .frame(height: 28)
         .background(DragArea())
+    }
+}
+
+extension MainView {
+    /// Ajusta a largura da janela ao modo (o Compacto fica estreito, sem sobras dos lados).
+    func resizeWindow(for mode: LayoutMode) {
+        DispatchQueue.main.async {
+            guard let window = model.window else { return }
+            let target: CGFloat
+            switch mode {
+            case .compact: target = 470
+            case .standard: target = max(min(window.frame.width, 1100), 960)
+            case .full: target = max(window.frame.width, 1280)
+            }
+            var frame = window.frame
+            let top = frame.maxY
+            frame.size.width = target
+            if mode == .compact { frame.size.height = max(frame.height, 820) }
+            frame.origin.y = top - frame.height
+            window.setFrame(frame, display: true, animate: true)
+        }
+    }
+}
+
+/// Dá acesso à NSWindow que hospeda a view.
+private struct WindowAccessor: NSViewRepresentable {
+    let onWindow: (NSWindow) -> Void
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async { if let w = view.window { onWindow(w) } }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        DispatchQueue.main.async { if let w = nsView.window { onWindow(w) } }
     }
 }
 
