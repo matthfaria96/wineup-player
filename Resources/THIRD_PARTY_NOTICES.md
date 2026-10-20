@@ -13,3 +13,10 @@ O Wineup usa as bibliotecas abaixo. Cada uma mantém sua licença original.
 | libsndfile, mpg123, LAME, Musepack, libtta-cpp | LGPL | **frameworks dinâmicos substituíveis** em `Contents/Frameworks`; o código-fonte de cada um está nos repositórios de sbooth/*-binary-xcframework e nos projetos originais |
 
 Texto completo das licenças: https://github.com/sbooth/SFBAudioEngine/tree/main/LICENSES
+
+## Adicionados na Fase 2
+
+| Componente | Licença | Observação |
+|---|---|---|
+| GRDB.swift (Gwendal Roué) | MIT | Banco SQLite da biblioteca (migrations, FTS5) |
+| TagLib (CXXTagLib) | LGPL-2.1 / MPL-1.1 | Escrita de tags ID3; linkado estaticamente sob MPL-1.1. Fonte: https://taglib.org |

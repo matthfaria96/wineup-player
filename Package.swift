@@ -7,12 +7,17 @@ let package = Package(
     dependencies: [
         // MIT. Decoders de FLAC/MP3/Ogg/Opus/APE/DSD etc., leitura de tags e ReplayGain.
         .package(url: "https://github.com/sbooth/SFBAudioEngine", from: "0.14.0"),
+        // MIT. SQLite: migrations, FTS5, DatabasePool (WAL).
+        .package(url: "https://github.com/groue/GRDB.swift", from: "7.0.0"),
+        // TagLib (LGPL/MPL) já resolvido pelo SFBAudioEngine; usado direto pelo shim WineupID3.
+        .package(url: "https://github.com/sbooth/CXXTagLib", from: "2.3.2"),
     ],
     targets: [
         .executableTarget(
             name: "Wineup",
             dependencies: [
                 "WineupCore",
+                "WineupLibrary",
                 .product(name: "SFBAudioEngine", package: "SFBAudioEngine"),
             ],
             path: "Sources/Wineup"
@@ -22,6 +27,34 @@ let package = Package(
             name: "WineupCore",
             path: "Sources/WineupCore",
             swiftSettings: [.unsafeFlags(["-strict-concurrency=complete"])]
+        ),
+        // Shim ObjC++ mínimo sobre TagLib (API C).
+        .target(
+            name: "WineupID3",
+            dependencies: [.product(name: "taglib", package: "CXXTagLib")],
+            path: "Sources/WineupID3"
+        ),
+        // Banco SQLite, varredura e escrita segura.
+        .target(
+            name: "WineupLibrary",
+            dependencies: [
+                "WineupCore",
+                "WineupID3",
+                .product(name: "GRDB", package: "GRDB.swift"),
+                .product(name: "SFBAudioEngine", package: "SFBAudioEngine"),
+            ],
+            path: "Sources/WineupLibrary",
+            swiftSettings: [.unsafeFlags(["-strict-concurrency=complete"])]
+        ),
+        .testTarget(
+            name: "WineupLibraryTests",
+            dependencies: [
+                "WineupLibrary",
+                "WineupID3",
+                .product(name: "GRDB", package: "GRDB.swift"),
+                .product(name: "SFBAudioEngine", package: "SFBAudioEngine"),
+            ],
+            path: "Tests/WineupLibraryTests"
         ),
         .testTarget(
             name: "WineupCoreTests",

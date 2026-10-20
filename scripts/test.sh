@@ -7,7 +7,7 @@ cd "$(dirname "$0")/.."
 # encontra ("plugin for module 'TestingMacros' not found"); passamos o caminho.
 PLUGIN_DIR="$(dirname "$(xcrun --find swift)")/../lib/swift/host/plugins/testing"
 if [ -d "$PLUGIN_DIR" ]; then
-    swift test -Xswiftc -plugin-path -Xswiftc "$PLUGIN_DIR"
+    swift test -Xswiftc -plugin-path -Xswiftc "$PLUGIN_DIR" "$@"
 else
-    swift test
+    swift test "$@"
 fi
