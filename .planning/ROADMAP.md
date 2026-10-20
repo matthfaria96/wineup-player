@@ -41,7 +41,14 @@ Granularidade: standard. Cobertura: 58/58 requisitos v1.
   3. Arquivo movido, renomeado ou em disco desconectado aparece como ausente sem perder playlists e histórico
   4. Busca por título, artista ou álbum ignora acentos e responde instantaneamente em uma biblioteca sintética de 100 mil arquivos, sem travar a interface
   5. Gravar e reler tags em FLAC, MP3, M4A, Ogg/Opus e WAV preserva campos desconhecidos, versão de ID3 e capas; cada gravação tem backup, verificação e pode ser desfeita a partir do diário (validado por testes com arquivos de exemplo)
-**Plans**: TBD
+**Plans:** 6 plans
+Plans:
+- [ ] 02-01-PLAN.md — GRDB/TagLib no pacote, esquema v1 (LIB-06, marcações, playlists), raízes persistentes e CatalogWriter
+- [ ] 02-02-PLAN.md — Scanner incremental, movidos/ausentes, escala de varredura
+- [ ] 02-03-PLAN.md — Busca FTS sem acento, navegação (Sem categoria, Singles), escala 100k
+- [ ] 02-04-PLAN.md — Backends de tags (SFB + TagLib ID3) e testes de preservação por formato
+- [ ] 02-05-PLAN.md — TagWriter seguro (backup, verificação, journal) e undo
+- [ ] 02-06-PLAN.md — NAV-01 (~/Music), integração no app e gate build-app
 **Pesquisa de fase**: sim (cobertura de `writeMetadata` por formato, `replaceItemAt` e inode, backup por `clonefile`, sandbox/`LibraryRoot`)
 
 ### Phase 3: Áudio Real
