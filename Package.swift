@@ -21,6 +21,7 @@ let package = Package(
             dependencies: [
                 "WineupCore",
                 "WineupLibrary",
+                "WineupAudio",
                 .product(name: "SFBAudioEngine", package: "SFBAudioEngine"),
             ],
             path: "Sources/Wineup"

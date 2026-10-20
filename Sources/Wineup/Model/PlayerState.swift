@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import WineupAudio
 import WineupCore
 import WineupLibrary
 
@@ -10,8 +11,11 @@ final class PlayerState: ObservableObject {
     @Published var selectedID: TrackID?
     @Published var isPlaying = false
     @Published var progress = 0.0
-    @Published var balance = 0.5
-    @Published var speed = 0.5
+    @Published var balance = 0.5 { didSet { audio.setBalance(RateMapping.pan(balance: balance)) } }
+    @Published var speed = 0.5 { didSet { audio.setRate(RateMapping.rate(slider: speed)) } }
+    @Published var replayGainMode: ReplayGainMode = .track { didSet { audio.replayGainMode = replayGainMode } }
+    @Published var preventClipping = true { didSet { audio.preventClipping = preventClipping } }
+    @Published var outputSampleRate: Double?
     @Published var eqBypass = false { didSet { syncEqualizer() } }
     @Published var preset = "Custom"
     @Published var query = "" { didSet { scheduleLibrarySearch() } }
@@ -26,17 +30,30 @@ final class PlayerState: ObservableObject {
     @Published var preamp = 0.0 { didSet { syncEqualizer() } }
     @Published var bands: [Double] = SampleData.presets["Custom"] ?? [] { didSet { syncEqualizer() } }
 
-    private let audio = AudioEngineService()
+    private let audio = SFBAudioEngineAdapter()
     let library = LibraryController()
     private var searchTask: Task<Void, Never>?
     private var usingSampleTracks = true
 
     init() {
-        audio.onEndOfAudio = { [weak self] in self?.step(by: 1) }
+        audio.onNowPlayingChanged = { [weak self] url in self?.nowPlayingChanged(url) }
+        audio.onEndOfAudio = { [weak self] in
+            self?.isPlaying = false
+            self?.progress = 0
+        }
         audio.onError = { [weak self] message in self?.statusMessage = message }
+        audio.onConfigurationChange = { [weak self] rate in self?.outputSampleRate = rate }
         audio.setVolume(volume)
+        audio.setRate(RateMapping.rate(slider: speed))
+        audio.setBalance(RateMapping.pan(balance: balance))
+        audio.replayGainMode = replayGainMode
+        audio.preventClipping = preventClipping
         syncEqualizer()
     }
+
+    var meter: LevelTap { audio.meter }
+
+    var playbackRate: Double { RateMapping.rate(slider: speed) }
 
     var currentTrack: Track? { tracks.first { $0.id == currentID } }
 
@@ -57,7 +74,11 @@ final class PlayerState: ObservableObject {
 
     var remainingSeconds: Int {
         guard let track = currentTrack else { return 0 }
-        return Int(Double(track.duration) * (1 - progress))
+        if track.url != nil {
+            return Int(RateMapping.remainingWallSeconds(
+                total: audio.totalTime, current: audio.currentTime, rate: playbackRate))
+        }
+        return Int(Double(track.duration) * (1 - progress) / playbackRate)
     }
 
     var activeLyricIndex: Int {
@@ -151,6 +172,7 @@ final class PlayerState: ObservableObject {
         if let url = track.url {
             do {
                 try audio.play(url)
+                enqueueNext(after: track)
                 isPlaying = true
                 statusMessage = nil
             } catch {
@@ -213,7 +235,7 @@ final class PlayerState: ObservableObject {
             let total = audio.totalTime
             if total > 0 { progress = min(audio.currentTime / total, 1) }
         } else if track.duration > 0 {
-            let next = progress + delta / Double(track.duration)
+            let next = progress + delta * playbackRate / Double(track.duration)
             if next >= 1 { step(by: 1) } else { progress = next }
         }
     }
@@ -224,6 +246,25 @@ final class PlayerState: ObservableObject {
     }
 
     // MARK: Privado
+
+    private func enqueueNext(after track: Track) {
+        guard let next = NextTrackPlanner.next(after: track.id, in: tracks), let url = next.url else { return }
+        try? audio.enqueue(url)
+    }
+
+    private func nowPlayingChanged(_ url: URL?) {
+        guard let url else { return }
+        let current = currentID.flatMap { id in tracks.firstIndex { $0.id == id } } ?? -1
+        let matches = tracks.indices.filter { tracks[$0].url == url }
+        guard let index = matches.first(where: { $0 > current }) ?? matches.first else { return }
+        let track = tracks[index]
+        guard track.id != currentID else { return }
+        currentID = track.id
+        selectedID = track.id
+        progress = 0
+        refreshDetails(for: track)
+        enqueueNext(after: track)
+    }
 
     private func syncEqualizer() {
         audio.applyEqualizer(preamp: preamp, bands: bands, bypass: eqBypass)
