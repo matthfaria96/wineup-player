@@ -29,6 +29,11 @@ Tocar a biblioteca local do usuário de forma confiável, com a interface cláss
 - [ ] Controles de mídia do sistema, atalhos de teclado e Now Playing
 - [ ] Modelo de dados separando arquivo, gravação, lançamento, artista, arte e letra
 - [ ] Navegação por artista/álbum/single com capas e fallback visual (sem reescrever tags)
+- [ ] Biblioteca carrega `~/Music` por padrão; visões por Álbum, Banda, Pastas, Estilo (com "Sem categoria") e Playlists
+- [ ] Álbum virtual "Singles" para faixas sem álbum ou de álbuns com uma faixa
+- [ ] Playlists automáticas por cor de tag (só quando há faixas marcadas, desativáveis)
+- [ ] Perfil do usuário (playlists, tags, preferências, EQ) salvo, exportável e importável
+- [ ] Seletor de design de exibição da janela/conteúdo
 - [ ] Letras `.lrc` sincronizadas
 - [ ] Wineup Library Fixer: diagnóstico, prévia com confiança, gravação controlada de tags e desfazer
 - [ ] Reconhecimento por impressão acústica e provedores de metadados/capas (opcionais, com aviso de privacidade)
@@ -74,6 +79,8 @@ Tocar a biblioteca local do usuário de forma confiável, com a interface cláss
 | Frameworks LGPL embutidos como dinâmicos em `Contents/Frameworks` | Cumpre a LGPL mantendo-os substituíveis | — Pending |
 | Sem sandbox; acesso a pastas centralizado em `LibraryRoot` (WineupCore) — fase 1 | App de distribuição direta; um ponto único facilita bookmarks e validação de caminhos | — Pending |
 | Winamp/Mixxx/Cog só como referência de estudo | Licenças proíbem reutilização (WCL) ou exigem copyleft (GPL) | ✓ Good |
+| "Singles" é um álbum virtual criado pelo app com faixas sem álbum e de álbuns de uma faixa | Pedido do usuário (2026-10-20); substitui "Álbum desconhecido" do briefing; nada é regravado nas tags | — Pending |
+| Perfil do usuário exportável/importável (playlists, tags de cor, preferências, EQ) | Pedido do usuário: nunca perder o ecossistema montado | — Pending |
 | `.planning/` versionado no git | Planejamento rastreável junto do código | — Pending |
 
 ## Evolution

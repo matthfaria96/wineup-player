@@ -4,7 +4,7 @@
 
 Player de música nativo para macOS (Swift + SwiftUI) com interface clássica de painéis e o Wineup Library Fixer. O roadmap segue camadas horizontais (escolha do usuário), na ordem de dependência dos targets SwiftPM: Core, Dados, Áudio, Serviços, UI, Sistema, Fixer e Provedores online. Como o risco das camadas é entregar valor visível tarde, **toda fase termina com um build demonstrável (`swift build` + `.app`) em que o app ainda abre e toca**.
 
-Granularidade: standard. Cobertura: 51/51 requisitos v1.
+Granularidade: standard. Cobertura: 58/58 requisitos v1.
 
 ## Phases
 
@@ -34,7 +34,7 @@ Granularidade: standard. Cobertura: 51/51 requisitos v1.
 ### Phase 2: Dados e Escrita Segura
 **Goal**: A biblioteca do usuário persiste entre sessões, é varrida e pesquisada com rapidez, e qualquer gravação de tag é protegida por backup, verificação e desfazer
 **Depends on**: Phase 1
-**Requirements**: LIB-01, LIB-02, LIB-03, LIB-04, LIB-05, LIB-06, LIB-07, SAFE-01, SAFE-02, SAFE-03
+**Requirements**: LIB-01, LIB-02, LIB-03, LIB-04, LIB-05, LIB-06, LIB-07, SAFE-01, SAFE-02, SAFE-03, NAV-01
 **Success Criteria** (what must be TRUE):
   1. Usuário adiciona pastas de música, fecha e reabre o app e as pastas e faixas continuam na biblioteca
   2. Uma nova varredura relê só arquivos novos ou alterados, mostra progresso e pode ser cancelada
@@ -61,7 +61,7 @@ Granularidade: standard. Cobertura: 51/51 requisitos v1.
 ### Phase 4: Serviços de Reprodução
 **Goal**: A reprodução passa a funcionar sobre a biblioteca persistente, com fila, playlists e sessão restaurável
 **Depends on**: Phase 2, Phase 3
-**Requirements**: PLAY-01, PLAY-02, PLAY-03, PLAY-04, DISC-02
+**Requirements**: PLAY-01, PLAY-02, PLAY-03, PLAY-04, DISC-02, NAV-03, PROF-01, PROF-02
 **Success Criteria** (what must be TRUE):
   1. Usuário toca uma faixa vinda da biblioteca persistente de ponta a ponta, monta uma fila, reordena, repete (uma/todas) e embaralha
   2. Usuário cria, salva, renomeia e apaga playlists e importa/exporta M3U/M3U8
@@ -74,7 +74,7 @@ Granularidade: standard. Cobertura: 51/51 requisitos v1.
 ### Phase 5: Interface sobre Serviços Reais
 **Goal**: Os painéis clássicos mostram e controlam dados reais, com navegação por discografia, letras sincronizadas, skins próprias e acessibilidade
 **Depends on**: Phase 4
-**Requirements**: UI-01, UI-02, UI-03, UI-04, DISC-01, DISC-03, DISC-04
+**Requirements**: UI-01, UI-02, UI-03, UI-04, UI-05, DISC-01, DISC-03, DISC-04, NAV-02, NAV-04
 **Success Criteria** (what must be TRUE):
   1. Os painéis AMP, FX, Playlist, Search, Lyrics e Capa refletem a reprodução, a biblioteca e os medidores reais
   2. Usuário abre a página de um artista e vê álbuns, EPs, singles e "Álbum desconhecido" sem que nenhuma tag seja reescrita, e reproduz tudo ou embaralha com a ordenação ativa visível

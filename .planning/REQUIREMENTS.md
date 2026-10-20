@@ -48,10 +48,22 @@
 
 ### Discografia, capas e letras (DISC)
 
-- [ ] **DISC-01**: Página do artista mostra álbuns, EPs, singles e "Álbum desconhecido" como visões, sem reescrever tags
+- [ ] **DISC-01**: Página do artista mostra álbuns, EPs e o álbum "Singles" do app como visões, sem reescrever tags
 - [ ] **DISC-02**: A capa exibida segue a ordem: arte do arquivo, imagem na pasta, capa do lançamento, placeholder — sem gravar nos arquivos
 - [ ] **DISC-03**: Letras embutidas e arquivos `.lrc` são exibidos, com destaque sincronizado quando houver tempo
 - [ ] **DISC-04**: Usuário reproduz tudo ou embaralha a partir da página do artista, com a ordenação ativa visível
+
+### Navegação da biblioteca (NAV)
+
+- [ ] **NAV-01**: Na primeira abertura, o app adiciona e carrega automaticamente a pasta Música do usuário (`~/Music`) como raiz da biblioteca
+- [ ] **NAV-02**: Usuário escolhe como ver a biblioteca: por Álbum, por Banda/Artista, por Pastas, por Estilo (gênero dos metadados; faixas sem gênero ficam em "Sem categoria") ou por Playlists
+- [ ] **NAV-03**: Na visão por Álbum, faixas sem álbum e faixas de álbuns com uma única música aparecem num álbum "Singles" criado pelo app (agrupamento virtual, sem reescrever tags)
+- [ ] **NAV-04**: Na visão de Playlists aparecem as playlists do usuário e uma playlist automática por cor de tag, exibida só quando há ao menos uma faixa com aquela cor; uma opção desativa as playlists de tags
+
+### Perfil do usuário (PROF)
+
+- [ ] **PROF-01**: Playlists, cores de tag atribuídas às faixas, preferências de exibição e presets de EQ ficam salvos num perfil do usuário persistido automaticamente
+- [ ] **PROF-02**: Usuário exporta o perfil para um arquivo e importa um perfil (em outro Mac ou após reinstalar), com prévia do que será importado, sem perder o ecossistema montado
 
 ### Interface (UI)
 
@@ -59,6 +71,7 @@
 - [ ] **UI-02**: Temas são definidos por um formato de skin próprio documentado; Grafite, Vinho e Verde viram skins embutidas
 - [ ] **UI-03**: Os controles customizados (sliders, botões, listas) funcionam com VoiceOver e teclado
 - [ ] **UI-04**: Disposição, tema e tamanho de janela persistem entre sessões
+- [ ] **UI-05**: Usuário altera o design de exibição da janela e do conteúdo (disposição dos painéis, tema/skin e estilo da lista: compacta, com capas ou em grade) num seletor de exibição
 
 ### Sistema e distribuição (SYS)
 
@@ -158,6 +171,13 @@
 | UI-02 | Fase 5 | Pendente |
 | UI-03 | Fase 5 | Pendente |
 | UI-04 | Fase 5 | Pendente |
+| NAV-01 | Fase 2 | Pendente |
+| NAV-02 | Fase 5 | Pendente |
+| NAV-03 | Fase 4 | Pendente |
+| NAV-04 | Fase 5 | Pendente |
+| PROF-01 | Fase 4 | Pendente |
+| PROF-02 | Fase 4 | Pendente |
+| UI-05 | Fase 5 | Pendente |
 | SYS-01 | Fase 6 | Pendente |
 | SYS-02 | Fase 6 | Pendente |
 | SYS-03 | Fase 6 | Pendente |
@@ -177,10 +197,12 @@
 | NET-05 | Fase 8 | Pendente |
 
 **Coverage:**
-- v1 requirements: 51 total
-- Mapped to phases: 51
+- v1 requirements: 58 total
+- Mapped to phases: 58
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-10-20*
 *Last updated: 2026-10-20 after initial definition*
+
+*2026-10-20: adicionados NAV-01..04, PROF-01..02, UI-05 a pedido do usuário; DISC-01 passa a usar o álbum "Singles" do app.*
