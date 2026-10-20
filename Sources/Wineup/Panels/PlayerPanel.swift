@@ -6,6 +6,7 @@ import SwiftUI
 struct PlayerPanel: View {
     @ObservedObject var state: PlayerState
 
+    @StateObject private var meter = MeterModel()
     @Environment(\.theme) private var theme
     private let ticker = Timer.publish(every: 0.25, on: .main, in: .common).autoconnect()
 
@@ -30,6 +31,8 @@ struct PlayerPanel: View {
             .padding(.bottom, 10)
         }
         .onReceive(ticker) { _ in state.tick(0.25) }
+        .onAppear { meter.start(tap: state.meter) }
+        .onDisappear { meter.stop() }
     }
 
     private var header: some View {
@@ -50,7 +53,10 @@ struct PlayerPanel: View {
     private var readout: some View {
         HStack(alignment: .top, spacing: 10) {
             VStack(alignment: .leading, spacing: 5) {
-                LevelMeter(isPlaying: state.isPlaying)
+                HStack(alignment: .bottom, spacing: 10) {
+                    LevelMeter(levels: meter.levels)
+                    SpectrumView(bands: meter.bands)
+                }
                 Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 2) {
                     GridRow {
                         Text("Play").foregroundStyle(theme.text)
