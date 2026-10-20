@@ -1,3 +1,4 @@
+import WineupCore
 import Foundation
 
 /// Dados fictícios só para preencher a interface.
@@ -37,8 +38,8 @@ enum SampleData {
         ("Snap", "Don't Be Shy", 277, nil),
     ]
 
-    static let tracks: [Track] = rows.enumerated().map { index, row in
-        Track(id: index + 1, artist: row.0, title: row.1, duration: row.2, mark: row.3)
+    static let tracks: [Track] = rows.map { row in
+        Track(artist: row.0, title: row.1, duration: row.2, mark: row.3)
     }
 
     static let lyrics: [String] = [

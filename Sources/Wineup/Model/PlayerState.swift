@@ -1,11 +1,12 @@
 import AppKit
 import Foundation
+import WineupCore
 
 /// Estado do player. Faixas com `url` tocam de verdade; as de exemplo (sem url) só animam a interface.
 final class PlayerState: ObservableObject {
     @Published var tracks: [Track] = SampleData.tracks
-    @Published var currentID: Int = 17
-    @Published var selectedID: Int?
+    @Published var currentID: TrackID? = SampleData.tracks.dropFirst(16).first?.id ?? SampleData.tracks.first?.id
+    @Published var selectedID: TrackID?
     @Published var isPlaying = false
     @Published var progress = 0.0
     @Published var balance = 0.5
@@ -33,6 +34,9 @@ final class PlayerState: ObservableObject {
     }
 
     var currentTrack: Track? { tracks.first { $0.id == currentID } }
+
+    /// Posição 1-based da faixa atual na lista.
+    var currentPosition: Int? { tracks.firstIndex { $0.id == currentID }.map { $0 + 1 } }
 
     var visibleTracks: [Track] {
         guard let markFilter else { return tracks }
@@ -68,7 +72,7 @@ final class PlayerState: ObservableObject {
                 }
                 self.stop()
                 self.tracks = loaded
-                self.currentID = loaded[0].id
+                self.currentID = loaded.first?.id
                 self.selectedID = nil
                 self.statusMessage = nil
                 self.play(loaded[0])
@@ -137,8 +141,8 @@ final class PlayerState: ObservableObject {
     }
 
     func step(by offset: Int) {
-        guard let index = tracks.firstIndex(where: { $0.id == currentID }), !tracks.isEmpty else { return }
-        play(tracks[(index + offset + tracks.count) % tracks.count])
+        guard let currentID, let next = TrackList.neighbor(of: currentID, offset: offset, in: tracks) else { return }
+        play(next)
     }
 
     func playRandom() {
@@ -147,7 +151,7 @@ final class PlayerState: ObservableObject {
 
     func deleteSelected() {
         guard let selectedID else { return }
-        tracks = tracks.filter { $0.id != selectedID }
+        tracks = TrackList.removing(selectedID, from: tracks)
         self.selectedID = nil
     }
 

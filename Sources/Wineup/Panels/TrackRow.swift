@@ -1,8 +1,10 @@
+import WineupCore
 import SwiftUI
 
 /// Linha de faixa usada na playlist e na busca.
 struct TrackRow: View {
     let track: Track
+    let index: Int
     let isCurrent: Bool
     let isSelected: Bool
     var showsDuration = true
@@ -11,7 +13,7 @@ struct TrackRow: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            Text("\(track.id). \(track.displayName)")
+            Text("\(index). \(track.displayName)")
                 .lineLimit(1)
                 .truncationMode(.tail)
             Spacer(minLength: 4)

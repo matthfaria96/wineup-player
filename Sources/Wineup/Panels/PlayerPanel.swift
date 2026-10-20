@@ -1,4 +1,6 @@
+import WineupCore
 import Combine
+import WineupCore
 import SwiftUI
 
 struct PlayerPanel: View {
@@ -14,7 +16,7 @@ struct PlayerPanel: View {
                     header
                     readout
                     sliders
-                    WaveformView(seed: state.currentID, progress: state.progress, onSeek: state.seek(to:))
+                    WaveformView(seed: state.currentTrack?.id.seed ?? 0, progress: state.progress, onSeek: state.seek(to:))
                         .frame(height: 30)
                     transport
                     footer
@@ -52,7 +54,7 @@ struct PlayerPanel: View {
                 Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 2) {
                     GridRow {
                         Text("Play").foregroundStyle(theme.text)
-                        Text("\(state.currentID)").foregroundStyle(theme.text)
+                        Text(state.currentPosition.map(String.init) ?? "-").foregroundStyle(theme.text)
                     }
                     GridRow {
                         Text("Stereo").foregroundStyle(theme.text)

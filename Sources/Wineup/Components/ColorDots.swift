@@ -1,3 +1,4 @@
+import WineupCore
 import SwiftUI
 
 /// Bolinhas de marcação coloridas; tocar numa filtra a playlist, o X limpa.

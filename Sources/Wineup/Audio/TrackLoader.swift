@@ -1,4 +1,6 @@
+import WineupCore
 import AppKit
+import WineupCore
 import Foundation
 import SFBAudioEngine
 
@@ -37,19 +39,16 @@ enum TrackLoader {
     }
 
     static func tracks(from urls: [URL]) -> [Track] {
-        audioURLs(in: urls).enumerated().map { index, url in
-            track(id: index + 1, url: url)
-        }
+        audioURLs(in: urls).map { track(url: $0) }
     }
 
-    static func track(id: Int, url: URL) -> Track {
+    static func track(url: URL) -> Track {
         let fallbackTitle = url.deletingPathExtension().lastPathComponent
         guard let file = try? AudioFile(readingPropertiesAndMetadataFrom: url) else {
-            return Track(id: id, artist: "Desconhecido", title: fallbackTitle, duration: 0, mark: nil, url: url)
+            return Track(artist: "Desconhecido", title: fallbackTitle, duration: 0, mark: nil, url: url)
         }
         let metadata = file.metadata
         return Track(
-            id: id,
             artist: nonEmpty(metadata.artist) ?? "Desconhecido",
             title: nonEmpty(metadata.title) ?? fallbackTitle,
             duration: Int((file.properties.duration ?? 0).rounded()),

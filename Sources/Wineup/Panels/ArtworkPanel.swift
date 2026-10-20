@@ -1,3 +1,4 @@
+import WineupCore
 import SwiftUI
 
 /// Capa em tela cheia com os dados da faixa sobrepostos; sem capa, mostra o símbolo de nota.

@@ -9,9 +9,10 @@ struct PlaylistPanel: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 0) {
-                            ForEach(state.visibleTracks) { track in
+                            ForEach(Array(state.visibleTracks.enumerated()), id: \.element.id) { offset, track in
                                 TrackRow(
                                     track: track,
+                                    index: offset + 1,
                                     isCurrent: track.id == state.currentID,
                                     isSelected: track.id == state.selectedID
                                 )
@@ -21,7 +22,7 @@ struct PlaylistPanel: View {
                             }
                         }
                     }
-                    .onAppear { proxy.scrollTo(state.currentID, anchor: .center) }
+                    .onAppear { if let id = state.currentID { proxy.scrollTo(id, anchor: .center) } }
                 }
                 footer
             }

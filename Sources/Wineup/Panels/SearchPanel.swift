@@ -17,9 +17,10 @@ struct SearchPanel: View {
                 } else {
                     ScrollView {
                         LazyVStack(spacing: 0) {
-                            ForEach(state.searchResults) { track in
+                            ForEach(Array(state.searchResults.enumerated()), id: \.element.id) { offset, track in
                                 TrackRow(
                                     track: track,
+                                    index: offset + 1,
                                     isCurrent: track.id == state.currentID,
                                     isSelected: track.id == state.selectedID,
                                     showsDuration: false
