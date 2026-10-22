@@ -1,7 +1,8 @@
 import WineupCore
 import SwiftUI
 
-/// Capa em tela cheia com os dados da faixa sobrepostos; sem capa, mostra o símbolo de nota.
+/// Capa sempre quadrada (1:1), do tamanho da largura do painel; os dados da faixa ficam
+/// embaixo e ocupam o resto do espaço. Sem capa, mostra o símbolo de nota no mesmo quadrado.
 struct ArtworkPanel: View {
     @ObservedObject var state: PlayerState
 
@@ -9,44 +10,51 @@ struct ArtworkPanel: View {
 
     var body: some View {
         Panel(title: "Capa") {
-            ZStack(alignment: .bottomLeading) {
-                LinearGradient(
-                    colors: [theme.artworkTint.opacity(0.9), theme.artworkTint.opacity(0.35)],
-                    startPoint: .top, endPoint: .bottom
-                )
-                if let cover = state.cover {
-                    Image(nsImage: cover)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .clipped()
-                        .overlay(LinearGradient(colors: [.clear, .black.opacity(0.65)], startPoint: .center, endPoint: .bottom))
-                } else {
-                    Image(systemName: "music.note")
-                        .font(.system(size: 120, weight: .regular))
-                        .foregroundStyle(Color.black.opacity(0.28))
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
+            VStack(alignment: .leading, spacing: 12) {
+                cover
+                    .aspectRatio(1, contentMode: .fit)
+                    .frame(maxWidth: .infinity)
+                    .layoutPriority(1)
                 info
-                    .padding(16)
+                Spacer(minLength: 0)
             }
+            .padding(12)
         }
     }
 
-    private var info: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            if let track = state.currentTrack {
-                Text(track.artist).font(.system(size: 17, weight: .bold))
-                Text(track.title).font(.system(size: 15, weight: .semibold))
-                Text(track.album ?? "Álbum desconhecido").font(.system(size: 15, weight: .semibold))
-                if let year = track.year { Text(year).font(.system(size: 15, weight: .bold)) }
-                if let url = track.url {
-                    Text(url.pathExtension.uppercased()).font(.system(size: 12, weight: .semibold))
-                }
+    private var cover: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 6)
+                .fill(LinearGradient(colors: [theme.artworkTint.opacity(0.9), theme.artworkTint.opacity(0.35)],
+                                     startPoint: .top, endPoint: .bottom))
+            if let image = state.cover {
+                Image(nsImage: image)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Image(systemName: "music.note")
+                    .font(.system(size: 90, weight: .regular))
+                    .foregroundStyle(Color.black.opacity(0.28))
             }
         }
-        .foregroundStyle(Color.white)
-        .shadow(color: .black.opacity(0.6), radius: 3)
-        .lineLimit(2)
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+
+    private var info: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            if let track = state.currentTrack {
+                Text(track.title).font(.system(size: 15, weight: .bold)).foregroundStyle(theme.text)
+                Text(track.artist).font(.system(size: 13, weight: .medium)).foregroundStyle(theme.text)
+                Text([track.album ?? "Álbum desconhecido", track.year].compactMap { $0 }.joined(separator: " · "))
+                    .font(.system(size: 12)).foregroundStyle(theme.mutedText)
+                if let url = track.url {
+                    Text(url.pathExtension.uppercased()).font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(theme.mutedText)
+                }
+            } else {
+                Text("Nada tocando").font(.system(size: 13)).foregroundStyle(theme.mutedText)
+            }
+        }
+        .lineLimit(1)
     }
 }
