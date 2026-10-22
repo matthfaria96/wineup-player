@@ -102,6 +102,10 @@ final class PlayerState: ObservableObject {
     private var searchTask: Task<Void, Never>?
     private var usingSampleTracks = true
     private var restoredOnce = false
+    /// Arquivos abertos pelo Finder/⌘O antes da biblioteca carregar: a lista fica com eles.
+    private var openedFilesFirst = false
+    /// A lista atual veio de arquivos abertos ou de um M3U (não do visualizador).
+    var externalList = false
     /// Falhas seguidas ao tocar (para não pular a fila inteira em laço).
     var consecutiveFailures = 0
     private var eqSaveTask: Task<Void, Never>?
@@ -212,6 +216,13 @@ final class PlayerState: ObservableObject {
 
     /// Mostra na lista o que o visualizador entregou.
     func showTracks(title: String, items: [Track]) {
+        // Lista aberta à mão (arquivos, M3U): só a navegação do usuário a substitui.
+        if externalList && browser.isBackgroundRefresh { return }
+        externalList = false
+        if openedFilesFirst && !restoredOnce {
+            restoredOnce = true   // a primeira carga da biblioteca não substitui os arquivos abertos
+            return
+        }
         let started = ProcessInfo.processInfo.systemUptime
         // Mede até a próxima volta do loop principal (layout + desenho da lista).
         DispatchQueue.main.async { PerfLog.record("render", since: started, detail: "\(items.count) faixas") }
@@ -274,7 +285,8 @@ final class PlayerState: ObservableObject {
                     return
                 }
                 self.stop()
-                self.usingSampleTracks = false
+                if !self.restoredOnce { self.openedFilesFirst = true }
+                self.externalList = true
                 self.tracks = loaded
                 self.currentID = loaded.first?.id
                 self.selectedID = nil

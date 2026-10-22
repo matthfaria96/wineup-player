@@ -78,15 +78,9 @@ struct PlayerPanel: View {
     }
 
     /// "-MM:SS" com dois dígitos de minuto, como num visor LCD.
-    static func lcdTime(_ seconds: Int) -> String {
-        let s = max(seconds, 0)
-        return String(format: "-%02d:%02d", min(s / 60, 99), s % 60)
-    }
+    static func lcdTime(_ seconds: Int) -> String { Clock.lcd(seconds, negative: true) }
 
-    static func lcdTotal(_ seconds: Int) -> String {
-        let s = max(seconds, 0)
-        return String(format: "%02d:%02d", min(s / 60, 99), s % 60)
-    }
+    static func lcdTotal(_ seconds: Int) -> String { Clock.lcd(seconds) }
 
     private var transport: some View {
         HStack(spacing: 6) {

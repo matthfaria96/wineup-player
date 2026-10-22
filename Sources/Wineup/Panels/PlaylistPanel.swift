@@ -77,17 +77,18 @@ struct PlaylistPanel: View {
 
     private var countText: String {
         if browser.showsGroups && state.query.isEmpty {
+            let n = browser.groups.count
             let noun: String
             switch browser.view {
-            case .albums: noun = "álbuns"
-            case .artists: noun = "artistas"
-            case .genres: noun = "gêneros"
-            default: noun = "playlists"
+            case .albums: noun = n == 1 ? "álbum" : "álbuns"
+            case .artists: noun = n == 1 ? "artista" : "artistas"
+            case .genres: noun = n == 1 ? "gênero" : "gêneros"
+            default: noun = n == 1 ? "playlist" : "playlists"
             }
-            return "\(browser.groups.count) \(noun)"
+            return "\(n) \(noun)"
         }
         let n = state.query.isEmpty ? state.visibleTracks.count : state.searchResults.count
-        return "\(n) faixas"
+        return n == 1 ? "1 faixa" : "\(n) faixas"
     }
 
     /// Linha do grupo aberto (álbum, artista, gênero, playlist): voltar + nome.

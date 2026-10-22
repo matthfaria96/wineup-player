@@ -116,6 +116,7 @@ extension PlayerState {
             let present = entries.filter { FileManager.default.fileExists(atPath: $0.url.path) }
             let items = present.map { browser.track(atPath: $0.url.path) }
             showTracks(title: file.deletingPathExtension().lastPathComponent, items: items)
+            externalList = true
             let missing = entries.count - present.count
             statusMessage = missing == 0 ? "Playlist aberta: \(items.count) faixas."
                 : "Playlist aberta: \(items.count) faixas (\(missing) não encontradas)."

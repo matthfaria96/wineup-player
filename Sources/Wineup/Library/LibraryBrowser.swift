@@ -106,6 +106,8 @@ final class LibraryBrowser: ObservableObject {
     private(set) var marks: [String: MarkColor] = [:]
     /// Entrega a lista de faixas a mostrar (título, faixas).
     var onShowTracks: ((String, [Track]) -> Void)?
+    /// Recarga automática (varredura/vigia): não deve substituir uma lista aberta à mão.
+    private(set) var isBackgroundRefresh = false
     /// Fila atual (fornecida pelo player) para a visão "Fila".
     var queueProvider: (() -> [Track])?
     /// Pedido de nova varredura da biblioteca (botão Atualizar).
@@ -152,6 +154,7 @@ final class LibraryBrowser: ObservableObject {
     }
 
     func open(_ newGroup: ViewGroup) {
+        isBackgroundRefresh = false
         push()
         group = newGroup
         showGroupTracks(newGroup)
@@ -207,7 +210,7 @@ final class LibraryBrowser: ObservableObject {
     func libraryChanged() {
         clearCache()
         refreshMarks()
-        load(reopening: group?.id)
+        load(reopening: group?.id, background: true)
     }
 
     // MARK: Pasta padrão
@@ -258,8 +261,9 @@ final class LibraryBrowser: ObservableObject {
 
     // MARK: Carga
 
-    func load(reopening groupID: String? = nil) {
+    func load(reopening groupID: String? = nil, background: Bool = false) {
         loadToken += 1
+        isBackgroundRefresh = background
         if view == .queue {
             isLoading = false
             groups = []
