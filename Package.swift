@@ -6,6 +6,7 @@ let package = Package(
     platforms: [.macOS(.v14)],
     products: [
         .executable(name: "wineup-audiocheck", targets: ["WineupAudioCheck"]),
+        .executable(name: "wineup-demo", targets: ["WineupDemo"]),
     ],
     dependencies: [
         // MIT. Decoders de FLAC/MP3/Ogg/Opus/APE/DSD etc., leitura de tags e ReplayGain.
@@ -69,6 +70,16 @@ let package = Package(
                 .product(name: "SFBAudioEngine", package: "SFBAudioEngine"),
             ],
             path: "Sources/WineupAudioCheck"
+        ),
+        // Gera uma biblioteca de demonstração (áudio sintetizado com tags/capas) e monta playlists.
+        .executableTarget(
+            name: "WineupDemo",
+            dependencies: [
+                "WineupCore",
+                "WineupLibrary",
+                .product(name: "SFBAudioEngine", package: "SFBAudioEngine"),
+            ],
+            path: "Sources/WineupDemo"
         ),
         // Serviços de reprodução, sessão e configurações sobre Core/Library/Audio.
         .target(

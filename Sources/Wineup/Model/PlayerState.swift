@@ -138,6 +138,8 @@ final class PlayerState: ObservableObject {
         browser.currentGroupTitle = "Todas as músicas"
         tracks = mapped
         selectedID = nil
+        // Automação/testes: WINEUP_AUTOPLAY=1 toca a primeira faixa ao abrir.
+        if ProcessInfo.processInfo.environment["WINEUP_AUTOPLAY"] != nil, let first = mapped.first { play(first) }
     }
 
     func track(from item: LibraryTrack) -> Track {

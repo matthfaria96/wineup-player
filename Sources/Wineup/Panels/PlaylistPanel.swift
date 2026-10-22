@@ -169,6 +169,14 @@ struct PlaylistPanel: View {
             ColorDots(selection: $state.markFilter)
                 .help("Filtrar por tag de cor")
             Spacer(minLength: 0)
+            if let message = state.statusMessage {
+                Text(message)
+                    .font(.system(size: 11))
+                    .foregroundStyle(theme.mutedText)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+            Spacer(minLength: 0)
             Picker("Estilo da lista", selection: $state.listStyle) {
                 Image(systemName: "list.bullet").help("Compacta").tag(ListStyle.compact)
                 Image(systemName: "list.bullet.rectangle").help("Com detalhes").tag(ListStyle.detailed)
