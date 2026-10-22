@@ -152,6 +152,30 @@ func write(_ t: DemoTrack, index: Int, to dir: URL) throws -> URL {
 
 // MARK: Execução
 
+// Medição de varredura: wineup-demo --scanbench N
+// Cria uma faixa FLAC real (tags + capa), copia N vezes num diretório temporário e mede a
+// primeira varredura completa num banco temporário (arquivos lidos por segundo).
+if CommandLine.arguments.count == 3, CommandLine.arguments[1] == "--scanbench", let count = Int(CommandLine.arguments[2]) {
+    let base = FileManager.default.temporaryDirectory.appendingPathComponent("wineup-scanbench-\(UUID().uuidString)")
+    defer { try? FileManager.default.removeItem(at: base) }
+    let source = DemoTrack(title: "Amostra", artist: "Banda", album: "Disco", genre: "Rock", number: 1, year: "2025",
+                           seconds: 3, root: 220, tempo: 120, format: "flac", lyrics: ["linha"])
+    let sample = try write(source, index: 0, to: base.appendingPathComponent("origem"))
+    let lib = base.appendingPathComponent("lib")
+    for i in 0..<count {
+        let dir = lib.appendingPathComponent("Artista \(i % 50)/Album \(i % 400)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        try FileManager.default.copyItem(at: sample, to: dir.appendingPathComponent("\(i).flac"))
+    }
+    let db = try LibraryDatabase(path: base.appendingPathComponent("bench.sqlite").path)
+    let root = try LibraryRootStore(db: db).addRoot(lib)
+    let started = Date()
+    let result = try await WineupLibrary.Scanner(database: db).scan(rootID: root.id) { _ in }
+    let seconds = Date().timeIntervalSince(started)
+    print(String(format: "varredura: %d arquivos em %.2f s (%.0f arquivos/s)", result.read, seconds, Double(result.read) / seconds))
+    exit(0)
+}
+
 // Modo sintético (medições): wineup-demo --synthetic N <banco.sqlite> <pastaRaiz>
 // Insere N faixas direto no banco, sem criar arquivos de áudio.
 if CommandLine.arguments.count == 5, CommandLine.arguments[1] == "--synthetic", let count = Int(CommandLine.arguments[2]) {

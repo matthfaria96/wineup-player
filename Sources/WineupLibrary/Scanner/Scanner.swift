@@ -22,6 +22,20 @@ public final class Scanner: Sendable {
     private let database: LibraryDatabase
     private let batchSize: Int
 
+    /// Lê as tags do lote em paralelo (um arquivo por núcleo); a ordem do lote é preservada.
+    /// A gravação no banco continua sequencial (um único escritor).
+    static func readTags(_ batch: [(file: EnumeratedFile, existing: AudioFileRecord?)])
+        -> [(EnumeratedFile, AudioFileRecord?, ScannedTags?, String?)] {
+        let slots = UnsafeMutableBufferPointer<(ScannedTags?, String?)>.allocate(capacity: batch.count)
+        slots.initialize(repeating: (nil, nil))
+        defer { slots.deallocate() }
+        DispatchQueue.concurrentPerform(iterations: batch.count) { i in
+            do { slots[i] = (try TagReader.read(URL(fileURLWithPath: batch[i].file.path)), nil) }
+            catch { slots[i] = (nil, "unreadable") }
+        }
+        return batch.indices.map { (batch[$0].file, batch[$0].existing, slots[$0].0, slots[$0].1) }
+    }
+
     public init(database: LibraryDatabase, batchSize: Int = 500) {
         self.database = database
         self.batchSize = max(1, batchSize)
@@ -144,10 +158,7 @@ public final class Scanner: Sendable {
         for start in stride(from: 0, to: toRead.count, by: size) {
             try Task.checkCancellation()
             let batch = Array(toRead[start..<min(start + size, toRead.count)])
-            let results: [(EnumeratedFile, AudioFileRecord?, ScannedTags?, String?)] = batch.map { item in
-                do { return (item.file, item.existing, try TagReader.read(URL(fileURLWithPath: item.file.path)), nil) }
-                catch { return (item.file, item.existing, nil, "unreadable") }
-            }
+            let results = Self.readTags(batch)
             try await pool.write { db in
                 for (f, existing, tags, readError) in results {
                     var rec = existing ?? AudioFileRecord(rootID: rootRowID, path: f.path)
