@@ -1,4 +1,5 @@
 import SwiftUI
+import WineupCore
 
 @main
 struct WineupApp: App {
@@ -46,6 +47,16 @@ struct WineupApp: App {
             }
             CommandMenu("Controles") {
                 Button("Tocar/Pausar") { state.togglePlay() }.keyboardShortcut(.space, modifiers: [.command])
+                Button("Tocar faixa selecionada") { state.playSelected() }.keyboardShortcut(.return, modifiers: [.command])
+                Button("Remover faixa selecionada") { state.removeSelected() }.keyboardShortcut(.delete, modifiers: [.command])
+                Divider()
+                Toggle("Aleatório", isOn: Binding(get: { state.shuffleOn }, set: { state.shuffleOn = $0 }))
+                Picker("Repetir", selection: Binding(get: { state.repeatMode }, set: { state.repeatMode = $0 })) {
+                    Text("Desligado").tag(RepeatMode.off)
+                    Text("Todas").tag(RepeatMode.all)
+                    Text("Uma").tag(RepeatMode.one)
+                }
+                Divider()
                 Button("Próxima") { state.step(by: 1) }.keyboardShortcut(.rightArrow, modifiers: [.command, .option])
                 Button("Anterior") { state.step(by: -1) }.keyboardShortcut(.leftArrow, modifiers: [.command, .option])
                 Button("Parar") { state.stop() }.keyboardShortcut(".")

@@ -11,8 +11,30 @@ final class PlayerState: ObservableObject {
     @Published var selectedID: TrackID?
     @Published var isPlaying = false
     @Published var progress = 0.0
-    @Published var balance = 0.5 { didSet { audio.setBalance(RateMapping.pan(balance: balance)) } }
-    @Published var speed = 0.5 { didSet { audio.setRate(RateMapping.rate(slider: speed)) } }
+    @Published var balance = PlayerState.saved("balance", 0.5) {
+        didSet { audio.setBalance(RateMapping.pan(balance: balance)); UserDefaults.standard.set(balance, forKey: "balance") }
+    }
+    @Published var speed = PlayerState.saved("speed", 0.5) {
+        didSet { audio.setRate(RateMapping.rate(slider: speed)); UserDefaults.standard.set(speed, forKey: "speed") }
+    }
+    /// Fila de reprodução: a lista de onde a música foi tocada (navegar não interrompe a sequência).
+    @Published var queue = PlaybackQueue<Track>()
+    @Published var repeatMode: RepeatMode = RepeatMode(rawValue: UserDefaults.standard.string(forKey: "repeatMode") ?? "") ?? .off {
+        didSet {
+            UserDefaults.standard.set(repeatMode.rawValue, forKey: "repeatMode")
+            queue = queue.withRepeat(repeatMode)
+            reenqueue()
+        }
+    }
+    @Published var shuffleOn = UserDefaults.standard.bool(forKey: "shuffle") {
+        didSet {
+            UserDefaults.standard.set(shuffleOn, forKey: "shuffle")
+            queue = shuffleOn ? queue.shuffled(seed: UInt64.random(in: 1...UInt64.max)) : queue.unshuffled()
+            reenqueue()
+        }
+    }
+    /// Posição (0...1) para retomar a última faixa da sessão anterior.
+    var resumeFraction: Double?
     @Published var replayGainMode: ReplayGainMode = .track { didSet { audio.replayGainMode = replayGainMode } }
     @Published var preventClipping = true { didSet { audio.preventClipping = preventClipping } }
     @Published var outputSampleRate: Double?
@@ -32,7 +54,13 @@ final class PlayerState: ObservableObject {
         didSet { UserDefaults.standard.set(listStyle.rawValue, forKey: DisplayKeys.listStyle) }
     }
 
-    @Published var volume = 0.8 { didSet { audio.setVolume(volume) } }
+    @Published var volume = PlayerState.saved("volume", 0.8) {
+        didSet { audio.setVolume(volume); UserDefaults.standard.set(volume, forKey: "volume") }
+    }
+
+    static func saved(_ key: String, _ fallback: Double) -> Double {
+        UserDefaults.standard.object(forKey: key) as? Double ?? fallback
+    }
     @Published var preamp = 0.0 { didSet { syncEqualizer() } }
     @Published var bands: [Double] = SampleData.presets["Custom"] ?? [] { didSet { syncEqualizer() } }
 
@@ -62,6 +90,9 @@ final class PlayerState: ObservableObject {
         restoreEqualizer()
         syncEqualizer()
         browser.onOpen = { [weak self] title, items in self?.showGroup(title: title, items: items) }
+        NowPlaying.attach(self)
+        NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil,
+                                               queue: .main) { [weak self] _ in self?.saveSession() }
         browser.onRefresh = { [weak self] in
             Task { @MainActor in self?.library.rescan() }
         }
@@ -81,7 +112,7 @@ final class PlayerState: ObservableObject {
     var playbackRate: Double { RateMapping.rate(slider: speed) }
 
     var currentTrack: Track? {
-        tracks.first { $0.id == currentID } ?? lastPlayed.flatMap { $0.id == currentID ? $0 : nil }
+        queue.current ?? tracks.first { $0.id == currentID } ?? lastPlayed.flatMap { $0.id == currentID ? $0 : nil }
     }
 
     /// Posição 1-based da faixa atual na lista.
@@ -136,14 +167,20 @@ final class PlayerState: ObservableObject {
         usingSampleTracks = false
         listTitle = "Todas as músicas"
         browser.currentGroupTitle = "Todas as músicas"
+        browser.selected = .allTracks
         tracks = mapped
         selectedID = nil
         // Automação/testes: WINEUP_AUTOPLAY=1 toca a primeira faixa ao abrir.
-        if ProcessInfo.processInfo.environment["WINEUP_AUTOPLAY"] != nil, let first = mapped.first { play(first) }
+        if ProcessInfo.processInfo.environment["WINEUP_AUTOPLAY"] != nil, let first = mapped.first {
+            play(first)
+        } else {
+            restoreSession(in: mapped)
+        }
     }
 
     func track(from item: LibraryTrack) -> Track {
-        Track(artist: item.artist, title: item.title, duration: Int(item.duration ?? 0),
+        Track(id: TrackID(stableKey: item.url.standardizedFileURL.path),
+              artist: item.artist, title: item.title, duration: Int(item.duration ?? 0),
               mark: browser.mark(for: item.url), url: item.url, album: item.album)
     }
 
@@ -204,7 +241,19 @@ final class PlayerState: ObservableObject {
 
     // MARK: Reprodução
 
-    func play(_ track: Track) {
+    /// Toca uma faixa e monta a fila com a lista de onde ela veio (padrão: a lista aberta).
+    func play(_ track: Track, from list: [Track]? = nil) {
+        let source = list ?? (tracks.contains { $0.id == track.id } ? tracks : [track])
+        let index = source.firstIndex { $0.id == track.id } ?? 0
+        var newQueue = PlaybackQueue(items: source, currentIndex: index).withRepeat(repeatMode)
+        if shuffleOn { newQueue = newQueue.shuffled(seed: UInt64.random(in: 1...UInt64.max)) }
+        queue = newQueue
+        startCurrent()
+    }
+
+    /// Toca o item atual da fila (sem remontá-la).
+    private func startCurrent(resumeAt fraction: Double? = nil) {
+        guard let track = queue.current else { return }
         lastPlayed = track
         currentID = track.id
         selectedID = track.id
@@ -213,9 +262,12 @@ final class PlayerState: ObservableObject {
         if let url = track.url {
             do {
                 try audio.play(url)
+                if let fraction, fraction > 0 { audio.seek(toFraction: fraction) }
                 enqueueNext(after: track)
                 isPlaying = true
                 statusMessage = nil
+                saveSession()
+                NowPlaying.update(self)
             } catch {
                 isPlaying = false
                 statusMessage = "Não foi possível tocar \(track.title): \(error.localizedDescription)"
@@ -226,42 +278,60 @@ final class PlayerState: ObservableObject {
     }
 
     func togglePlay() {
-        guard let track = currentTrack else { return }
-        if track.url == nil { isPlaying.toggle(); return }
+        guard let track = currentTrack else {
+            // Nada carregado: toca a selecionada ou a primeira da lista.
+            let pick = selectedID.flatMap { id in visibleTracks.first { $0.id == id } } ?? visibleTracks.first
+            if let pick { play(pick, from: visibleTracks) }
+            return
+        }
         if isPlaying {
             audio.pause()
             isPlaying = false
         } else if audio.currentTime > 0 {
             audio.resume()
             isPlaying = true
+        } else if queue.current?.id == track.id {
+            let resume = resumeFraction
+            resumeFraction = nil
+            startCurrent(resumeAt: resume)
         } else {
             play(track)
         }
+        NowPlaying.update(self)
     }
 
     func pause() {
         if currentTrack?.url != nil { audio.pause() }
         isPlaying = false
+        NowPlaying.update(self)
     }
 
     func stop() {
         audio.stop()
         isPlaying = false
         progress = 0
+        NowPlaying.update(self)
     }
 
     func seek(to fraction: Double) {
         progress = min(max(fraction, 0), 1)
         if currentTrack?.url != nil { audio.seek(toFraction: progress) }
+        NowPlaying.update(self)
     }
 
+    /// Próxima/anterior pela fila. "Repetir uma" não prende o botão: avança normalmente.
     func step(by offset: Int) {
-        guard let currentID, let next = TrackList.neighbor(of: currentID, offset: offset, in: tracks) else { return }
-        play(next)
+        let manual = repeatMode == .one ? queue.withRepeat(.all) : queue
+        guard let index = offset >= 0 ? manual.nextIndex() : manual.previousIndex() else {
+            stop()
+            return
+        }
+        queue = queue.selecting(index: index)
+        startCurrent()
     }
 
     func playRandom() {
-        if let track = tracks.randomElement() { play(track) }
+        if let track = visibleTracks.randomElement() { play(track, from: visibleTracks) }
     }
 
     func deleteSelected() {
@@ -361,28 +431,39 @@ final class PlayerState: ObservableObject {
     // MARK: Privado
 
     private func enqueueNext(after track: Track) {
-        guard let next = NextTrackPlanner.next(after: track.id, in: tracks), let url = next.url else { return }
+        guard let index = queue.nextIndex(), let url = queue.items[index].url else { return }
         try? audio.enqueue(url)
     }
 
+    /// Refaz o pré-enfileiramento quando repetir/aleatório mudam.
+    func reenqueue() {
+        guard let track = queue.current, isPlaying else { return }
+        audio.clearQueue()
+        enqueueNext(after: track)
+    }
+
     private func nowPlayingChanged(_ url: URL?) {
-        guard let url else { return }
-        let current = currentID.flatMap { id in tracks.firstIndex { $0.id == id } } ?? -1
-        let matches = tracks.indices.filter { tracks[$0].url == url }
-        guard let index = matches.first(where: { $0 > current }) ?? matches.first else { return }
-        let track = tracks[index]
-        guard track.id != currentID else { return }
+        guard let url, queue.current?.url != url else { return }
+        // A SFB começou a próxima faixa pré-enfileirada (gapless): avança a fila.
+        guard let index = queue.nextIndex(), queue.items[index].url == url else { return }
+        queue = queue.selecting(index: index)
+        let track = queue.items[index]
+        lastPlayed = track
         currentID = track.id
         selectedID = track.id
         progress = 0
         refreshDetails(for: track)
         enqueueNext(after: track)
+        saveSession()
+        NowPlaying.update(self)
     }
 
     private func syncEqualizer() {
         audio.applyEqualizer(preamp: preamp, bands: bands, bypass: eqBypass)
         persistEqualizer()
     }
+
+    func refreshDetailsPublic(for track: Track) { refreshDetails(for: track) }
 
     private func refreshDetails(for track: Track) {
         guard let url = track.url else {
@@ -396,6 +477,7 @@ final class PlayerState: ObservableObject {
             DispatchQueue.main.async {
                 guard let self, self.currentID == track.id else { return }
                 self.cover = image
+                NowPlaying.update(self)
                 self.lyricLines = lines ?? ["Sem letra nesta faixa"]
             }
         }

@@ -45,10 +45,11 @@ enum TrackLoader {
     static func track(url: URL) -> Track {
         let fallbackTitle = url.deletingPathExtension().lastPathComponent
         guard let file = try? AudioFile(readingPropertiesAndMetadataFrom: url) else {
-            return Track(artist: "Desconhecido", title: fallbackTitle, duration: 0, mark: nil, url: url)
+            return Track(id: TrackID(stableKey: url.standardizedFileURL.path), artist: "Desconhecido", title: fallbackTitle, duration: 0, mark: nil, url: url)
         }
         let metadata = file.metadata
         return Track(
+            id: TrackID(stableKey: url.standardizedFileURL.path),
             artist: nonEmpty(metadata.artist) ?? "Desconhecido",
             title: nonEmpty(metadata.title) ?? fallbackTitle,
             duration: Int((file.properties.duration ?? 0).rounded()),

@@ -116,8 +116,11 @@ struct TrackMenu: View {
     let track: Track
 
     var body: some View {
-        Button("Tocar") { state.play(track) }
-        Button("Remover da lista") { state.selectedID = track.id; state.deleteSelected() }
+        Button("Tocar") { state.play(track, from: state.visibleTracks) }
+        Button("Tocar a seguir") { state.playNext(track) }
+        Button(state.browser.openPlaylistID != nil ? "Remover da playlist" : "Remover da lista") {
+            state.removeFromList(track)
+        }
         Menu("Tag de cor") {
             ForEach(MarkColor.allCases) { color in
                 Button(color.displayName) { state.setMark(color, on: track) }

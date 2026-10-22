@@ -135,6 +135,24 @@ public struct CollectionsStore: Sendable {
         }
     }
 
+    /// Remove a primeira ocorrência do arquivo na playlist e recompacta as posições.
+    public func remove(path: String, fromPlaylist id: Int64) throws {
+        try database.pool.write { db in
+            guard let itemID = try Int64.fetchOne(db, sql: """
+                SELECT pi.id FROM playlist_item pi JOIN audio_file af ON af.id = pi.audio_file_id
+                WHERE pi.playlist_id = ? AND af.path = ? ORDER BY pi.position LIMIT 1
+                """, arguments: [id, path]) else { return }
+            try db.execute(sql: "DELETE FROM playlist_item WHERE id = ?", arguments: [itemID])
+            let ids = try Int64.fetchAll(db, sql: "SELECT id FROM playlist_item WHERE playlist_id = ? ORDER BY position",
+                                         arguments: [id])
+            // Duas passadas para não violar UNIQUE(playlist_id, position) durante a renumeração.
+            for (n, item) in ids.enumerated() {
+                try db.execute(sql: "UPDATE playlist_item SET position = ? WHERE id = ?", arguments: [-(n + 1), item])
+            }
+            try db.execute(sql: "UPDATE playlist_item SET position = -position - 1 WHERE playlist_id = ?", arguments: [id])
+        }
+    }
+
     public func tracks(inPlaylist id: Int64) throws -> [LibraryTrack] {
         try database.pool.read { db in
             try Row.fetchAll(db, sql: LibraryTrack.baseSelect + """

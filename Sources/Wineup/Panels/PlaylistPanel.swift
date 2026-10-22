@@ -43,6 +43,8 @@ struct PlaylistPanel: View {
             VStack(alignment: .leading, spacing: 3) {
                 if browser.location == .library && state.query.isEmpty {
                     Menu {
+                        Button { state.showAllTracks() } label: { Label("Todas as músicas", systemImage: "music.note.list") }
+                        Divider()
                         ForEach(BrowseMode.allCases.filter { $0 != .folders }) { mode in
                             Button { browser.goLibrary(mode) } label: { Label(mode.title, systemImage: mode.symbol) }
                         }
@@ -136,7 +138,7 @@ struct PlaylistPanel: View {
                         ForEach(tracks) { track in
                             TrackTile(track: track, isCurrent: track.id == state.currentID)
                                 .id(track.id)
-                                .onTapGesture(count: 2) { state.play(track) }
+                                .onTapGesture(count: 2) { state.play(track, from: tracks) }
                                 .contextMenu { TrackMenu(state: state, track: track) }
                         }
                     }
@@ -153,7 +155,7 @@ struct PlaylistPanel: View {
                                      isSelected: track.id == state.selectedID,
                                      detailed: state.listStyle == .detailed)
                                 .id(track.id)
-                                .onTapGesture(count: 2) { state.play(track) }
+                                .onTapGesture(count: 2) { state.play(track, from: tracks) }
                                 .onTapGesture { state.selectedID = track.id }
                                 .contextMenu { TrackMenu(state: state, track: track) }
                         }

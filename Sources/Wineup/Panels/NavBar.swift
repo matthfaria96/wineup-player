@@ -203,9 +203,15 @@ struct NavBar: View {
                 Crumb(title: item.path == home.path ? "~" : item.lastPathComponent, url: item) { browser.goFolder(item) }
             }
         case .library:
-            var list = [Crumb(title: "Biblioteca") { browser.goLibrary(browser.mode) },
-                        Crumb(title: browser.mode.title) { browser.goLibrary(browser.mode) }]
-            if let group = browser.currentGroupTitle { list.append(Crumb(title: group) { browser.refresh() }) }
+            var list = [Crumb(title: "Biblioteca") { browser.goLibrary(browser.mode) }]
+            if browser.selected == .allTracks || (browser.selected == nil && browser.currentGroupTitle != nil) {
+                list.append(Crumb(title: "Todas as músicas") { browser.refresh() })
+                return list
+            }
+            list.append(Crumb(title: browser.mode.title) { browser.goLibrary(browser.mode) })
+            if !browser.showingGroups, let group = browser.currentGroupTitle {
+                list.append(Crumb(title: group) { browser.refresh() })
+            }
             return list
         }
     }

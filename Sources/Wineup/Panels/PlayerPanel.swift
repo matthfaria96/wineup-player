@@ -91,7 +91,13 @@ struct PlayerPanel: View {
             ChromeButton(symbol: "stop.fill") { state.stop() }.frame(width: 38)
             ChromeButton(symbol: "forward.fill") { state.step(by: 1) }.frame(width: 38)
             Spacer(minLength: 0)
-            ChromeButton(symbol: "shuffle") { state.playRandom() }.frame(width: 34).help("Tocar uma faixa aleatória")
+            ChromeButton(symbol: "shuffle", isOn: state.shuffleOn) { state.shuffleOn.toggle() }
+                .frame(width: 34).help(state.shuffleOn ? "Aleatório: ligado" : "Aleatório: desligado")
+            ChromeButton(symbol: state.repeatMode == .one ? "repeat.1" : "repeat", isOn: state.repeatMode != .off) {
+                state.repeatMode = { switch state.repeatMode { case .off: .all; case .all: .one; case .one: .off } }()
+            }
+            .frame(width: 34)
+            .help(["off": "Repetir: desligado", "all": "Repetir: todas", "one": "Repetir: uma"][state.repeatMode.rawValue] ?? "")
             ChromeButton(symbol: "folder") { state.presentOpenPanel() }.frame(width: 34).help("Abrir arquivos ou pastas")
         }
     }

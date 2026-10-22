@@ -198,6 +198,17 @@ final class LibraryBrowser: ObservableObject {
         reload()
     }
 
+    /// Playlist aberta agora (se a lista mostra uma playlist do usuário).
+    var openPlaylistID: Int64? {
+        if location == .library, !showingGroups, case .playlist(let id) = selected { return id }
+        return nil
+    }
+
+    func remove(path: String, fromPlaylist id: Int64) {
+        try? collections?.remove(path: path, fromPlaylist: id)
+        reload()
+    }
+
     func allPlaylists() -> [UserPlaylist] {
         (try? collections?.playlists()) ?? []
     }

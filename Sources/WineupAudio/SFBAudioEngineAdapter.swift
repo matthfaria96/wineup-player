@@ -65,6 +65,9 @@ public final class SFBAudioEngineAdapter: NSObject, AudioEngine, AudioPlayer.Del
         try player.enqueue(decoder)
     }
 
+    /// Esvazia a próxima faixa pré-enfileirada.
+    public func clearQueue() { player.clearQueue() }
+
     public func pause() { _ = player.pause() }
     public func resume() { _ = player.resume() }
     public func stop() { player.stop() }
