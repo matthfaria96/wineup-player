@@ -41,10 +41,13 @@ public struct Track: Identifiable, Hashable, Sendable {
     public var album: String?
     public var year: String?
     public var genre: String?
+    /// Trecho dentro do arquivo (faixas de CUE): início e fim em segundos.
+    public var start: Double?
+    public var end: Double?
 
     public init(id: TrackID = TrackID(), artist: String, title: String, duration: Int,
                 mark: MarkColor?, url: URL? = nil, album: String? = nil, year: String? = nil,
-                genre: String? = nil) {
+                genre: String? = nil, start: Double? = nil, end: Double? = nil) {
         self.id = id
         self.artist = artist
         self.title = title
@@ -54,7 +57,12 @@ public struct Track: Identifiable, Hashable, Sendable {
         self.album = album
         self.year = year
         self.genre = genre
+        self.start = start
+        self.end = end
     }
+
+    /// Faixa que é um trecho de um arquivo maior (CUE).
+    public var isSegment: Bool { start != nil }
 
     public var displayName: String { "\(artist) - \(title)" }
 }

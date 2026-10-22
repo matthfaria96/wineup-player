@@ -26,6 +26,9 @@ struct WineupApp: App {
                 Button("Nova playlist") { state.newPlaylist(with: nil) }
                     .keyboardShortcut("n")
                 Divider()
+                Button("Importar playlist M3U…") { state.importM3U() }
+                Button("Exportar lista como M3U…") { state.exportM3U() }
+                Divider()
                 Button("Exportar perfil…") { ProfileManager.export(state: state) }
                 Button("Importar perfil…") { ProfileManager.importProfile(state: state) }
             }

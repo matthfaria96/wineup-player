@@ -1,5 +1,6 @@
 import WineupCore
 import AppKit
+import ImageIO
 import WineupCore
 import Foundation
 import SFBAudioEngine
@@ -67,11 +68,38 @@ enum TrackLoader {
         return trimmed
     }
 
+    /// Miniatura reduzida da capa embutida (decodifica já no tamanho final, sem a imagem inteira).
+    static func thumbnail(for url: URL, maxPixel: Int = 160) -> NSImage? {
+        guard let file = try? AudioFile(readingPropertiesAndMetadataFrom: url),
+              let picture = file.metadata.attachedPictures.first,
+              let source = CGImageSourceCreateWithData(picture.imageData as CFData, nil) else { return nil }
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixel,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+        ]
+        guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
+        return NSImage(cgImage: image, size: NSSize(width: image.width, height: image.height))
+    }
+
     static func cover(for url: URL) -> NSImage? {
         guard let file = try? AudioFile(readingPropertiesAndMetadataFrom: url),
               let picture = file.metadata.attachedPictures.first
         else { return nil }
         return NSImage(data: picture.imageData)
+    }
+
+    /// Texto da letra: .lrc ao lado do arquivo (mesmo nome) ou letra embutida.
+    static func lyricsText(for url: URL) -> String? {
+        let sidecar = url.deletingPathExtension().appendingPathExtension("lrc")
+        if let data = try? Data(contentsOf: sidecar),
+           let text = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1),
+           !text.isEmpty {
+            return text
+        }
+        guard let file = try? AudioFile(readingPropertiesAndMetadataFrom: url),
+              let text = file.metadata.lyrics, !text.isEmpty else { return nil }
+        return text
     }
 
     static func lyrics(for url: URL) -> [String]? {

@@ -9,6 +9,9 @@ final class LibraryController {
     /// Presets de EQ no mesmo banco do app (respeita WINEUP_LIBRARY_PATH).
     nonisolated var presetStore: EqPresetStore? { database.map(EqPresetStore.init(db:)) }
     private var scanTask: Task<Void, Never>?
+    /// Vigia as raízes: mudanças no disco disparam varredura incremental automática.
+    private lazy var watcher = FolderWatcher { [weak self] in self?.folderChanged() }
+    private var pendingRescan = false
     private var onTracks: (([LibraryTrack]) -> Void)?
     private var onStatus: ((String?) -> Void)?
 
@@ -24,9 +27,26 @@ final class LibraryController {
         guard let database else { onStatus("Biblioteca indisponível"); return }
         self.onTracks = onTracks
         self.onStatus = onStatus
-        _ = try? LibraryBootstrap.ensureDefaultRoot(database: database)
+        if ProcessInfo.processInfo.environment["WINEUP_DEFAULT_FOLDER"] == nil {
+            _ = try? LibraryBootstrap.ensureDefaultRoot(database: database)
+        }
         await reload()
-        beginScan(rootIDs: nil)
+        // Medições: WINEUP_NO_SCAN=1 não varre na abertura (biblioteca sintética sem arquivos).
+        if ProcessInfo.processInfo.environment["WINEUP_NO_SCAN"] == nil {
+            beginScan(rootIDs: nil)
+            watchRoots()
+        }
+    }
+
+    private func watchRoots() {
+        guard let database else { return }
+        let paths = ((try? LibraryRootStore(db: database).roots()) ?? []).map(\.url.path)
+        watcher.watch(paths)
+    }
+
+    /// Algo mudou numa pasta vigiada: varre de novo (ou marca para varrer ao fim da atual).
+    private func folderChanged() {
+        if scanTask != nil { pendingRescan = true } else { beginScan(rootIDs: nil) }
     }
 
     func addFolders(_ urls: [URL]) async {
@@ -38,7 +58,7 @@ final class LibraryController {
             guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir), isDir.boolValue else { continue }
             if (try? store.addRoot(url)) != nil { added = true }
         }
-        if added { beginScan(rootIDs: nil) } else { onStatus?("Nenhuma pasta válida para adicionar.") }
+        if added { beginScan(rootIDs: nil); watchRoots() } else { onStatus?("Nenhuma pasta válida para adicionar.") }
     }
 
     func search(_ text: String) async -> [LibraryTrack] {
@@ -69,7 +89,7 @@ final class LibraryController {
             for root in roots where rootIDs?.contains(root.id) ?? true {
                 if Task.isCancelled { return }
                 do {
-                    for try await progress in scanner.scan(rootID: root.id) {
+                    for try await progress in scanner.scan(rootID: root.id) where progress.toRead > 0 {
                         self?.onStatus?("Varrendo biblioteca: \(progress.read)/\(progress.toRead)")
                     }
                 } catch {
@@ -79,6 +99,11 @@ final class LibraryController {
             guard !Task.isCancelled else { return }
             await self?.reload()
             self?.onStatus?(nil)
+            self?.scanTask = nil
+            if self?.pendingRescan == true {
+                self?.pendingRescan = false
+                self?.beginScan(rootIDs: nil)
+            }
         }
     }
 }

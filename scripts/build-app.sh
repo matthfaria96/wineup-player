@@ -48,7 +48,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
             <key>CFBundleTypeRole</key><string>Viewer</string>
             <key>LSHandlerRank</key><string>Alternate</string>
             <key>LSItemContentTypes</key>
-            <array><string>public.audio</string><string>public.folder</string></array>
+            <array><string>public.audio</string><string>public.folder</string><string>public.m3u-playlist</string><string>public.mpeg-4-playlist</string></array>
         </dict>
     </array>
 </dict>

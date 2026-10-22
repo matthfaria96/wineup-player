@@ -175,7 +175,7 @@ func checkConfigChange(_ fx: FixtureSet) throws {
 // MARK: driver
 
 let requested = CommandLine.arguments.dropFirst().first ?? "all"
-let known = ["meter", "rate", "chain", "gapless", "configchange", "all"]
+let known = ["meter", "rate", "chain", "gapless", "configchange", "formats", "all"]
 guard known.contains(requested) else {
     print("uso: wineup-audiocheck [\(known.joined(separator: "|"))]")
     exit(2)
@@ -207,6 +207,9 @@ do {
     if wants("rate") { report("rate") { try checkRate(fx) } }
     if wants("gapless") { report("gapless") { try checkGapless(fx) } }
     if wants("configchange") { report("configchange") { try checkConfigChange(fx) } }
+    if wants("formats") {
+        report("formats") { print("  formatos: \(try checkFormats(fx).joined(separator: ", "))") }
+    }
     fx.cleanup()
 } catch {
     print("FAIL setup: \(error)")

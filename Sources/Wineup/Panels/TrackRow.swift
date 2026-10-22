@@ -97,14 +97,21 @@ struct TrackTile: View {
 /// Carrega a capa embutida de uma faixa fora da main thread, com cache em memória.
 final class CoverLoader: ObservableObject {
     @Published var image: NSImage?
-    private static let cache = NSCache<NSURL, NSImage>()
+    /// Cache de miniaturas com limite de memória (~40 MB) e de quantidade.
+    private static let cache: NSCache<NSURL, NSImage> = {
+        let cache = NSCache<NSURL, NSImage>()
+        cache.totalCostLimit = 40 * 1024 * 1024
+        cache.countLimit = 600
+        return cache
+    }()
 
     func load(_ url: URL?) {
         guard image == nil, let url else { return }
         if let cached = Self.cache.object(forKey: url as NSURL) { image = cached; return }
         DispatchQueue.global(qos: .utility).async { [weak self] in
-            guard let found = TrackLoader.cover(for: url) else { return }
-            Self.cache.setObject(found, forKey: url as NSURL)
+            guard let found = TrackLoader.thumbnail(for: url) else { return }
+            let cost = Int(found.size.width * found.size.height * 4)
+            Self.cache.setObject(found, forKey: url as NSURL, cost: cost)
             DispatchQueue.main.async { self?.image = found }
         }
     }
@@ -118,6 +125,9 @@ struct TrackMenu: View {
     var body: some View {
         Button("Tocar") { state.play(track, from: state.visibleTracks) }
         Button("Tocar a seguir") { state.playNext(track) }
+        if state.browser.view == .queue {
+            Button("Remover da fila") { state.removeFromQueue(track) }
+        }
         Button(state.browser.openPlaylistID != nil ? "Remover da playlist" : "Remover da lista") {
             state.removeFromList(track)
         }
@@ -135,5 +145,19 @@ struct TrackMenu: View {
             Divider()
             Button("Nova playlist com esta faixa") { state.newPlaylist(with: track) }
         }
+    }
+}
+
+/// Linha que observa só a seleção (o painel não redesenha a lista ao selecionar).
+struct SelectableTrackRow: View {
+    @ObservedObject var selection: SelectionModel
+    let track: Track
+    let index: Int
+    let isCurrent: Bool
+    var detailed = false
+
+    var body: some View {
+        TrackRow(track: track, index: index, isCurrent: isCurrent,
+                 isSelected: selection.selectedID == track.id, detailed: detailed)
     }
 }

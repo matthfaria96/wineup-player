@@ -23,8 +23,18 @@ struct MainView: View {
                 .ignoresSafeArea()
         )
         .frame(minWidth: layout.minSize.width, minHeight: layout.minSize.height)
-        .background(WindowAccessor(onWindow: { model.window = $0 }))
-        .onAppear { model.columns = layout.columns(); resizeWindow(for: layout) }
+        .background(WindowAccessor(onWindow: { window in
+            let first = model.window == nil
+            model.window = window
+            // Ao abrir, ninguém fica com o foco (a busca não captura o teclado).
+            if first { DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { window.makeFirstResponder(nil) } }
+        }))
+        .onAppear {
+            model.columns = layout.columns()
+            resizeWindow(for: layout)
+            // A janela não abre com o foco na busca (não captura o teclado sozinha).
+            DispatchQueue.main.async { model.window?.makeFirstResponder(nil) }
+        }
         .onChange(of: layoutRaw) { _, raw in
             let mode = LayoutMode.named(raw)
             model.columns = mode.columns()
@@ -65,6 +75,7 @@ struct MainView: View {
                 Image(systemName: "magnifyingglass").foregroundStyle(theme.mutedText)
                 TextField(compact ? "Buscar" : "Buscar em sua biblioteca…", text: $state.query)
                     .textFieldStyle(.plain)
+                    .onExitCommand { state.query = "" }
                 if !state.query.isEmpty {
                     Image(systemName: "xmark.circle.fill").foregroundStyle(theme.mutedText)
                         .onTapGesture { state.query = "" }

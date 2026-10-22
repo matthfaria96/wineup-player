@@ -5,7 +5,7 @@ import WineupLibrary
 
 /// Como ver o conteúdo da pasta atual (independe de qual pasta é).
 enum ViewMode: String, CaseIterable, Identifiable {
-    case files, songs, albums, artists, genres, playlists
+    case files, songs, albums, artists, genres, playlists, queue
 
     var id: String { rawValue }
 
@@ -17,6 +17,7 @@ enum ViewMode: String, CaseIterable, Identifiable {
         case .artists: "Artistas"
         case .genres: "Gêneros"
         case .playlists: "Playlists"
+        case .queue: "Fila"
         }
     }
 
@@ -28,6 +29,7 @@ enum ViewMode: String, CaseIterable, Identifiable {
         case .artists: "music.mic"
         case .genres: "guitars"
         case .playlists: "list.star"
+        case .queue: "list.number"
         }
     }
 
@@ -63,7 +65,11 @@ enum NavPlaces {
     static var downloads: URL { FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask)[0] }
 
     static var defaultFolder: URL? {
-        UserDefaults.standard.string(forKey: defaultFolderKey).map { URL(fileURLWithPath: $0) }
+        // Testes/medições: WINEUP_DEFAULT_FOLDER substitui a preferência sem gravá-la.
+        if let override = ProcessInfo.processInfo.environment["WINEUP_DEFAULT_FOLDER"] {
+            return URL(fileURLWithPath: override)
+        }
+        return UserDefaults.standard.string(forKey: defaultFolderKey).map { URL(fileURLWithPath: $0) }
     }
 
     static func loadFavorites() -> [URL] {
@@ -100,6 +106,8 @@ final class LibraryBrowser: ObservableObject {
     private(set) var marks: [String: MarkColor] = [:]
     /// Entrega a lista de faixas a mostrar (título, faixas).
     var onShowTracks: ((String, [Track]) -> Void)?
+    /// Fila atual (fornecida pelo player) para a visão "Fila".
+    var queueProvider: (() -> [Track])?
     /// Pedido de nova varredura da biblioteca (botão Atualizar).
     var onRescan: (() -> Void)?
 
@@ -252,14 +260,24 @@ final class LibraryBrowser: ObservableObject {
 
     func load(reopening groupID: String? = nil) {
         loadToken += 1
+        if view == .queue {
+            isLoading = false
+            groups = []
+            subfolders = []
+            onShowTracks?("Fila", queueProvider?() ?? [])
+            return
+        }
         let token = loadToken
         let folder = folder, view = view, showTags = showColorTags
         isLoading = true
+        let started = ProcessInfo.processInfo.systemUptime
         Task.detached(priority: .userInitiated) { [weak self] in
             guard let self else { return }
             let result = self.build(folder: folder, view: view, showTags: showTags)
             await MainActor.run {
                 guard token == self.loadToken else { return }
+                PerfLog.record("load \(view.rawValue)", since: started,
+                               detail: "\(result.tracks.count) faixas, \(result.groups.count) grupos")
                 self.isLoading = false
                 self.subfolders = result.subfolders
                 self.groups = result.groups
@@ -299,6 +317,8 @@ final class LibraryBrowser: ObservableObject {
             built.groups = Self.grouped(scope(folder), key: { $0.genre }, empty: BrowseService.uncategorizedGenre)
         case .playlists:
             built.groups = playlistGroups(built.playlists, showTags: showTags)
+        case .queue:
+            break
         }
         return built
     }
@@ -341,7 +361,8 @@ final class LibraryBrowser: ObservableObject {
 
     private func withMark(_ t: Track) -> Track {
         Track(id: t.id, artist: t.artist, title: t.title, duration: t.duration,
-              mark: t.url.flatMap { marks[$0.path] }, url: t.url, album: t.album, year: t.year, genre: t.genre)
+              mark: t.url.flatMap { marks[$0.path] }, url: t.url, album: t.album, year: t.year, genre: t.genre,
+              start: t.start, end: t.end)
     }
 
     // MARK: Agrupamentos
@@ -416,10 +437,32 @@ final class LibraryBrowser: ObservableObject {
             (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true && $0.pathExtension != "app"
         }
         .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
-        let files = items.filter { allowed.contains($0.pathExtension.lowercased()) }
+        // Folhas CUE: viram faixas virtuais e escondem o arquivo único que elas dividem.
+        let cueTracks = items.filter { $0.pathExtension.lowercased() == "cue" }
+            .sorted { $0.path < $1.path }
+            .flatMap(cueTracksFor)
+        let covered = Set(cueTracks.compactMap { $0.url?.standardizedFileURL.path })
+        let files = items.filter { allowed.contains($0.pathExtension.lowercased()) && !covered.contains($0.standardizedFileURL.path) }
             .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
             .prefix(2000)
-        return (folders, files.map(TrackLoader.track(url:)))
+        return (folders, cueTracks + files.map(TrackLoader.track(url:)))
+    }
+
+    /// Faixas de uma folha CUE (o arquivo de áudio precisa existir).
+    private static func cueTracksFor(_ cueURL: URL) -> [Track] {
+        guard let data = try? Data(contentsOf: cueURL),
+              let text = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1),
+              let sheet = CueSheet.parse(text, baseDirectory: cueURL.deletingLastPathComponent()) else { return [] }
+        var fileDurations: [URL: Double] = [:]
+        return sheet.entries.compactMap { entry in
+            guard FileManager.default.fileExists(atPath: entry.file.path) else { return nil }
+            let total = fileDurations[entry.file] ?? Double(TrackLoader.track(url: entry.file).duration)
+            fileDurations[entry.file] = total
+            let length = (entry.end ?? total) - entry.start
+            return Track(id: TrackID(stableKey: entry.file.standardizedFileURL.path + "#\(entry.number)"),
+                         artist: entry.performer, title: entry.title, duration: Int(max(length, 0).rounded()),
+                         mark: nil, url: entry.file, album: sheet.album, start: entry.start, end: entry.end)
+        }
     }
 
     // MARK: Marcações e playlists
@@ -470,6 +513,12 @@ final class LibraryBrowser: ObservableObject {
         load(reopening: group?.id)
     }
 
+    /// Faixa por caminho: do banco (se indexada) ou lida do arquivo.
+    func track(atPath path: String) -> Track {
+        if let item = try? collections?.track(atPath: path) { return track(from: item) }
+        return withMark(TrackLoader.track(url: URL(fileURLWithPath: path)))
+    }
+
     /// Faixas de um grupo (playlists e tags vêm do banco).
     func tracks(for g: ViewGroup) -> [Track] {
         if let id = g.playlistID { return ((try? collections?.tracks(inPlaylist: id)) ?? []).map(track(from:)) }
@@ -500,5 +549,23 @@ enum PathActions {
 
     static func reveal(_ url: URL) {
         NSWorkspace.shared.activateFileViewerSelecting([url])
+    }
+}
+
+/// Medição opcional: WINEUP_PERF_LOG=<arquivo> grava a duração das cargas de visão.
+enum PerfLog {
+    private static let path = ProcessInfo.processInfo.environment["WINEUP_PERF_LOG"]
+
+    static func record(_ name: String, since start: TimeInterval, detail: String = "") {
+        guard let path else { return }
+        let ms = (ProcessInfo.processInfo.systemUptime - start) * 1000
+        let line = String(format: "%@\t%.1f ms\t%@\n", name, ms, detail)
+        if let handle = FileHandle(forWritingAtPath: path) {
+            handle.seekToEndOfFile()
+            handle.write(Data(line.utf8))
+            try? handle.close()
+        } else {
+            FileManager.default.createFile(atPath: path, contents: Data(line.utf8))
+        }
     }
 }

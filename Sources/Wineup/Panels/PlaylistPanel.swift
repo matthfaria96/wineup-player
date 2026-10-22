@@ -71,6 +71,7 @@ struct PlaylistPanel: View {
     private var subtitle: String {
         if !state.query.isEmpty { return "Resultados para \u{201C}\(state.query)\u{201D}" }
         if browser.view == .playlists { return "Suas playlists e tags de cor" }
+        if browser.view == .queue { return "Próximas músicas · arraste para reordenar" }
         return "Em " + NavPlaces.displayPath(browser.folder)
     }
 
@@ -170,7 +171,7 @@ struct PlaylistPanel: View {
                         ForEach(tracks) { track in
                             TrackTile(track: track, isCurrent: track.id == state.currentID)
                                 .id(track.id)
-                                .onTapGesture(count: 2) { state.play(track, from: tracks) }
+                                .onTapGesture(count: 2) { state.playFromList(track, list: tracks) }
                                 .contextMenu { TrackMenu(state: state, track: track) }
                         }
                     }
@@ -181,15 +182,16 @@ struct PlaylistPanel: View {
                         if tracks.isEmpty && (browser.view != .files || browser.subfolders.isEmpty) && !browser.isLoading {
                             emptyState
                         }
-                        ForEach(Array(tracks.enumerated()), id: \.element.id) { offset, track in
-                            TrackRow(track: track, index: offset + 1,
-                                     isCurrent: track.id == state.currentID,
-                                     isSelected: track.id == state.selectedID,
-                                     detailed: state.listStyle == .detailed)
+                        ForEach(tracks.indices, id: \.self) { offset in
+                            let track = tracks[offset]
+                            SelectableTrackRow(selection: state.selection, track: track, index: offset + 1,
+                                               isCurrent: track.id == state.currentID,
+                                               detailed: state.listStyle == .detailed)
                                 .id(track.id)
-                                .onTapGesture(count: 2) { state.play(track, from: tracks) }
+                                .onTapGesture(count: 2) { state.playFromList(track, list: tracks) }
                                 .simultaneousGesture(TapGesture().onEnded { state.selectedID = track.id })
                                 .contextMenu { TrackMenu(state: state, track: track) }
+                                .modifier(QueueReorder(enabled: browser.view == .queue, index: offset, state: state))
                         }
                     }
                 }
@@ -256,5 +258,29 @@ struct FolderMenu: View {
         }
         Button("Adicionar à biblioteca") { state.load(urls: [url]) }
         Button("Usar como pasta padrão") { state.makeDefaultFolder(url) }
+    }
+}
+
+/// Na visão Fila: arrastar uma linha e soltar sobre outra muda a ordem.
+private struct QueueReorder: ViewModifier {
+    let enabled: Bool
+    let index: Int
+    let state: PlayerState
+
+    func body(content: Content) -> some View {
+        if enabled {
+            content
+                .onDrag { NSItemProvider(object: "\(index)" as NSString) }
+                .onDrop(of: [.text], isTargeted: nil) { providers in
+                    guard let provider = providers.first else { return false }
+                    _ = provider.loadObject(ofClass: NSString.self) { object, _ in
+                        guard let text = object as? String, let source = Int(text) else { return }
+                        DispatchQueue.main.async { state.moveInQueue(from: source, to: index) }
+                    }
+                    return true
+                }
+        } else {
+            content
+        }
     }
 }

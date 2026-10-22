@@ -152,6 +152,40 @@ func write(_ t: DemoTrack, index: Int, to dir: URL) throws -> URL {
 
 // MARK: Execução
 
+// Modo sintético (medições): wineup-demo --synthetic N <banco.sqlite> <pastaRaiz>
+// Insere N faixas direto no banco, sem criar arquivos de áudio.
+if CommandLine.arguments.count == 5, CommandLine.arguments[1] == "--synthetic", let count = Int(CommandLine.arguments[2]) {
+    let db = try LibraryDatabase(path: CommandLine.arguments[3])
+    let root = CommandLine.arguments[4]
+    let genres = ["Rock", "Pop", "Jazz", "Blues", "Folk", "Metal", "Soul", "Funk", "Reggae", "Samba"]
+    let rootID: Int64 = try await db.pool.write { d in
+        try d.execute(sql: "INSERT INTO library_root(uuid,path,online,added_at) VALUES (?,?,1,?)",
+                      arguments: [UUID().uuidString, root, Date()])
+        return d.lastInsertedRowID
+    }
+    var start = 0
+    while start < count {
+        let end = min(start + 1000, count)
+        try await db.pool.write { d in
+            for i in start..<end {
+                try d.execute(sql: """
+                    INSERT INTO audio_file(root_id,path,inode,size,mtime_ns,status,duration)
+                    VALUES (?,?,?,?,?,'present',?)
+                    """, arguments: [rootID, "\(root)/Artista \(i % 400)/Album \(i % 2500)/\(i).flac", i, 1000, 1, 200.0])
+                let fid = d.lastInsertedRowID
+                let tags = ScannedTags(title: "Faixa \(i)", artist: "Artista \(i % 400)",
+                                       album: i % 9 == 0 ? nil : "Album \(i % 2500)",
+                                       genre: i % 13 == 0 ? nil : genres[i % genres.count],
+                                       trackNumber: i % 12 + 1, discNumber: 1, duration: 200)
+                try CatalogWriter.ingest(d, audioFileID: fid, tags: tags, fallbackTitle: "\(i)")
+            }
+        }
+        start = end
+    }
+    print("sintético: \(count) faixas em \(root)")
+    exit(0)
+}
+
 let music = FileManager.default.urls(for: .musicDirectory, in: .userDomainMask)[0]
 let target = CommandLine.arguments.count > 1 ? URL(fileURLWithPath: CommandLine.arguments[1])
                                               : music.appendingPathComponent("Wineup Demo", isDirectory: true)
@@ -166,7 +200,10 @@ for (i, t) in catalog.enumerated() {
 
 let override = ProcessInfo.processInfo.environment["WINEUP_LIBRARY_PATH"]
 let db = try LibraryDatabase(path: override ?? LibraryDatabase.defaultPath())
-_ = try? LibraryBootstrap.ensureDefaultRoot(database: db)
+// Em testes (WINEUP_DEFAULT_FOLDER), não adiciona ~/Music: só a pasta da demonstração.
+if ProcessInfo.processInfo.environment["WINEUP_DEFAULT_FOLDER"] == nil {
+    _ = try? LibraryBootstrap.ensureDefaultRoot(database: db)
+}
 let rootStore = LibraryRootStore(db: db)
 var roots = try rootStore.roots()
 // A demo fica dentro de ~/Music; só adiciona raiz própria se ela não estiver coberta.

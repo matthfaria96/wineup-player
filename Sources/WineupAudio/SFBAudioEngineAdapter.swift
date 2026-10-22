@@ -72,6 +72,12 @@ public final class SFBAudioEngineAdapter: NSObject, AudioEngine, AudioPlayer.Del
     public func resume() { _ = player.resume() }
     public func stop() { player.stop() }
 
+    /// Pula para um instante absoluto do arquivo (segundos).
+    public func seek(toTime time: Double) {
+        guard time.isFinite, time >= 0 else { return }
+        _ = player.seek(time: time)
+    }
+
     public func seek(toFraction fraction: Double) {
         guard fraction.isFinite else { return }
         _ = player.seek(position: min(max(fraction, 0), 1))

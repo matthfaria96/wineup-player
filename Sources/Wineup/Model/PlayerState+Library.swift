@@ -1,3 +1,4 @@
+import UniformTypeIdentifiers
 import AppKit
 import Foundation
 import WineupCore
@@ -102,5 +103,80 @@ extension PlayerState {
         browser.setDefaultFolder(url)
         if !browser.isIndexed(url) { Task { await library.addFolders([url]) } }
         statusMessage = "Pasta padrão: \(NavPlaces.displayPath(url))"
+    }
+}
+
+// MARK: M3U / M3U8
+
+extension PlayerState {
+    /// Abre uma playlist M3U/M3U8 na lista (faixas que existem no disco).
+    func openM3U(_ file: URL) {
+        do {
+            let entries = try M3U.read(file)
+            let present = entries.filter { FileManager.default.fileExists(atPath: $0.url.path) }
+            let items = present.map { browser.track(atPath: $0.url.path) }
+            showTracks(title: file.deletingPathExtension().lastPathComponent, items: items)
+            let missing = entries.count - present.count
+            statusMessage = missing == 0 ? "Playlist aberta: \(items.count) faixas."
+                : "Playlist aberta: \(items.count) faixas (\(missing) não encontradas)."
+        } catch {
+            statusMessage = "Não foi possível ler a playlist \(file.lastPathComponent)."
+        }
+    }
+
+    /// Importa um M3U como playlist do Wineup (faixas que estão na biblioteca).
+    func importM3U() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.init(filenameExtension: "m3u")!, .init(filenameExtension: "m3u8")!]
+        panel.message = "Escolha uma playlist M3U/M3U8 para importar"
+        guard panel.runModal() == .OK, let file = panel.url, let entries = try? M3U.read(file) else { return }
+        let paths = entries.map(\.url.path)
+        let name = file.deletingPathExtension().lastPathComponent
+        if let created = browser.createPlaylist(named: name, paths: paths) {
+            let added = browser.allPlaylists().first { $0.id == created.id }?.paths.count ?? 0
+            statusMessage = "Playlist \u{201C}\(created.name)\u{201D} importada: \(added) de \(entries.count) faixas na biblioteca."
+        }
+        openM3U(file)
+    }
+
+    /// Exporta a lista atual como .m3u8 (UTF-8).
+    func exportM3U() {
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "\(listTitle).m3u8"
+        panel.message = "Exportar a lista atual como playlist M3U8"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try M3U.write(visibleTracks).write(to: url, atomically: true, encoding: .utf8)
+            statusMessage = "Playlist exportada: \(visibleTracks.count) faixas."
+        } catch {
+            statusMessage = "Não foi possível exportar a playlist."
+        }
+    }
+}
+
+// MARK: Fila
+
+extension PlayerState {
+    /// Na visão Fila, tocar uma faixa só muda a posição (não remonta a fila).
+    func playFromList(_ track: Track, list: [Track]) {
+        if browser.view == .queue, let index = queue.items.firstIndex(where: { $0.id == track.id }) {
+            queue = queue.selecting(index: index)
+            startCurrentPublic()
+        } else {
+            play(track, from: list)
+        }
+    }
+
+    /// Reordena a fila (arrastar na visão Fila).
+    func moveInQueue(from source: Int, to destination: Int) {
+        guard queue.items.indices.contains(source), source != destination else { return }
+        queue = queue.moving(from: IndexSet(integer: source), to: destination > source ? destination + 1 : destination)
+        reenqueue()
+    }
+
+    func removeFromQueue(_ track: Track) {
+        guard let index = queue.items.firstIndex(where: { $0.id == track.id }), index != queue.currentIndex else { return }
+        queue = queue.removing(at: index)
+        reenqueue()
     }
 }

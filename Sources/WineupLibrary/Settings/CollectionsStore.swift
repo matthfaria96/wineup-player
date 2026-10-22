@@ -180,6 +180,14 @@ public struct CollectionsStore: Sendable {
         }
     }
 
+    /// Uma faixa pelo caminho exato (nil se não está na biblioteca).
+    public func track(atPath path: String) throws -> LibraryTrack? {
+        try database.pool.read { db in
+            try Row.fetchOne(db, sql: LibraryTrack.baseSelect + "\nWHERE af.path = ?", arguments: [path])
+                .map(LibraryTrack.make)
+        }
+    }
+
     /// Raízes da biblioteca (caminhos), para saber se uma pasta já está indexada.
     public func rootPaths() throws -> [String] {
         try database.pool.read { db in try String.fetchAll(db, sql: "SELECT path FROM library_root") }
