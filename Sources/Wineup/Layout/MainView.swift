@@ -77,6 +77,7 @@ struct MainView: View {
             .background(RoundedRectangle(cornerRadius: 7).fill(Color.white.opacity(0.06)))
             .overlay(RoundedRectangle(cornerRadius: 7).stroke(theme.panelBorder, lineWidth: 1))
             Spacer(minLength: 8)
+            // Seletor de layout que mostra o modo atual (no Compacto, só o ícone).
             Menu {
                 Picker("Layout", selection: $layoutRaw) {
                     ForEach(LayoutMode.allCases) { Text($0.name).tag($0.rawValue) }
@@ -84,14 +85,18 @@ struct MainView: View {
                 .pickerStyle(.inline)
                 .labelsHidden()
             } label: {
-                if compact { Image(systemName: "square.grid.2x2") }
-                else { Label("Layout", systemImage: "square.grid.2x2").labelStyle(.titleAndIcon) }
+                if compact {
+                    Image(systemName: "square.grid.2x2")
+                } else {
+                    Label(LayoutMode.named(layoutRaw).name, systemImage: "square.grid.2x2")
+                        .labelStyle(.titleAndIcon)
+                }
             }
             .menuStyle(.button)
             .buttonStyle(.bordered)
             .controlSize(.small)
             .fixedSize()
-            .help("Layout e design de exibição")
+            .help("Layout: Padrão, Compacto ou Completo")
         }
         .font(.system(size: 11))
         .padding(.leading, 12)

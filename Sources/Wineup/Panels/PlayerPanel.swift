@@ -50,23 +50,24 @@ struct PlayerPanel: View {
     }
 
     private var readout: some View {
-        HStack(alignment: .center, spacing: 10) {
-            LevelMeter(levels: meter.levels)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            VStack(alignment: .trailing, spacing: 4) {
-                // Duração total, pequena e apagada, acima do tempo restante.
-                HStack(spacing: 4) {
-                    Text("TOTAL").font(.system(size: 8, weight: .semibold)).tracking(0.8)
-                    Text(Self.lcdTotal(state.currentTrack?.duration ?? 0))
-                        .font(.system(size: 11, weight: .medium, design: .monospaced))
-                }
-                .foregroundStyle(Color(hex: 0xBFC8EE).opacity(0.6))
-                SevenSegmentText(text: Self.lcdTime(state.remainingSeconds), digitHeight: 28)
+        VStack(alignment: .trailing, spacing: 4) {
+            // Duração total, pequena e apagada, acima do visor.
+            HStack(spacing: 4) {
+                Text("TOTAL").font(.system(size: 8, weight: .semibold)).tracking(0.8)
+                Text(Self.lcdTotal(state.currentTrack?.duration ?? 0))
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
             }
-            .fixedSize()
-            .layoutPriority(1)
+            .foregroundStyle(Color(hex: 0xBFC8EE).opacity(0.6))
+            // Barras e tempo restante com a mesma altura: topo e base na mesma linha.
+            HStack(alignment: .center, spacing: 10) {
+                LevelMeter(levels: meter.levels)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                SevenSegmentText(text: Self.lcdTime(state.remainingSeconds), digitHeight: LevelMeter.totalHeight)
+                    .fixedSize()
+                    .layoutPriority(1)
+            }
+            .frame(height: LevelMeter.totalHeight)
         }
-        .frame(height: 44)
     }
 
     /// "-MM:SS" com dois dígitos de minuto, como num visor LCD.

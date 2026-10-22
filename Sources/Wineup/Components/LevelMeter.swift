@@ -7,11 +7,16 @@ struct LevelMeter: View {
     var segments = 24
     var redSegments = 3
 
+    static let rowHeight: CGFloat = 15
+    static let rowSpacing: CGFloat = 4
+    /// Altura das duas fileiras juntas (o visor de tempo usa a mesma altura).
+    static var totalHeight: CGFloat { rowHeight * 2 + rowSpacing }
+
     private let lit = Color(hex: 0xF3E2B8)
     private let peak = Color(hex: 0xE5322D)
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: Self.rowSpacing) {
             row(level: levels.first ?? 0)
             row(level: levels.count > 1 ? levels[1] : (levels.first ?? 0))
         }
@@ -26,7 +31,7 @@ struct LevelMeter: View {
                 RoundedRectangle(cornerRadius: 1)
                     .fill(color.opacity(on ? 1 : 0.14))
                     .frame(minWidth: 4, maxWidth: 8)
-                    .frame(height: 17)
+                    .frame(height: Self.rowHeight)
             }
         }
     }
