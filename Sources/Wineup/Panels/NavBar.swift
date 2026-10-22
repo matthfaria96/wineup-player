@@ -21,6 +21,7 @@ struct NavBar: View {
                 .foregroundStyle(browser.isCurrentFavorite ? Color.yellow : theme.mutedText)
                 .help(browser.isCurrentFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos")
             }
+            actionsMenu
             Button { browser.refresh() } label: { Image(systemName: "arrow.clockwise") }
                 .buttonStyle(.borderless)
                 .foregroundStyle(theme.mutedText)
@@ -34,6 +35,28 @@ struct NavBar: View {
 
     /// Título grande, caminho e contagem acima da lista.
     var crumbTitles: [String] { crumbs.map(\.title) }
+
+    /// Mais ações do local atual: copiar caminho, Finder, ir para pasta, biblioteca.
+    private var actionsMenu: some View {
+        Menu {
+            if let url = browser.currentFolder {
+                Button("Copiar caminho") { PathActions.copy(url) }
+                Button("Mostrar no Finder") { PathActions.reveal(url) }
+                Button("Tocar tudo desta pasta") { state.playFolder(url) }
+                Button("Adicionar à biblioteca") { state.load(urls: [url]) }
+                Divider()
+            }
+            Button("Ir para a pasta…") { browser.goToTypedPath() }
+            Button("Escolher outra pasta…") { browser.chooseOtherFolder() }
+            Button("Subir um nível") { browser.goUp() }.disabled(!browser.canGoUp)
+        } label: {
+            Image(systemName: "ellipsis.circle")
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help("Mais ações")
+    }
 
     // MARK: Seletor de local
 
@@ -113,7 +136,7 @@ struct NavBar: View {
             }
         case .library:
             if let group = browser.currentGroupTitle {
-                Button { } label: { Label(group, systemImage: browser.mode.symbol) }
+                Text(group)
             }
             Button { browser.goLibrary(browser.mode) } label: { Label(browser.mode.title, systemImage: browser.mode.symbol) }
             Button { browser.goLibrary(.albums) } label: { Label("Biblioteca", systemImage: "books.vertical") }
@@ -142,6 +165,13 @@ struct NavBar: View {
                 }
                 Button(crumb.title) { crumb.action() }
                     .buttonStyle(.plain)
+                    .contextMenu {
+                        if let url = crumb.url {
+                            Button("Abrir") { browser.goFolder(url) }
+                            Button("Copiar caminho") { PathActions.copy(url) }
+                            Button("Mostrar no Finder") { PathActions.reveal(url) }
+                        }
+                    }
                     .foregroundStyle(index == crumbs.count - 1 ? theme.text : theme.mutedText)
                     .lineLimit(1)
             }
@@ -151,7 +181,11 @@ struct NavBar: View {
         .layoutPriority(-1)
     }
 
-    struct Crumb { let title: String; let action: () -> Void }
+    struct Crumb {
+        let title: String
+        var url: URL? = nil
+        let action: () -> Void
+    }
 
     var crumbs: [Crumb] {
         switch browser.location {
@@ -166,12 +200,12 @@ struct NavBar: View {
             }
             if parts.isEmpty { parts = [url] }
             return parts.suffix(3).map { item in
-                Crumb(title: item.path == home.path ? "~" : item.lastPathComponent) { browser.goFolder(item) }
+                Crumb(title: item.path == home.path ? "~" : item.lastPathComponent, url: item) { browser.goFolder(item) }
             }
         case .library:
             var list = [Crumb(title: "Biblioteca") { browser.goLibrary(browser.mode) },
                         Crumb(title: browser.mode.title) { browser.goLibrary(browser.mode) }]
-            if let group = browser.currentGroupTitle { list.append(Crumb(title: group) {}) }
+            if let group = browser.currentGroupTitle { list.append(Crumb(title: group) { browser.refresh() }) }
             return list
         }
     }

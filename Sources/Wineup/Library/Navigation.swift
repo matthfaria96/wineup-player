@@ -144,6 +144,25 @@ extension LibraryBrowser {
         NavPlaces.saveFavorites(favorites)
     }
 
+    func addFavorite(_ url: URL) {
+        guard !favorites.contains(url) else { return }
+        favorites = favorites + [url]
+        NavPlaces.saveFavorites(favorites)
+    }
+
+    /// Pede um caminho digitado (aceita "~") e navega até ele.
+    func goToTypedPath() {
+        let current = currentFolder.map(NavPlaces.displayPath) ?? "~/Music"
+        guard let typed = TextPrompt.ask(title: "Ir para a pasta", value: current) else { return }
+        let path = (typed.trimmingCharacters(in: .whitespaces) as NSString).expandingTildeInPath
+        var isDir: ObjCBool = false
+        if FileManager.default.fileExists(atPath: path, isDirectory: &isDir), isDir.boolValue {
+            goFolder(URL(fileURLWithPath: path))
+        } else {
+            NSSound.beep()
+        }
+    }
+
     func removeFavorite(_ url: URL) {
         favorites = favorites.filter { $0 != url }
         NavPlaces.saveFavorites(favorites)
@@ -161,5 +180,17 @@ extension LibraryBrowser {
             .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
             .prefix(2000)
         return (folders, files.map(TrackLoader.track(url:)))
+    }
+}
+
+/// Ações de caminho compartilhadas (copiar, Finder).
+enum PathActions {
+    static func copy(_ url: URL) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(url.path, forType: .string)
+    }
+
+    static func reveal(_ url: URL) {
+        NSWorkspace.shared.activateFileViewerSelecting([url])
     }
 }

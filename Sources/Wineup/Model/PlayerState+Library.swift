@@ -26,3 +26,18 @@ extension PlayerState {
         browser.createPlaylist(named: "Nova playlist", paths: track?.url.map { [$0.path] } ?? [])
     }
 }
+
+extension PlayerState {
+    /// Abre a pasta na lista e toca a primeira faixa.
+    func playFolder(_ url: URL) {
+        browser.goFolder(url)
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let first = TrackLoader.audioURLs(in: [url]).first.map(TrackLoader.track(url:))
+            DispatchQueue.main.async {
+                guard let self, let first else { return }
+                let match = self.tracks.first { $0.url == first.url } ?? first
+                self.play(match)
+            }
+        }
+    }
+}

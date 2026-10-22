@@ -6,8 +6,8 @@ import WineupLibrary
 
 /// Estado do player. Faixas com `url` tocam de verdade; as de exemplo (sem url) só animam a interface.
 final class PlayerState: ObservableObject {
-    @Published var tracks: [Track] = SampleData.tracks
-    @Published var currentID: TrackID? = SampleData.tracks.dropFirst(16).first?.id ?? SampleData.tracks.first?.id
+    @Published var tracks: [Track] = []
+    @Published var currentID: TrackID?
     @Published var selectedID: TrackID?
     @Published var isPlaying = false
     @Published var progress = 0.0
@@ -24,7 +24,7 @@ final class PlayerState: ObservableObject {
     @Published var markFilter: MarkColor?
     @Published var lyricsScale = 1.0
     @Published var cover: NSImage?
-    @Published var lyricLines: [String] = SampleData.lyrics
+    @Published var lyricLines: [String] = []
     @Published var statusMessage: String?
     /// Nome do que está na lista agora (álbum, banda, pasta, estilo ou playlist).
     @Published var listTitle = "Playlist"
@@ -95,7 +95,8 @@ final class PlayerState: ObservableObject {
     var searchResults: [Track] {
         let needle = query.trimmingCharacters(in: .whitespaces)
         guard !needle.isEmpty else { return [] }
-        if library.isAvailable { return libraryResults }
+        if library.isAvailable, !libraryResults.isEmpty { return libraryResults }
+        // Sem resultado na biblioteca (ou fora dela): filtra a lista aberta.
         return tracks.filter { $0.displayName.localizedCaseInsensitiveContains(needle) }
     }
 
@@ -124,13 +125,18 @@ final class PlayerState: ObservableObject {
     private func applyLibraryTracks(_ found: [LibraryTrack]) {
         browser.refreshMarks()
         browser.reload()
-        guard usingSampleTracks, !found.isEmpty else { return }
+        guard usingSampleTracks else { return }
+        guard !found.isEmpty else {
+            // Biblioteca ainda vazia: começa navegando a pasta Música do usuário.
+            usingSampleTracks = false
+            browser.goFolder(NavPlaces.music)
+            return
+        }
         let mapped = found.map(track(from:))
         usingSampleTracks = false
         listTitle = "Todas as músicas"
         browser.currentGroupTitle = "Todas as músicas"
         tracks = mapped
-        currentID = mapped.first?.id
         selectedID = nil
     }
 
@@ -379,7 +385,7 @@ final class PlayerState: ObservableObject {
     private func refreshDetails(for track: Track) {
         guard let url = track.url else {
             cover = nil
-            lyricLines = SampleData.lyrics
+            lyricLines = []
             return
         }
         DispatchQueue.global(qos: .utility).async { [weak self] in

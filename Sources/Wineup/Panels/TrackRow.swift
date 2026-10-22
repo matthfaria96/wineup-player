@@ -1,3 +1,4 @@
+import AppKit
 import WineupCore
 import SwiftUI
 
@@ -67,6 +68,7 @@ struct TrackRow: View {
 struct TrackTile: View {
     let track: Track
     let isCurrent: Bool
+    @StateObject private var covers = CoverLoader()
     @Environment(\.theme) private var theme
 
     var body: some View {
@@ -74,13 +76,37 @@ struct TrackTile: View {
             ZStack(alignment: .topTrailing) {
                 RoundedRectangle(cornerRadius: 6).fill(theme.artworkTint)
                     .aspectRatio(1, contentMode: .fit)
-                    .overlay(Image(systemName: "music.note").font(.system(size: 30)).foregroundStyle(.black.opacity(0.3)))
+                    .overlay {
+                        if let image = covers.image {
+                            Image(nsImage: image).resizable().scaledToFill()
+                        } else {
+                            Image(systemName: "music.note").font(.system(size: 30)).foregroundStyle(.black.opacity(0.3))
+                        }
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
                 if let mark = track.mark { Circle().fill(mark.color).frame(width: 10, height: 10).padding(6) }
             }
             Text(track.title).font(.system(size: 12, weight: .semibold)).lineLimit(1)
             Text(track.artist).font(.system(size: 10)).foregroundStyle(theme.mutedText).lineLimit(1)
         }
         .foregroundStyle(isCurrent ? theme.currentRow : theme.text)
+        .onAppear { covers.load(track.url) }
+    }
+}
+
+/// Carrega a capa embutida de uma faixa fora da main thread, com cache em memória.
+final class CoverLoader: ObservableObject {
+    @Published var image: NSImage?
+    private static let cache = NSCache<NSURL, NSImage>()
+
+    func load(_ url: URL?) {
+        guard image == nil, let url else { return }
+        if let cached = Self.cache.object(forKey: url as NSURL) { image = cached; return }
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            guard let found = TrackLoader.cover(for: url) else { return }
+            Self.cache.setObject(found, forKey: url as NSURL)
+            DispatchQueue.main.async { self?.image = found }
+        }
     }
 }
 

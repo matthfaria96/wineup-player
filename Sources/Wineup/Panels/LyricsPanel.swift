@@ -6,11 +6,17 @@ struct LyricsPanel: View {
     @Environment(\.theme) private var theme
 
     var body: some View {
-        Panel(title: "Lyrics") {
+        Panel(title: "Letras") {
             VStack(spacing: 6) {
                 ScrollViewReader { proxy in
                     ScrollView {
                         VStack(spacing: 14) {
+                            if state.lyricLines.isEmpty {
+                                Text(state.currentTrack == nil ? "Toque uma música para ver a letra" : "Sem letra para esta faixa")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(theme.mutedText)
+                                    .padding(.top, 30)
+                            }
                             ForEach(Array(state.lyricLines.enumerated()), id: \.offset) { index, line in
                                 Text(line)
                                     .font(.system(size: 19 * state.lyricsScale, weight: index == state.activeLyricIndex ? .semibold : .regular))

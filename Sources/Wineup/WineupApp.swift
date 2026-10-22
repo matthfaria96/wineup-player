@@ -28,6 +28,29 @@ struct WineupApp: App {
                 Button("Exportar perfil…") { ProfileManager.export(state: state) }
                 Button("Importar perfil…") { ProfileManager.importProfile(state: state) }
             }
+            CommandMenu("Ir") {
+                Button("Voltar") { state.browser.goBack() }.keyboardShortcut("[")
+                Button("Avançar") { state.browser.goForward() }.keyboardShortcut("]")
+                Button("Subir um nível") { state.browser.goUp() }.keyboardShortcut(.upArrow)
+                Divider()
+                Button("Música") { state.browser.goFolder(NavPlaces.music) }.keyboardShortcut("m", modifiers: [.command, .shift])
+                Button("Downloads") { state.browser.goFolder(NavPlaces.downloads) }.keyboardShortcut("l", modifiers: [.command, .option])
+                Button("Biblioteca") { state.browser.goLibrary(.albums) }.keyboardShortcut("b", modifiers: [.command, .shift])
+                Button("Ir para a pasta…") { state.browser.goToTypedPath() }.keyboardShortcut("g", modifiers: [.command, .shift])
+                Divider()
+                Button("Copiar caminho da pasta") {
+                    if let url = state.browser.currentFolder { PathActions.copy(url) }
+                }
+                .keyboardShortcut("c", modifiers: [.command, .option])
+                Button("Atualizar") { state.browser.refresh() }.keyboardShortcut("r")
+            }
+            CommandMenu("Controles") {
+                Button("Tocar/Pausar") { state.togglePlay() }.keyboardShortcut(.space, modifiers: [.command])
+                Button("Próxima") { state.step(by: 1) }.keyboardShortcut(.rightArrow, modifiers: [.command, .option])
+                Button("Anterior") { state.step(by: -1) }.keyboardShortcut(.leftArrow, modifiers: [.command, .option])
+                Button("Parar") { state.stop() }.keyboardShortcut(".")
+                Button("Faixa aleatória") { state.playRandom() }.keyboardShortcut("s", modifiers: [.command, .option])
+            }
             CommandMenu("Exibição") {
                 Picker("Ver biblioteca por", selection: Binding(get: { state.browser.mode }, set: { state.browser.mode = $0 })) {
                     ForEach(BrowseMode.allCases) { Text($0.title).tag($0) }

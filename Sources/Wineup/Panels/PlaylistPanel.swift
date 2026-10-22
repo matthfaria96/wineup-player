@@ -94,6 +94,19 @@ struct PlaylistPanel: View {
         }
     }
 
+    private var emptyState: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "music.note.list").font(.system(size: 28)).foregroundStyle(theme.mutedText)
+            Text(state.query.isEmpty ? "Nenhuma música aqui" : "Nada encontrado")
+                .font(.system(size: 13, weight: .semibold))
+            Text("Abra uma pasta (⌘O), arraste músicas para a janela ou escolha outro local em Biblioteca ▾.")
+                .font(.system(size: 11)).foregroundStyle(theme.mutedText)
+                .multilineTextAlignment(.center).frame(maxWidth: 280)
+        }
+        .foregroundStyle(theme.text)
+        .padding(.top, 40)
+    }
+
     /// Subpastas da pasta atual, antes das músicas.
     @ViewBuilder private var folderRows: some View {
         if browser.currentFolder != nil, state.query.isEmpty {
@@ -110,6 +123,7 @@ struct PlaylistPanel: View {
                 .frame(height: 24)
                 .contentShape(Rectangle())
                 .onTapGesture { browser.goFolder(url) }
+                .contextMenu { FolderMenu(state: state, browser: browser, url: url) }
             }
         }
     }
@@ -130,6 +144,9 @@ struct PlaylistPanel: View {
                 } else {
                     LazyVStack(spacing: 0) {
                         folderRows
+                        if tracks.isEmpty && browser.subfolders.isEmpty || tracks.isEmpty && browser.currentFolder == nil {
+                            emptyState
+                        }
                         ForEach(Array(tracks.enumerated()), id: \.element.id) { offset, track in
                             TrackRow(track: track, index: offset + 1,
                                      isCurrent: track.id == state.currentID,
@@ -176,5 +193,25 @@ struct PlaylistPanel: View {
         .padding(.horizontal, 14)
         .frame(height: 34)
         .overlay(alignment: .top) { Divider().opacity(0.5) }
+    }
+}
+
+/// Ações de uma pasta: abrir, copiar caminho, Finder, favoritos, biblioteca.
+struct FolderMenu: View {
+    let state: PlayerState
+    let browser: LibraryBrowser
+    let url: URL
+
+    var body: some View {
+        Button("Abrir") { browser.goFolder(url) }
+        Button("Tocar tudo") { state.playFolder(url) }
+        Divider()
+        Button("Copiar caminho") { PathActions.copy(url) }
+        Button("Mostrar no Finder") { PathActions.reveal(url) }
+        Divider()
+        Button(browser.favorites.contains(url) ? "Remover dos favoritos" : "Adicionar aos favoritos") {
+            browser.favorites.contains(url) ? browser.removeFavorite(url) : browser.addFavorite(url)
+        }
+        Button("Adicionar à biblioteca") { state.load(urls: [url]) }
     }
 }
