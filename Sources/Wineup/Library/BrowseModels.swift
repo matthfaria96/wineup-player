@@ -87,6 +87,7 @@ enum DisplayKeys {
     static let layout = "layoutMode.v2"
     static let theme = "themeID"
     static let browseMode = "browseMode"
+    static let viewMode = "viewMode"
     static let listStyle = "listStyle"
     static let showColorTags = "showColorTagPlaylists"
 }

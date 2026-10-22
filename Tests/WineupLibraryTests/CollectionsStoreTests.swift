@@ -56,4 +56,19 @@ struct CollectionsStoreTests {
             #expect(try store.resolvePath(path: "/outro/mac/T2.mp3", title: "T2", artist: "ana") == "/m/c.mp3")
         }
     }
+
+    @Test func tracksUnderFolder() async throws {
+        try await withTempDir { dir in
+            let db = try makeTempDatabase(in: dir)
+            let r = try await SyntheticLibrary.addRoot(db)
+            for path in ["/m/rock/a.mp3", "/m/rock/sub/b.mp3", "/m/pop/c.mp3", "/m/rock_x/d.mp3"] {
+                let tags = ScannedTags(title: path, artist: "A", album: nil, genre: nil, trackNumber: nil, discNumber: nil)
+                _ = try await SyntheticLibrary.addTrack(db, rootID: r, name: path, tags: tags)
+            }
+            let store = CollectionsStore(database: db)
+            // Inclui subpastas; "_" e "%" no nome não viram curinga ("rock_x" fica de fora).
+            #expect(Set(try store.tracks(under: "/m/rock").map(\.path)) == ["/m/rock/a.mp3", "/m/rock/sub/b.mp3"])
+            #expect(try store.tracks(under: "/m").count == 4)
+        }
+    }
 }

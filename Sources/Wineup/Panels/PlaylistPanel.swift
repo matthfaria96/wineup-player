@@ -8,17 +8,17 @@ struct PlaylistPanel: View {
     @Environment(\.theme) private var theme
 
     var body: some View {
-        let nav = NavBar(state: state, browser: browser)
         Panel(title: "") {
             VStack(spacing: 0) {
-                nav
+                NavBar(state: state, browser: browser)
                 Divider().opacity(0.5)
-                titleBlock(crumbs: nav.crumbTitles)
+                titleBlock
+                if browser.group != nil && state.query.isEmpty { groupHeader }
                 if showsColumns { columnHeader }
                 Group {
                     if !state.query.isEmpty {
                         trackList(state.searchResults)
-                    } else if showingGroups {
+                    } else if browser.showsGroups {
                         LibraryGroupsView(state: state, browser: browser)
                     } else {
                         trackList(state.visibleTracks)
@@ -30,42 +30,36 @@ struct PlaylistPanel: View {
         }
     }
 
-    private var showingGroups: Bool { browser.location == .library && browser.showingGroups && state.query.isEmpty }
-    private var showsColumns: Bool { !showingGroups && state.listStyle != .grid }
-
-    private var bigTitle: String {
-        if !state.query.isEmpty { return "Busca" }
-        return showingGroups ? browser.mode.title : state.listTitle
+    private var showsColumns: Bool {
+        (!browser.showsGroups || !state.query.isEmpty) && state.listStyle != .grid
     }
 
-    private func titleBlock(crumbs: [String]) -> some View {
+    // MARK: Visualizador (título = como ver a pasta)
+
+    private var titleBlock: some View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 3) {
-                if browser.location == .library && state.query.isEmpty {
-                    Menu {
-                        Button { state.showAllTracks() } label: { Label("Todas as músicas", systemImage: "music.note.list") }
-                        Divider()
-                        ForEach(BrowseMode.allCases.filter { $0 != .folders }) { mode in
-                            Button { browser.goLibrary(mode) } label: { Label(mode.title, systemImage: mode.symbol) }
-                        }
-                    } label: {
-                        HStack(spacing: 6) {
-                            Text(bigTitle).font(.system(size: 24, weight: .bold)).lineLimit(1)
-                            Image(systemName: "chevron.down").font(.system(size: 12, weight: .semibold))
-                                .foregroundStyle(theme.mutedText)
-                        }
+                Menu {
+                    ForEach(ViewMode.allCases) { mode in
+                        Button { browser.setView(mode) } label: { Label(mode.title, systemImage: mode.symbol) }
                     }
-                    .menuStyle(.borderlessButton)
-                    .menuIndicator(.hidden)
-                    .fixedSize()
-                    .help("Ver biblioteca por")
-                } else {
-                    Text(bigTitle).font(.system(size: 24, weight: .bold)).lineLimit(1)
+                } label: {
+                    HStack(spacing: 6) {
+                        Text(state.query.isEmpty ? browser.view.title : "Busca")
+                            .font(.system(size: 24, weight: .bold)).lineLimit(1)
+                        Image(systemName: "chevron.down").font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(theme.mutedText)
+                    }
                 }
-                Text(state.query.isEmpty ? crumbs.joined(separator: " / ") : "Resultados para \u{201C}\(state.query)\u{201D}")
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .fixedSize()
+                .help("Ver esta pasta por: Pastas, Músicas, Álbuns, Artistas, Gêneros ou Playlists")
+                Text(subtitle)
                     .font(.system(size: 12)).foregroundStyle(theme.mutedText).lineLimit(1)
             }
             Spacer(minLength: 8)
+            if browser.isLoading { ProgressView().controlSize(.small) }
             Text(countText).font(.system(size: 12)).foregroundStyle(theme.mutedText)
         }
         .foregroundStyle(theme.text)
@@ -74,10 +68,48 @@ struct PlaylistPanel: View {
         .padding(.bottom, 10)
     }
 
+    private var subtitle: String {
+        if !state.query.isEmpty { return "Resultados para \u{201C}\(state.query)\u{201D}" }
+        if browser.view == .playlists { return "Suas playlists e tags de cor" }
+        return "Em " + NavPlaces.displayPath(browser.folder)
+    }
+
     private var countText: String {
-        if showingGroups { return "\(browser.groups.count) itens" }
+        if browser.showsGroups && state.query.isEmpty {
+            let noun: String
+            switch browser.view {
+            case .albums: noun = "álbuns"
+            case .artists: noun = "artistas"
+            case .genres: noun = "gêneros"
+            default: noun = "playlists"
+            }
+            return "\(browser.groups.count) \(noun)"
+        }
         let n = state.query.isEmpty ? state.visibleTracks.count : state.searchResults.count
         return "\(n) faixas"
+    }
+
+    /// Linha do grupo aberto (álbum, artista, gênero, playlist): voltar + nome.
+    private var groupHeader: some View {
+        HStack(spacing: 8) {
+            Button { browser.closeGroup() } label: {
+                Label(browser.view.title, systemImage: "chevron.left").labelStyle(.titleAndIcon)
+            }
+            .buttonStyle(.borderless)
+            .foregroundStyle(theme.mutedText)
+            Text(browser.group?.title ?? "").font(.system(size: 15, weight: .semibold)).lineLimit(1)
+            Spacer()
+            if let group = browser.group, let first = state.visibleTracks.first {
+                ChromeButton(action: { state.play(first, from: state.visibleTracks) }) {
+                    Label("Tocar", systemImage: "play.fill").labelStyle(.titleAndIcon)
+                }
+                .fixedSize()
+                .help("Tocar \(group.title)")
+            }
+        }
+        .foregroundStyle(theme.text)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
     }
 
     private var columnHeader: some View {
@@ -101,7 +133,7 @@ struct PlaylistPanel: View {
             Image(systemName: "music.note.list").font(.system(size: 28)).foregroundStyle(theme.mutedText)
             Text(state.query.isEmpty ? "Nenhuma música aqui" : "Nada encontrado")
                 .font(.system(size: 13, weight: .semibold))
-            Text("Abra uma pasta (⌘O), arraste músicas para a janela ou escolha outro local em Biblioteca ▾.")
+            Text("Troque a pasta no seletor acima, abra uma pasta (⌘O) ou arraste músicas para a janela.")
                 .font(.system(size: 11)).foregroundStyle(theme.mutedText)
                 .multilineTextAlignment(.center).frame(maxWidth: 280)
         }
@@ -109,9 +141,9 @@ struct PlaylistPanel: View {
         .padding(.top, 40)
     }
 
-    /// Subpastas da pasta atual, antes das músicas.
+    /// Na visão Pastas: subpastas antes das músicas (clique entra na pasta).
     @ViewBuilder private var folderRows: some View {
-        if browser.currentFolder != nil, state.query.isEmpty {
+        if browser.view == .files, state.query.isEmpty {
             ForEach(browser.subfolders, id: \.self) { url in
                 HStack(spacing: 8) {
                     Image(systemName: "folder.fill").foregroundStyle(theme.accent.opacity(0.8)).frame(width: 28)
@@ -121,10 +153,10 @@ struct PlaylistPanel: View {
                 }
                 .font(.system(size: 13))
                 .foregroundStyle(theme.text)
-                .padding(.horizontal, 10)
-                .frame(height: 24)
+                .padding(.horizontal, 14)
+                .frame(height: 29)
                 .contentShape(Rectangle())
-                .onTapGesture { browser.goFolder(url) }
+                .onTapGesture { browser.go(folder: url) }
                 .contextMenu { FolderMenu(state: state, browser: browser, url: url) }
             }
         }
@@ -146,7 +178,7 @@ struct PlaylistPanel: View {
                 } else {
                     LazyVStack(spacing: 0) {
                         folderRows
-                        if tracks.isEmpty && browser.subfolders.isEmpty || tracks.isEmpty && browser.currentFolder == nil {
+                        if tracks.isEmpty && (browser.view != .files || browser.subfolders.isEmpty) && !browser.isLoading {
                             emptyState
                         }
                         ForEach(Array(tracks.enumerated()), id: \.element.id) { offset, track in
@@ -213,7 +245,7 @@ struct FolderMenu: View {
     let url: URL
 
     var body: some View {
-        Button("Abrir") { browser.goFolder(url) }
+        Button("Abrir") { browser.go(folder: url) }
         Button("Tocar tudo") { state.playFolder(url) }
         Divider()
         Button("Copiar caminho") { PathActions.copy(url) }
@@ -223,5 +255,6 @@ struct FolderMenu: View {
             browser.favorites.contains(url) ? browser.removeFavorite(url) : browser.addFavorite(url)
         }
         Button("Adicionar à biblioteca") { state.load(urls: [url]) }
+        Button("Usar como pasta padrão") { state.makeDefaultFolder(url) }
     }
 }

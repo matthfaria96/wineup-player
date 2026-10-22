@@ -56,7 +56,8 @@ enum TrackLoader {
             mark: nil,
             url: url,
             album: nonEmpty(metadata.albumTitle),
-            year: nonEmpty(metadata.releaseDate).map { String($0.prefix(4)) }
+            year: nonEmpty(metadata.releaseDate).map { String($0.prefix(4)) },
+            genre: nonEmpty(metadata.genre)
         )
     }
 

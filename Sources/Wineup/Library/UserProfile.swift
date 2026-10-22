@@ -18,7 +18,7 @@ struct UserProfile: Codable {
 }
 
 enum ProfileManager {
-    static let prefKeys = [DisplayKeys.layout, DisplayKeys.theme, DisplayKeys.browseMode,
+    static let prefKeys = [DisplayKeys.layout, DisplayKeys.theme, DisplayKeys.viewMode,
                            DisplayKeys.listStyle, DisplayKeys.showColorTags]
 
     static func export(state: PlayerState) {
@@ -84,7 +84,7 @@ enum ProfileManager {
             if key == DisplayKeys.showColorTags { UserDefaults.standard.set(value == "1" || value == "true", forKey: key) }
             else { UserDefaults.standard.set(value, forKey: key) }
         }
-        browser.reload()
+        browser.refresh()
         state.statusMessage = missing == 0 ? "Perfil importado." : "Perfil importado; \(missing) faixas não encontradas nesta biblioteca."
     }
 }

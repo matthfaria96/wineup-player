@@ -164,6 +164,27 @@ public struct CollectionsStore: Sendable {
         }
     }
 
+    // MARK: Faixas de uma pasta (recursivo)
+
+    /// Faixas presentes cujo caminho está dentro de `folder` (inclui subpastas).
+    public func tracks(under folder: String) throws -> [LibraryTrack] {
+        let prefix = folder.hasSuffix("/") ? folder : folder + "/"
+        let escaped = prefix.replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "%", with: "\\%").replacingOccurrences(of: "_", with: "\\_")
+        return try database.pool.read { db in
+            try Row.fetchAll(db, sql: LibraryTrack.baseSelect + """
+
+                WHERE af.status = 'present' AND af.path LIKE ? ESCAPE '\\'
+                ORDER BY ar.name COLLATE NOCASE, rel.title COLLATE NOCASE, rt.disc_number, rt.track_number, rec.title
+                """, arguments: [escaped + "%"]).map(LibraryTrack.make)
+        }
+    }
+
+    /// Raízes da biblioteca (caminhos), para saber se uma pasta já está indexada.
+    public func rootPaths() throws -> [String] {
+        try database.pool.read { db in try String.fetchAll(db, sql: "SELECT path FROM library_root") }
+    }
+
     // MARK: Pastas e busca por caminho/identidade
 
     /// Pastas com faixas presentes, em todas as raízes.

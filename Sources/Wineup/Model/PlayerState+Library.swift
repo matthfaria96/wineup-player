@@ -1,13 +1,9 @@
+import AppKit
 import Foundation
 import WineupCore
 import WineupLibrary
 
 extension PlayerState {
-    func showGroup(title: String, items: [LibraryTrack]) {
-        listTitle = title
-        tracks = items.map(track(from:))
-        selectedID = nil
-    }
 
     func setMark(_ color: MarkColor?, on track: Track) {
         guard let url = track.url else { return }
@@ -55,7 +51,7 @@ extension PlayerState {
 extension PlayerState {
     /// Abre a pasta na lista e toca a primeira faixa.
     func playFolder(_ url: URL) {
-        browser.goFolder(url)
+        browser.go(folder: url)
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let first = TrackLoader.audioURLs(in: [url]).first.map(TrackLoader.track(url:))
             DispatchQueue.main.async {
@@ -78,6 +74,33 @@ extension PlayerState {
 
     /// Abre todas as músicas da biblioteca na lista.
     func showAllTracks() {
-        browser.open(BrowseGroup(kind: .allTracks, title: "Todas as músicas", subtitle: "", count: 0))
+        browser.setView(.songs)
+    }
+}
+
+extension PlayerState {
+    /// Toca um grupo inteiro (álbum, artista, gênero, playlist ou tag).
+    func playGroup(_ group: ViewGroup) {
+        let items = browser.tracks(for: group)
+        if let first = items.first { play(first, from: items) }
+    }
+
+    /// Pergunta a pasta padrão de músicas (primeira abertura). Cancelar usa ~/Music.
+    func askDefaultFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.directoryURL = NavPlaces.music
+        panel.prompt = "Usar esta pasta"
+        panel.message = "Escolha sua pasta de músicas. O Wineup abre nela e você navega a partir dela."
+        let url = panel.runModal() == .OK ? (panel.url ?? NavPlaces.music) : NavPlaces.music
+        makeDefaultFolder(url)
+    }
+
+    /// Define a pasta padrão e garante que ela esteja na biblioteca (indexada).
+    func makeDefaultFolder(_ url: URL) {
+        browser.setDefaultFolder(url)
+        if !browser.isIndexed(url) { Task { await library.addFolders([url]) } }
+        statusMessage = "Pasta padrão: \(NavPlaces.displayPath(url))"
     }
 }

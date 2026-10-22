@@ -71,6 +71,7 @@ final class PlayerState: ObservableObject {
     var lastPlayed: Track?
     private var searchTask: Task<Void, Never>?
     private var usingSampleTracks = true
+    private var restoredOnce = false
     private var eqSaveTask: Task<Void, Never>?
 
     init() {
@@ -89,22 +90,11 @@ final class PlayerState: ObservableObject {
         audio.preventClipping = preventClipping
         restoreEqualizer()
         syncEqualizer()
-        browser.onOpen = { [weak self] title, items in self?.showGroup(title: title, items: items) }
+        browser.onShowTracks = { [weak self] title, items in self?.showTracks(title: title, items: items) }
+        browser.onRescan = { [weak self] in Task { @MainActor in self?.library.rescan() } }
         NowPlaying.attach(self)
         NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil,
                                                queue: .main) { [weak self] _ in self?.saveSession() }
-        browser.onRefresh = { [weak self] in
-            Task { @MainActor in self?.library.rescan() }
-        }
-        browser.onOpenTracks = { [weak self] title, items in
-            guard let self else { return }
-            self.listTitle = title
-            self.tracks = items.map { t in
-                Track(id: t.id, artist: t.artist, title: t.title, duration: t.duration,
-                      mark: self.browser.mark(for: t.url), url: t.url, album: t.album, year: t.year)
-            }
-            self.selectedID = nil
-        }
     }
 
     var meter: LevelTap { audio.meter }
@@ -133,7 +123,7 @@ final class PlayerState: ObservableObject {
 
     var remainingSeconds: Int {
         guard let track = currentTrack else { return 0 }
-        if track.url != nil {
+        if track.url != nil, audio.totalTime > 0 {
             return Int(RateMapping.remainingWallSeconds(
                 total: audio.totalTime, current: audio.currentTime, rate: playbackRate))
         }
@@ -153,38 +143,34 @@ final class PlayerState: ObservableObject {
             onStatus: { [weak self] message in self?.statusMessage = message })
     }
 
+    /// A biblioteca carregou/terminou uma varredura.
     private func applyLibraryTracks(_ found: [LibraryTrack]) {
-        browser.refreshMarks()
-        browser.reload()
-        guard usingSampleTracks else { return }
-        guard !found.isEmpty else {
-            // Biblioteca ainda vazia: começa navegando a pasta Música do usuário.
+        if usingSampleTracks {
+            // Primeira carga: abre a pasta padrão (pergunta qual é, na primeira vez).
             usingSampleTracks = false
-            browser.goFolder(NavPlaces.music)
-            return
-        }
-        let mapped = found.map(track(from:))
-        usingSampleTracks = false
-        listTitle = "Todas as músicas"
-        browser.currentGroupTitle = "Todas as músicas"
-        browser.selected = .allTracks
-        // A tela inicial entra no histórico, para o botão voltar retornar a ela.
-        browser.record(.group(BrowseGroup(kind: .allTracks, title: "Todas as músicas", subtitle: "", count: 0)))
-        tracks = mapped
-        selectedID = nil
-        // Automação/testes: WINEUP_AUTOPLAY=1 toca a primeira faixa ao abrir.
-        if ProcessInfo.processInfo.environment["WINEUP_AUTOPLAY"] != nil, let first = mapped.first {
-            play(first)
+            if NavPlaces.defaultFolder == nil { askDefaultFolder() }
+            browser.load()
         } else {
-            restoreSession(in: mapped)
+            browser.libraryChanged()
         }
     }
 
-    func track(from item: LibraryTrack) -> Track {
-        Track(id: TrackID(stableKey: item.url.standardizedFileURL.path),
-              artist: item.artist, title: item.title, duration: Int(item.duration ?? 0),
-              mark: browser.mark(for: item.url), url: item.url, album: item.album)
+    /// Mostra na lista o que o visualizador entregou.
+    func showTracks(title: String, items: [Track]) {
+        listTitle = title
+        tracks = items
+        selectedID = nil
+        if !restoredOnce {
+            restoredOnce = true
+            if ProcessInfo.processInfo.environment["WINEUP_AUTOPLAY"] != nil, let first = items.first {
+                play(first, from: items)
+            } else {
+                restoreSession(in: items)
+            }
+        }
     }
+
+    func track(from item: LibraryTrack) -> Track { browser.track(from: item) }
 
     private func scheduleLibrarySearch() {
         searchTask?.cancel()

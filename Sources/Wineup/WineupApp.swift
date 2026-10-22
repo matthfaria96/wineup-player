@@ -34,13 +34,14 @@ struct WineupApp: App {
                 Button("Avançar") { state.browser.goForward() }.keyboardShortcut("]")
                 Button("Subir um nível") { state.browser.goUp() }.keyboardShortcut(.upArrow)
                 Divider()
-                Button("Música") { state.browser.goFolder(NavPlaces.music) }.keyboardShortcut("m", modifiers: [.command, .shift])
-                Button("Downloads") { state.browser.goFolder(NavPlaces.downloads) }.keyboardShortcut("l", modifiers: [.command, .option])
-                Button("Biblioteca") { state.browser.goLibrary(.albums) }.keyboardShortcut("b", modifiers: [.command, .shift])
+                Button("Pasta padrão") { state.browser.go(folder: state.browser.defaultFolder) }.keyboardShortcut("h", modifiers: [.command, .shift])
+                Button("Música") { state.browser.go(folder: NavPlaces.music) }.keyboardShortcut("m", modifiers: [.command, .shift])
+                Button("Downloads") { state.browser.go(folder: NavPlaces.downloads) }.keyboardShortcut("l", modifiers: [.command, .option])
+                Button("Escolher pasta padrão…") { state.askDefaultFolder() }
                 Button("Ir para a pasta…") { state.browser.goToTypedPath() }.keyboardShortcut("g", modifiers: [.command, .shift])
                 Divider()
                 Button("Copiar caminho da pasta") {
-                    if let url = state.browser.currentFolder { PathActions.copy(url) }
+                    PathActions.copy(state.browser.folder)
                 }
                 .keyboardShortcut("c", modifiers: [.command, .option])
                 Button("Atualizar") { state.browser.refresh() }.keyboardShortcut("r")
@@ -63,8 +64,8 @@ struct WineupApp: App {
                 Button("Faixa aleatória") { state.playRandom() }.keyboardShortcut("s", modifiers: [.command, .option])
             }
             CommandMenu("Exibição") {
-                Picker("Ver biblioteca por", selection: Binding(get: { state.browser.mode }, set: { state.browser.mode = $0 })) {
-                    ForEach(BrowseMode.allCases) { Text($0.title).tag($0) }
+                Picker("Ver pasta por", selection: Binding(get: { state.browser.view }, set: { state.browser.setView($0) })) {
+                    ForEach(ViewMode.allCases) { Text($0.title).tag($0) }
                 }
                 Picker("Estilo da lista", selection: Binding(get: { state.listStyle }, set: { state.listStyle = $0 })) {
                     ForEach(ListStyle.allCases) { Text($0.title).tag($0) }

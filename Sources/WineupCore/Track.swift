@@ -40,9 +40,11 @@ public struct Track: Identifiable, Hashable, Sendable {
     public var url: URL?
     public var album: String?
     public var year: String?
+    public var genre: String?
 
     public init(id: TrackID = TrackID(), artist: String, title: String, duration: Int,
-                mark: MarkColor?, url: URL? = nil, album: String? = nil, year: String? = nil) {
+                mark: MarkColor?, url: URL? = nil, album: String? = nil, year: String? = nil,
+                genre: String? = nil) {
         self.id = id
         self.artist = artist
         self.title = title
@@ -51,6 +53,7 @@ public struct Track: Identifiable, Hashable, Sendable {
         self.url = url
         self.album = album
         self.year = year
+        self.genre = genre
     }
 
     public var displayName: String { "\(artist) - \(title)" }
