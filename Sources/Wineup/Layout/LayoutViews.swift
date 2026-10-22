@@ -15,6 +15,8 @@ enum PanelKind: String, CaseIterable, Codable {
         }
     }
 
+    var hasTitleBar: Bool { self != .playlist }
+
     func canSwap(with other: PanelKind) -> Bool {
         (fixedHeight == nil) == (other.fixedHeight == nil)
     }
@@ -93,11 +95,14 @@ struct ArrangedLayout: View {
             .frame(height: kind.fixedHeight)
             .clipped()
             .overlay(alignment: .top) {
-                // Alça de arrasto: a barra de título do painel.
-                Color.clear
-                    .frame(height: 24)
-                    .contentShape(Rectangle())
-                    .onDrag { NSItemProvider(object: kind.rawValue as NSString) }
+                // Alça de arrasto: a barra de título do painel. A Playlist não tem barra de
+                // título (o topo é a navegação), então não recebe alça para não bloquear cliques.
+                if kind.hasTitleBar {
+                    Color.clear
+                        .frame(height: 24)
+                        .contentShape(Rectangle())
+                        .onDrag { NSItemProvider(object: kind.rawValue as NSString) }
+                }
             }
             .overlay(
                 RoundedRectangle(cornerRadius: 9)

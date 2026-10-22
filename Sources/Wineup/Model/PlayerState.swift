@@ -168,6 +168,8 @@ final class PlayerState: ObservableObject {
         listTitle = "Todas as músicas"
         browser.currentGroupTitle = "Todas as músicas"
         browser.selected = .allTracks
+        // A tela inicial entra no histórico, para o botão voltar retornar a ela.
+        browser.record(.group(BrowseGroup(kind: .allTracks, title: "Todas as músicas", subtitle: "", count: 0)))
         tracks = mapped
         selectedID = nil
         // Automação/testes: WINEUP_AUTOPLAY=1 toca a primeira faixa ao abrir.
