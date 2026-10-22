@@ -18,10 +18,22 @@ struct LevelMeter: View {
     private let loud = Color(hex: 0xF2C230)
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Self.rowSpacing) {
-            row(level: levels.first ?? 0)
-            row(level: levels.count > 1 ? levels[1] : (levels.first ?? 0))
+        // Um único Canvas (em vez de 48 views): barato de redesenhar 30× por segundo.
+        Canvas { context, size in
+            let gap: CGFloat = 2.5
+            let width = max((size.width - gap * CGFloat(segments - 1)) / CGFloat(segments), 2)
+            for (row, level) in [levels.first ?? 0, levels.count > 1 ? levels[1] : (levels.first ?? 0)].enumerated() {
+                let y = CGFloat(row) * (Self.rowHeight + Self.rowSpacing)
+                for index in 0..<segments {
+                    let on = Double(index) / Double(segments) < level
+                    let rect = CGRect(x: CGFloat(index) * (width + gap), y: y, width: width, height: Self.rowHeight)
+                    context.fill(Path(roundedRect: rect, cornerRadius: 1),
+                                 with: .color(zoneColor(index).opacity(on ? 1 : 0.14)))
+                }
+            }
         }
+        .frame(minWidth: CGFloat(segments) * 6, maxWidth: CGFloat(segments) * 10.5)
+        .frame(height: Self.totalHeight)
     }
 
     /// Creme (tema) até os sons altos, depois 6 amarelas e as 3 últimas vermelhas.
@@ -31,16 +43,4 @@ struct LevelMeter: View {
         return lit
     }
 
-    private func row(level: Double) -> some View {
-        HStack(spacing: 2.5) {
-            ForEach(0..<segments, id: \.self) { index in
-                let on = Double(index) / Double(segments) < level
-                let color = zoneColor(index)
-                RoundedRectangle(cornerRadius: 1)
-                    .fill(color.opacity(on ? 1 : 0.14))
-                    .frame(minWidth: 4, maxWidth: 8)
-                    .frame(height: Self.rowHeight)
-            }
-        }
-    }
 }

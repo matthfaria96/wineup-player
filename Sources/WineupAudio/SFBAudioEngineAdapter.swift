@@ -85,6 +85,18 @@ public final class SFBAudioEngineAdapter: NSObject, AudioEngine, AudioPlayer.Del
 
     public func setRate(_ rate: Double) { chain.setRate(Float(rate)) }
     public func setBalance(_ pan: Double) { chain.setPan(Float(pan)) }
+
+    /// L (-1), normal (0) ou R (1): em L/R a música inteira fica num lado só.
+    public func setSide(_ side: Int) {
+        let chain = chain
+        try? withEngine { engine in
+            var format = chain.timePitch.inputFormat(forBus: 0)
+            if format.channelCount == 0 || format.sampleRate == 0 {
+                format = engine.mainMixerNode.outputFormat(forBus: 0)
+            }
+            chain.setSide(side, engine: engine, sink: engine.mainMixerNode, format: format)
+        }
+    }
     public func setReplayGain(linear: Double) { chain.setGain(linear: Float(linear)) }
 
     public func applyEqualizer(preamp: Double, bands: [Double], bypass: Bool) {

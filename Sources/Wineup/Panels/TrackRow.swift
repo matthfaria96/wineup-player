@@ -129,7 +129,7 @@ struct TrackMenu: View {
             Button("Remover tag") { state.setMark(nil, on: track) }
         }
         Menu("Adicionar à playlist") {
-            ForEach(state.browser.allPlaylists()) { list in
+            ForEach(state.browser.playlists) { list in
                 Button(list.name) { state.addToPlaylist(track, playlistID: list.id) }
             }
             Divider()

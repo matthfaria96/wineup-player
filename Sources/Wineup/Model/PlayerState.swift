@@ -10,12 +10,25 @@ final class PlayerState: ObservableObject {
     @Published var currentID: TrackID?
     @Published var selectedID: TrackID?
     @Published var isPlaying = false
-    @Published var progress = 0.0
-    @Published var balance = PlayerState.saved("balance", 0.5) {
-        didSet { audio.setBalance(RateMapping.pan(balance: balance)); UserDefaults.standard.set(balance, forKey: "balance") }
+    /// Relógio separado: só o Player e as Letras redesenham a cada atualização de posição.
+    let clock = PlaybackClock()
+    var progress: Double {
+        get { clock.progress }
+        set { if clock.progress != newValue { clock.progress = newValue } }
     }
-    @Published var speed = PlayerState.saved("speed", 0.5) {
-        didSet { audio.setRate(RateMapping.rate(slider: speed)); UserDefaults.standard.set(speed, forKey: "speed") }
+    /// Lado do som: -1 = música inteira na esquerda, 0 = normal, 1 = inteira na direita.
+    @Published var side = UserDefaults.standard.integer(forKey: "side") {
+        didSet { audio.setSide(side); UserDefaults.standard.set(side, forKey: "side") }
+    }
+    /// Velocidade de 0,5× (2× mais lenta) a 2×, em passos de 0,25.
+    @Published var playbackRate = PlayerState.saved("playbackRate", 1.0) {
+        didSet { audio.setRate(playbackRate); UserDefaults.standard.set(playbackRate, forKey: "playbackRate") }
+    }
+    static let rateSteps: [Double] = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
+
+    func changeRate(by step: Int) {
+        let index = Self.rateSteps.firstIndex { abs($0 - playbackRate) < 0.01 } ?? 2
+        playbackRate = Self.rateSteps[min(max(index + step, 0), Self.rateSteps.count - 1)]
     }
     /// Fila de reprodução: a lista de onde a música foi tocada (navegar não interrompe a sequência).
     @Published var queue = PlaybackQueue<Track>()
@@ -84,8 +97,9 @@ final class PlayerState: ObservableObject {
         audio.onError = { [weak self] message in self?.statusMessage = message }
         audio.onConfigurationChange = { [weak self] rate in self?.outputSampleRate = rate }
         audio.setVolume(volume)
-        audio.setRate(RateMapping.rate(slider: speed))
-        audio.setBalance(RateMapping.pan(balance: balance))
+        audio.setRate(playbackRate)
+        audio.setBalance(0)
+        if side != 0 { audio.setSide(side) }
         audio.replayGainMode = replayGainMode
         audio.preventClipping = preventClipping
         restoreEqualizer()
@@ -98,8 +112,9 @@ final class PlayerState: ObservableObject {
     }
 
     var meter: LevelTap { audio.meter }
+    /// Modelo do medidor, fora do PlayerPanel para que só o medidor redesenhe a 30 Hz.
+    private(set) lazy var meterModel: MeterModel = MainActor.assumeIsolated { MeterModel() }
 
-    var playbackRate: Double { RateMapping.rate(slider: speed) }
 
     var currentTrack: Track? {
         queue.current ?? tracks.first { $0.id == currentID } ?? lastPlayed.flatMap { $0.id == currentID ? $0 : nil }
@@ -470,4 +485,9 @@ final class PlayerState: ObservableObject {
             }
         }
     }
+}
+
+/// Posição da faixa (0...1), publicada à parte para não redesenhar a lista a cada tick.
+final class PlaybackClock: ObservableObject {
+    @Published var progress = 0.0
 }

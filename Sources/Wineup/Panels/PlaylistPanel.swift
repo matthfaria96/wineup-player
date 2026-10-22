@@ -188,7 +188,7 @@ struct PlaylistPanel: View {
                                      detailed: state.listStyle == .detailed)
                                 .id(track.id)
                                 .onTapGesture(count: 2) { state.play(track, from: tracks) }
-                                .onTapGesture { state.selectedID = track.id }
+                                .simultaneousGesture(TapGesture().onEnded { state.selectedID = track.id })
                                 .contextMenu { TrackMenu(state: state, track: track) }
                         }
                     }

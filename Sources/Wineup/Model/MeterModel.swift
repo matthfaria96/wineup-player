@@ -8,6 +8,8 @@ import WineupCore
 final class MeterModel: ObservableObject {
     @Published private(set) var levels: [Double] = [0, 0]
     @Published private(set) var bands: [Double] = Array(repeating: 0, count: MeterModel.bandCount)
+    /// O espectro (FFT) só é calculado se alguma tela o exibe.
+    var computesSpectrum = false
 
     static let bandCount = 20
     private static let publishThreshold = 0.005
@@ -43,7 +45,9 @@ final class MeterModel: ObservableObject {
                 let rms = snap.rms.indices.contains(channel) ? snap.rms[channel] : (snap.rms.first ?? 0)
                 return MeterMath.dbToMeter(20 * log10(max(rms, 1e-9)))
             }
-            targetBands = analyzer.bands(samples: snap.samples, sampleRate: snap.sampleRate)
+            if computesSpectrum {
+                targetBands = analyzer.bands(samples: snap.samples, sampleRate: snap.sampleRate)
+            }
         }
 
         let nextLevels = zip(levels, targetLevels).map {

@@ -2,6 +2,12 @@ import SwiftUI
 
 struct LyricsPanel: View {
     @ObservedObject var state: PlayerState
+    @ObservedObject private var clock: PlaybackClock
+
+    init(state: PlayerState) {
+        self.state = state
+        self.clock = state.clock
+    }
 
     @Environment(\.theme) private var theme
 
