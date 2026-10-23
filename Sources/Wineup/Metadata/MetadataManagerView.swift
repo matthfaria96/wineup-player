@@ -21,7 +21,7 @@ struct MetadataManagerView: View {
 
     var body: some View {
         HSplitView {
-            MetadataSidebar(model: model, onPickMatch: { pickerRow = $0 })
+            MetadataSidebar(model: model)
                 .frame(minWidth: 250, idealWidth: 280, maxWidth: 360)
             VStack(spacing: 0) {
                 if model.dirtyCount > 0 && !model.isBusy {
@@ -29,7 +29,8 @@ struct MetadataManagerView: View {
                 }
                 MetadataTable(model: model, onPickMatch: { pickerRow = $0 })
                 if showQueue && !model.workIDs.isEmpty {
-                    WorkQueuePanel(model: model).transition(.move(edge: .bottom).combined(with: .opacity))
+                    WorkQueuePanel(model: model, onHide: { showQueue = false })
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
                 Divider()
                 statusBar
@@ -153,7 +154,12 @@ struct MetadataManagerView: View {
                         } else if let m = model.message {
                             Text(m).lineLimit(1)
                         }
-                        Image(systemName: "chevron.up").rotationEffect(.degrees(showQueue ? 180 : 0))
+                        Label(showQueue ? "Recolher" : "Ver músicas", systemImage: "chevron.up")
+                            .labelStyle(.titleAndIcon)
+                            .imageScale(.small)
+                            .padding(.horizontal, 6).padding(.vertical, 1)
+                            .background(Capsule().fill(Color.primary.opacity(0.08)))
+                            .rotationEffect(.zero)
                     }
                     .contentShape(Rectangle())
                 }

@@ -316,9 +316,18 @@ final class MetadataManagerModel: ObservableObject {
         let review = rows.filter { $0.status == .review }.count
         let lyrics = rows.filter { $0.lyrics?.text != nil }.count
         message = "\(ready) prontas para salvar · \(lyrics) letras encontradas" + (review > 0 ? " · \(review) para revisar (confiança baixa)" : "")
+        // Resumo só para buscas em lote: numa música só, a própria linha e o painel já mostram o resultado
+        // (e um resumo por cima da janela de resultados fazia ela fechar, reabrir e buscar de novo, sem fim).
         let searched = rows.filter { workIDs.contains($0.id) }
-        if !searched.isEmpty { report = SearchReport(searched) }
+        if searched.count > 1 { report = SearchReport(searched) }
+        else if let only = searched.first {
+            message = only.status == .notFound ? "Nada encontrado para \(only.fileName)."
+                : only.isDirty ? "Dados encontrados para \(only.fileName) — confira e salve." : message
+        }
     }
+
+    /// Fecha a lista da última busca (o painel de cards do rodapé).
+    func clearWork() { if !isBusy { workIDs = [] } }
 
     /// Letra escrita à mão (vira um .lrc estático, ou sincronizado se tiver marcas [mm:ss]).
     func setManualLyrics(_ text: String, for id: MetadataRow.ID) {

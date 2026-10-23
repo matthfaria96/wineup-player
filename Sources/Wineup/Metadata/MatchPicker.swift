@@ -7,6 +7,8 @@ struct MatchPicker: View {
     let rowID: MetadataRow.ID
     @Environment(\.dismiss) private var dismiss
     @State private var choice: MatchCandidate.ID?
+    /// Busca automática só uma vez por abertura (sem resultado, não repete sozinha).
+    @State private var searched = false
 
     private var row: MetadataRow? { model.rows.first { $0.id == rowID } }
     private var candidates: [MatchCandidate] { row?.proposal?.candidates ?? [] }
@@ -35,7 +37,9 @@ struct MatchPicker: View {
             .frame(minHeight: 240)
             .overlay {
                 if row?.status == .searching { ProgressView() }
-                else if candidates.isEmpty { Text("Sem resultados ainda.").foregroundStyle(.secondary) }
+                else if candidates.isEmpty {
+                    Text(row?.status == .notFound ? "Nada encontrado nas bases." : "Sem resultados ainda.").foregroundStyle(.secondary)
+                }
             }
             HStack {
                 Button("Buscar de novo") { model.searchCandidates(for: rowID) }
@@ -56,7 +60,10 @@ struct MatchPicker: View {
         .frame(width: 780, height: 420)
         .onAppear {
             choice = row?.proposal?.match?.id ?? candidates.first?.id
-            if candidates.isEmpty { model.searchCandidates(for: rowID) }
+            if candidates.isEmpty, !searched, row?.status != .notFound, !model.isBusy {
+                searched = true
+                model.searchCandidates(for: rowID)
+            }
         }
         .onChange(of: candidates.first?.id) { _, first in if choice == nil { choice = first } }
     }

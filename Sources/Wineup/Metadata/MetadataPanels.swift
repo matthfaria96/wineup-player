@@ -32,34 +32,44 @@ struct SaveBanner: View {
     }
 }
 
-/// Painel que sobe do rodapé: um card quadrado por música da busca, com capa, nome e estado.
+/// Faixa que sobe do rodapé: um card quadrado pequeno por música da busca, lado a lado, com capa e estado.
+/// Botões claros para recolher (o rodapé continua mostrando o progresso) e para limpar a lista.
 struct WorkQueuePanel: View {
     @ObservedObject var model: MetadataManagerModel
-    private let columns = [GridItem(.adaptive(minimum: 92, maximum: 120), spacing: 8)]
+    let onHide: () -> Void
 
     var body: some View {
         let rows = model.workIDs.compactMap { id in model.rows.first { $0.id == id } }
+        let done = rows.filter { RowLook($0) != .searching && ($0.status != .idle || $0.isDirty) }.count
         VStack(spacing: 0) {
             Divider()
-            HStack {
-                Text(model.isBusy ? "Buscando" : "Última busca").font(.system(size: 12, weight: .semibold))
-                Text("\(rows.filter { RowLook($0) != .searching && $0.status != .idle || $0.isDirty }.count) de \(rows.count)")
-                    .font(.system(size: 11)).foregroundStyle(.secondary).monospacedDigit()
+            HStack(spacing: 8) {
+                Text(model.isBusy ? "Buscando" : "Última busca").font(.system(size: 11, weight: .semibold))
+                Text("\(done) de \(rows.count)").font(.system(size: 11)).foregroundStyle(.secondary).monospacedDigit()
+                    .contentTransition(.numericText())
                 Spacer()
                 Legend()
+                Button(action: onHide) { Image(systemName: "chevron.down") }
+                    .buttonStyle(.borderless)
+                    .help("Recolher (o progresso continua no rodapé)")
+                if !model.isBusy {
+                    Button { withAnimation(.snappy) { model.clearWork(); onHide() } } label: { Image(systemName: "xmark") }
+                        .buttonStyle(.borderless)
+                        .help("Fechar e limpar esta lista")
+                }
             }
-            .padding(.horizontal, 12).padding(.top, 8).padding(.bottom, 6)
-            ScrollView {
-                LazyVGrid(columns: columns, spacing: 8) {
+            .padding(.horizontal, 10).frame(height: 26)
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(spacing: 6) {
                     ForEach(rows) { row in
                         QueueCard(row: row)
                             .onTapGesture { model.selection = [row.id] }
                     }
                 }
-                .padding(.horizontal, 12).padding(.bottom, 10)
+                .padding(.horizontal, 10).padding(.bottom, 8)
             }
+            .frame(height: 86)
         }
-        .frame(height: 210)
         .background(.background.secondary)
     }
 }
@@ -70,23 +80,20 @@ private struct QueueCard: View {
 
     var body: some View {
         let look = RowLook(row)
-        VStack(spacing: 4) {
-            ZStack(alignment: .topTrailing) {
-                RowThumb(row: row, size: 64)
-                if row.isDirty {
-                    FoundDot(visible: true).offset(x: 4, y: -2)
-                }
+        VStack(spacing: 3) {
+            ZStack(alignment: .topLeading) {
+                RowThumb(row: row, size: 44)
+                if row.isDirty { FoundDot(visible: true).offset(x: -4, y: -3) }
             }
             Text(row.value("title").isEmpty ? row.fileName : row.value("title"))
-                .font(.system(size: 10, weight: .medium)).lineLimit(1).truncationMode(.middle)
-            Text(caption(look)).font(.system(size: 9)).foregroundStyle(look.color == .yellow ? Color.orange : look.color)
+                .font(.system(size: 9, weight: .medium)).lineLimit(1).truncationMode(.middle)
+            Text(caption(look)).font(.system(size: 8)).foregroundStyle(look.color == .yellow ? Color.orange : look.color)
                 .lineLimit(1)
         }
-        .padding(6)
-        .frame(maxWidth: .infinity)
-        .aspectRatio(1, contentMode: .fit)
-        .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.05)))
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(look.color.opacity(look == .searching ? 0.6 : 0.25), lineWidth: 1))
+        .padding(5)
+        .frame(width: 72, height: 78)
+        .background(RoundedRectangle(cornerRadius: 7).fill(Color.primary.opacity(0.05)))
+        .overlay(RoundedRectangle(cornerRadius: 7).stroke(look.color.opacity(look == .searching ? 0.6 : 0.25), lineWidth: 1))
         .help(RowLook.tooltip(row))
         .animation(.snappy, value: look)
     }
@@ -95,9 +102,9 @@ private struct QueueCard: View {
         switch look {
         case .searching: "Buscando…"
         case .complete: "Completa"
-        case .incomplete: row.isDirty ? "Encontrada · falta salvar" : "Falta: " + row.missingEssentials.joined(separator: ", ")
+        case .incomplete: row.isDirty ? "Falta salvar" : "Incompleta"
         case .review: "Revisar"
-        case .notFound: "Nada encontrado"
+        case .notFound: "Nada"
         case .failed: "Erro"
         }
     }
