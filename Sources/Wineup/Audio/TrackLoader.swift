@@ -4,6 +4,7 @@ import ImageIO
 import WineupCore
 import Foundation
 import SFBAudioEngine
+import WineupLibrary
 
 /// Lê arquivos de áudio (tags e duração) e capas embutidas.
 enum TrackLoader {
@@ -69,10 +70,18 @@ enum TrackLoader {
     }
 
     /// Miniatura reduzida da capa embutida (decodifica já no tamanho final, sem a imagem inteira).
+    /// Capa: a embutida (frontal primeiro); sem ela, a imagem da pasta (cover.jpg, folder.jpg...).
+    static func coverData(for url: URL) -> Data? {
+        if let file = try? AudioFile(readingPropertiesAndMetadataFrom: url) {
+            let pics = file.metadata.attachedPictures
+            if let p = pics.first(where: { $0.type == .frontCover }) ?? pics.first { return p.imageData }
+        }
+        return FolderCover.url(for: url).flatMap { try? Data(contentsOf: $0) }
+    }
+
     static func thumbnail(for url: URL, maxPixel: Int = 160) -> NSImage? {
-        guard let file = try? AudioFile(readingPropertiesAndMetadataFrom: url),
-              let picture = file.metadata.attachedPictures.first,
-              let source = CGImageSourceCreateWithData(picture.imageData as CFData, nil) else { return nil }
+        guard let data = coverData(for: url),
+              let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceThumbnailMaxPixelSize: maxPixel,
@@ -83,10 +92,7 @@ enum TrackLoader {
     }
 
     static func cover(for url: URL) -> NSImage? {
-        guard let file = try? AudioFile(readingPropertiesAndMetadataFrom: url),
-              let picture = file.metadata.attachedPictures.first
-        else { return nil }
-        return NSImage(data: picture.imageData)
+        coverData(for: url).flatMap(NSImage.init(data:))
     }
 
     /// Texto da letra: .lrc ao lado do arquivo (mesmo nome) ou letra embutida.

@@ -37,3 +37,22 @@ private func withTempDirSync(_ body: (URL) throws -> Void) throws {
     defer { try? FileManager.default.removeItem(at: dir) }
     try body(dir)
 }
+
+@Suite("Capa da pasta")
+struct FolderCoverTests {
+    @Test func prefersKnownNamesThenSingleImage() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let audio = dir.appendingPathComponent("01.mp3")
+        #expect(FolderCover.find(in: dir) == nil)
+        try Data([1]).write(to: dir.appendingPathComponent("scan.png"))
+        #expect(FolderCover.find(in: dir)?.lastPathComponent == "scan.png")
+        try Data([1]).write(to: dir.appendingPathComponent("back.jpg"))
+        #expect(FolderCover.find(in: dir) == nil)
+        try Data([1]).write(to: dir.appendingPathComponent("Folder.JPG"))
+        #expect(FolderCover.find(in: dir)?.lastPathComponent == "Folder.JPG")
+        try Data([1]).write(to: dir.appendingPathComponent("cover.png"))
+        #expect(FolderCover.url(for: audio)?.lastPathComponent == "cover.png")
+    }
+}

@@ -17,6 +17,7 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/Wineup"
 cp Resources/WineUp.icns "$APP/Contents/Resources/WineUp.icns"
+./scripts/notices-versions.sh
 cp Resources/THIRD_PARTY_NOTICES.md "$APP/Contents/Resources/"
 # Clipes embutidos do painel visual (domínio público / CC, ver THIRD_PARTY_NOTICES.md).
 cp -R Resources/Videos "$APP/Contents/Resources/Videos"

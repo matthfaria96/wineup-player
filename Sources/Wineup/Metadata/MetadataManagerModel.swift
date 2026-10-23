@@ -365,7 +365,7 @@ final class MetadataManagerModel: ObservableObject {
 
     /// Álbum desconhecido: descobre pela música (título + artista) na busca do iTunes.
     func suggestAlbum() async -> String? {
-        guard OnlineConsent.isGranted else { return nil }
+        guard OnlineConsent.isGranted, OnlineServices.isOn(.albumHint) else { return nil }
         guard let row = (selectedRows.isEmpty ? rows : selectedRows).first else { return nil }
         let q = MetadataFixer.query(for: row.file)
         return try? await ITunesHintClient().albumHint(title: q.title, artist: q.artist, duration: row.file.duration)?.album
@@ -405,9 +405,16 @@ final class MetadataManagerModel: ObservableObject {
             guard let i = index(of: row.id) else { continue }
             var item = SaveBatch.Item(path: row.url.path)
             do {
-                if row.hasTagChanges {
+                let mode = coverSaveMode
+                var changes = row.tagChanges
+                if mode == .folder { changes.cover = nil }
+                if !changes.isEmpty {
                     guard row.file.isWritable else { throw TagWriterError.unsupportedFormat }
-                    item.journalID = try writer.apply(row.tagChanges, url: row.url).id
+                    item.journalID = try writer.apply(changes, url: row.url).id
+                }
+                // Capa também (ou só) como imagem na pasta, sem trocar uma que já exista.
+                if let cover = row.cover, mode != .embed, let created = Self.writeFolderCover(cover, beside: row.url) {
+                    item.createdFiles.append(created.path)
                 }
                 if let text = row.lyrics?.text {
                     let lrc = row.file.lyricsURL
@@ -425,7 +432,7 @@ final class MetadataManagerModel: ObservableObject {
                 rows[i].status = .failed(Self.describe(error))
                 failed += 1
             }
-            if item.journalID != nil || item.wroteLyrics { items.append(item) }
+            if item.journalID != nil || item.wroteLyrics || !item.createdFiles.isEmpty { items.append(item) }
         }
         if !items.isEmpty {
             try? history.add(SaveBatch(folder: folder?.path ?? "", items: items))
@@ -480,6 +487,37 @@ final class MetadataManagerModel: ObservableObject {
         }
         selection.subtract(paths)
         message = "\(moved) arquivo(s) na Lixeira" + (failed.isEmpty ? "" : " · não deu: \(failed.joined(separator: ", "))")
+    }
+
+    // MARK: Capa na pasta
+
+    enum CoverSaveMode: String, CaseIterable, Identifiable {
+        case embed, folder, both
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .embed: "Embutir no arquivo de música"
+            case .folder: "Salvar como cover.jpg na pasta"
+            case .both: "Os dois"
+            }
+        }
+    }
+
+    static let coverSaveKey = "metadata.coverSave"
+    @Published var coverSaveMode = CoverSaveMode(rawValue: UserDefaults.standard.string(forKey: MetadataManagerModel.coverSaveKey) ?? "") ?? .embed {
+        didSet { UserDefaults.standard.set(coverSaveMode.rawValue, forKey: Self.coverSaveKey) }
+    }
+
+    /// Grava cover.jpg/png na pasta da música se ainda não há capa solta lá. Devolve o arquivo criado.
+    static func writeFolderCover(_ cover: CoverImage, beside audio: URL) -> URL? {
+        let folder = audio.deletingLastPathComponent()
+        FolderCover.invalidate(folder)
+        guard FolderCover.url(for: audio) == nil else { return nil }
+        let dest = folder.appendingPathComponent(cover.mimeType == "image/png" ? "cover.png" : "cover.jpg")
+        guard !FileManager.default.fileExists(atPath: dest.path), (try? cover.data.write(to: dest, options: .withoutOverwriting)) != nil
+        else { return nil }
+        FolderCover.invalidate(folder)
+        return dest
     }
 
     // MARK: Histórico e desfazer

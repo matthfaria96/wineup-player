@@ -29,12 +29,17 @@ public struct MetadataFixer: Sendable {
     private let acoustID: AcoustIDClient?
     private let fpcalc: String?
     private let hints: ITunesHintClient?
+    /// Serviço de dados/capas desligado nas Opções: só letras.
+    private let metadataEnabled: Bool
 
     public init(musicBrainz: MusicBrainzClient = MusicBrainzClient(), covers: CoverArtClient = CoverArtClient(),
                 lyrics: LyricsService = LyricsService.standard(), acoustID: AcoustIDClient? = nil,
-                fpcalc: String? = AcoustIDClient.fpcalcPath(), hints: ITunesHintClient? = ITunesHintClient()) {
+                fpcalc: String? = AcoustIDClient.fpcalcPath(),
+                hints: ITunesHintClient? = OnlineServices.isOn(.albumHint) ? ITunesHintClient() : nil,
+                metadataEnabled: Bool = OnlineServices.isOn(.metadata)) {
         self.musicBrainz = musicBrainz; self.covers = covers; self.lyrics = lyrics
         self.acoustID = acoustID; self.fpcalc = fpcalc; self.hints = hints
+        self.metadataEnabled = metadataEnabled
     }
 
     public var canFingerprint: Bool { acoustID != nil && fpcalc != nil }
@@ -60,6 +65,7 @@ public struct MetadataFixer: Sendable {
     }
 
     private func textMatches(title: String, artist: String, album: String?, duration: Double?) async throws -> [MatchCandidate] {
+        guard metadataEnabled else { return [] }
         var list: [MatchCandidate] = []
         var genre: String?
         // Sem álbum no arquivo: a dica do iTunes leva à versão de estúdio no MusicBrainz.

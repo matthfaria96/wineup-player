@@ -10,9 +10,24 @@ public struct SaveBatch: Codable, Identifiable, Sendable, Equatable {
         public var lyricsBackup: String?
         /// O .lrc foi criado ou trocado nesta gravação.
         public var wroteLyrics: Bool
+        /// Arquivos novos criados nesta gravação (ex.: cover.jpg na pasta); desfazer manda para a Lixeira.
+        public var createdFiles: [String] = []
 
-        public init(path: String, journalID: UUID? = nil, lyricsBackup: String? = nil, wroteLyrics: Bool = false) {
+        public init(path: String, journalID: UUID? = nil, lyricsBackup: String? = nil, wroteLyrics: Bool = false,
+                    createdFiles: [String] = []) {
             self.path = path; self.journalID = journalID; self.lyricsBackup = lyricsBackup; self.wroteLyrics = wroteLyrics
+            self.createdFiles = createdFiles
+        }
+
+        enum CodingKeys: String, CodingKey { case path, journalID, lyricsBackup, wroteLyrics, createdFiles }
+
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            path = try c.decode(String.self, forKey: .path)
+            journalID = try c.decodeIfPresent(UUID.self, forKey: .journalID)
+            lyricsBackup = try c.decodeIfPresent(String.self, forKey: .lyricsBackup)
+            wroteLyrics = try c.decodeIfPresent(Bool.self, forKey: .wroteLyrics) ?? false
+            createdFiles = try c.decodeIfPresent([String].self, forKey: .createdFiles) ?? []
         }
 
         public var lyricsURL: URL { URL(fileURLWithPath: path).deletingPathExtension().appendingPathExtension("lrc") }
@@ -98,6 +113,9 @@ public enum BatchUndo {
                     } else if FileManager.default.fileExists(atPath: lrc.path) {
                         try remove(lrc)
                     }
+                }
+                for created in item.createdFiles where FileManager.default.fileExists(atPath: created) {
+                    try remove(URL(fileURLWithPath: created))
                 }
                 result.restored += 1
             } catch {

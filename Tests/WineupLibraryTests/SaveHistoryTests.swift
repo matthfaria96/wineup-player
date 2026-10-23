@@ -41,3 +41,20 @@ struct SaveHistoryTests {
         }
     }
 }
+
+@Suite("Desfazer: arquivos criados")
+struct CreatedFilesUndoTests {
+    @Test func undoRemovesCreatedCoverAndOldHistoryStillDecodes() async throws {
+        try await withTempDir { dir in
+            let h = try await WriterHarness.make(dir) { try FormatCase.flac.make($0) }
+            let cover = h.music.appendingPathComponent("cover.jpg")
+            try Data([1, 2]).write(to: cover)
+            let batch = SaveBatch(folder: h.music.path, items: [.init(path: h.file.path, createdFiles: [cover.path])])
+            #expect(BatchUndo.undo(batch, writer: h.writer(), remove: { try FileManager.default.removeItem(at: $0) }).restored == 1)
+            #expect(!FileManager.default.fileExists(atPath: cover.path))
+            let old = #"{"path":"/m/a.flac","wroteLyrics":true}"#
+            let item = try JSONDecoder().decode(SaveBatch.Item.self, from: Data(old.utf8))
+            #expect(item.createdFiles.isEmpty && item.wroteLyrics)
+        }
+    }
+}

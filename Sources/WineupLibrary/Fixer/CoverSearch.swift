@@ -27,6 +27,7 @@ public struct CoverSearch: Sendable {
     public func search(artist: String, album: String, source: CoverCandidate.Source) async throws -> [CoverCandidate] {
         switch source {
         case .musicBrainz:
+            guard OnlineServices.isOn(.metadata) else { return [] }
             return try await musicBrainz.searchReleases(artist: artist, album: album).compactMap { r in
                 guard let thumb = URL(string: "https://coverartarchive.org/release/\(r.id)/front-250"),
                       let full = URL(string: "https://coverartarchive.org/release/\(r.id)/front-1200") else { return nil }
@@ -35,7 +36,7 @@ public struct CoverSearch: Sendable {
                                       thumbURL: thumb, fullURL: full)
             }
         case .iTunes:
-            guard let url = FixerHTTP.url("https://itunes.apple.com/search",
+            guard OnlineServices.isOn(.albumHint), let url = FixerHTTP.url("https://itunes.apple.com/search",
                                           [("term", "\(artist) \(album)"), ("entity", "album"), ("limit", "25")])
             else { return [] }
             let json = try await FixerHTTP.json(fetcher, url) as? [String: Any]

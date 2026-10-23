@@ -49,7 +49,7 @@
 ### Discografia, capas e letras (DISC)
 
 - [x] **DISC-01**: Página do artista mostra álbuns, EPs e o álbum "Singles" do app como visões, sem reescrever tags
-- [ ] **DISC-02**: A capa exibida segue a ordem: arte do arquivo, imagem na pasta, capa do lançamento, placeholder — sem gravar nos arquivos
+- [x] **DISC-02**: A capa exibida segue a ordem: arte do arquivo, imagem na pasta, capa do lançamento, placeholder — sem gravar nos arquivos *(feito: arquivo → pasta → placeholder; a capa do lançamento online fica a cargo do gerenciador)*
 - [x] **DISC-03**: Letras embutidas e arquivos `.lrc` são exibidos, com destaque sincronizado quando houver tempo
 - [x] **DISC-04**: Usuário reproduz tudo ou embaralha a partir da página do artista, com a ordenação ativa visível
 
@@ -79,7 +79,7 @@
 - [x] **SYS-02**: Atalhos de teclado clássicos (Z X C V B, espaço, setas) controlam o player
 - [x] **SYS-03**: Modo mini sempre no topo
 - [ ] **SYS-04**: Script de release assina com Developer ID, notariza e gera `.dmg` que abre num Mac limpo
-- [ ] **SYS-05**: Avisos de terceiros listam versões exatas e as bibliotecas LGPL continuam substituíveis no `.app`
+- [x] **SYS-05**: Avisos de terceiros listam versões exatas e as bibliotecas LGPL continuam substituíveis no `.app`
 
 ### Library Fixer (FIX)
 
@@ -93,10 +93,10 @@
 
 ### Provedores online (NET)
 
-- [ ] **NET-01**: Usuário liga, por provedor, consultas a MusicBrainz/Cover Art Archive; o padrão é offline
+- [x] **NET-01**: Usuário liga, por provedor, consultas a MusicBrainz/Cover Art Archive; o padrão é offline *(feito: consentimento geral + chave por serviço)*
 - [x] **NET-02**: Antes do primeiro envio, o app mostra exatamente o que será enviado e pede consentimento
 - [x] **NET-03**: Identificação por impressão acústica (AcoustID/Chromaprint) sugere o lançamento com confiança, considerando duração e contexto do álbum
-- [ ] **NET-04**: Fixer busca capas online e permite escolher entre embutir no arquivo ou salvar ao lado
+- [x] **NET-04**: Fixer busca capas online e permite escolher entre embutir no arquivo ou salvar ao lado
 - [x] **NET-05**: Requisições respeitam os limites de cada serviço e podem ser interrompidas e retomadas
 
 ## v2 Requirements

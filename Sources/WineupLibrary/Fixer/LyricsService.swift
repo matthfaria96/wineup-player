@@ -8,6 +8,8 @@ public struct LyricsService: Sendable {
     private let primary: LRCLibClient
     private let backup: NetEaseLyricsClient?
     private let musixmatch: MusixmatchClient?
+    /// Letras desligadas nas Opções: nenhuma consulta.
+    private var disabled = false
 
     public init(primary: LRCLibClient = LRCLibClient(), backup: NetEaseLyricsClient? = NetEaseLyricsClient(),
                 musixmatch: MusixmatchClient? = nil) {
@@ -19,12 +21,15 @@ public struct LyricsService: Sendable {
     /// Com o token do Musixmatch salvo nas preferências, se houver.
     public static func standard() -> LyricsService {
         let token = (UserDefaults.standard.string(forKey: musixmatchTokenKey) ?? "").trimmingCharacters(in: .whitespaces)
-        return LyricsService(musixmatch: token.isEmpty ? nil : MusixmatchClient(token: token))
+        var s = LyricsService(musixmatch: token.isEmpty ? nil : MusixmatchClient(token: token))
+        s.disabled = !OnlineServices.isOn(.lyrics)
+        return s
     }
 
     /// Primeira letra aceitável; uma fonte fora do ar não impede as outras.
     public func best(title: String, artist: String, album: String?, duration: Double?,
                      syncedOnly: Bool = false) async throws -> LyricsCandidate? {
+        guard !disabled else { return nil }
         var lastError: Error?
         var plainFallback: LyricsCandidate?
         let steps: [@Sendable () async throws -> LyricsCandidate?] = [
@@ -48,6 +53,7 @@ public struct LyricsService: Sendable {
 
     /// Opções para escolha manual: as da fonte principal e as da reserva, sincronizadas primeiro.
     public func search(title: String, artist: String, duration: Double?) async throws -> [LyricsCandidate] {
+        guard !disabled else { return [] }
         async let main = (try? await primary.search(title: title, artist: artist, duration: duration)) ?? []
         async let more = (try? await backup?.search(title: title, artist: artist, duration: duration)) ?? []
         var list = await main + more

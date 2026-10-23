@@ -36,3 +36,32 @@ Trechos de 10–20 s, sem som, reduzidos a 960 px. Cada um mantém a licença or
 | universo/universo-colisao.mp4 | Galaxy Collision Animation – James Webb Space Telescope Science | NASA/ESA/STScI (via Commons) | CC BY 3.0 | https://commons.wikimedia.org/wiki/File:Galaxy_Collision_Animation-_James_Webb_Space_Telescope_Science.webm |
 
 Os clipes CC BY exigem crédito ao autor: os nomes completos estão nas páginas de origem.
+
+<!-- versoes:inicio -->
+## Versões exatas (geradas do Package.resolved a cada build)
+
+| Pacote | Versão | Origem |
+|---|---|---|
+| avfaudioextensions | 0.5.1 | https://github.com/sbooth/AVFAudioExtensions |
+| cdumb | 2.0.3 | https://github.com/sbooth/CDUMB |
+| cspeex | 1.2.1 | https://github.com/sbooth/CSpeex |
+| cxxaudioringbuffer | 0.2.0 | https://github.com/sbooth/CXXAudioRingBuffer |
+| cxxdispatchsemaphore | 0.4.1 | https://github.com/sbooth/CXXDispatchSemaphore |
+| cxxmessagequeue | 0.2.2 | https://github.com/sbooth/CXXMessageQueue |
+| cxxmonkeysaudio | 12.13.0 | https://github.com/sbooth/CXXMonkeysAudio |
+| cxxqueue | 0.1.1 | https://github.com/sbooth/CXXQueue |
+| cxxtaglib | 2.3.2 | https://github.com/sbooth/CXXTagLib |
+| cxxunfairlock | 0.3.1 | https://github.com/sbooth/CXXUnfairLock |
+| flac-binary-xcframework | 0.2.0 | https://github.com/sbooth/flac-binary-xcframework |
+| grdb.swift | 7.11.1 | https://github.com/groue/GRDB.swift |
+| lame-binary-xcframework | 0.1.2 | https://github.com/sbooth/lame-binary-xcframework |
+| mpc-binary-xcframework | 0.1.2 | https://github.com/sbooth/mpc-binary-xcframework |
+| mpg123-binary-xcframework | 0.3.1 | https://github.com/sbooth/mpg123-binary-xcframework |
+| ogg-binary-xcframework | 0.1.3 | https://github.com/sbooth/ogg-binary-xcframework |
+| opus-binary-xcframework | 0.3.0 | https://github.com/sbooth/opus-binary-xcframework |
+| sfbaudioengine | 0.14.0 | https://github.com/sbooth/SFBAudioEngine |
+| sndfile-binary-xcframework | 0.1.2 | https://github.com/sbooth/sndfile-binary-xcframework |
+| tta-cpp-binary-xcframework | 0.1.2 | https://github.com/sbooth/tta-cpp-binary-xcframework |
+| vorbis-binary-xcframework | 0.1.2 | https://github.com/sbooth/vorbis-binary-xcframework |
+| wavpack-binary-xcframework | 0.2.0 | https://github.com/sbooth/wavpack-binary-xcframework |
+<!-- versoes:fim -->

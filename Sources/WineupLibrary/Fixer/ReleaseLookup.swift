@@ -60,6 +60,7 @@ public struct ReleaseDetail: Sendable, Equatable {
 extension MusicBrainzClient {
     /// Busca de álbuns por artista + álbum (como a "Fonte de Etiquetas" do Mp3tag).
     public func searchReleases(artist: String, album: String) async throws -> [ReleaseSummary] {
+        guard OnlineServices.isOn(.metadata) else { return [] }
         var parts: [String] = []
         if !album.isEmpty { parts.append("release:\"\(Self.escape(album))\"") }
         if !artist.isEmpty { parts.append("artist:\"\(Self.escape(artist))\"") }

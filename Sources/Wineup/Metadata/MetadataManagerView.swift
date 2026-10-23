@@ -162,10 +162,19 @@ struct MetadataSettings: View {
                 Text("Substituir também o que já existe").tag(FillPolicy.overwrite)
             }
             .pickerStyle(.radioGroup)
+            Picker("Capa ao salvar", selection: $model.coverSaveMode) {
+                ForEach(MetadataManagerModel.CoverSaveMode.allCases) { Text($0.title).tag($0) }
+            }
             Section("Consultas online") {
                 Toggle("Permitir buscar dados, capas e letras na internet", isOn: Binding(
                     get: { OnlineConsent.isGranted },
                     set: { OnlineConsent.answer = $0 ? .granted : .denied }))
+                ForEach(OnlineServices.Service.allCases, id: \.self) { service in
+                    Toggle(service.title, isOn: Binding(get: { OnlineServices.isOn(service) },
+                                                        set: { OnlineServices.set(service, $0); model.objectWillChange.send() }))
+                        .padding(.leading, 16)
+                        .disabled(!OnlineConsent.isGranted)
+                }
                 Text(OnlineConsent.whatIsSent)
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
