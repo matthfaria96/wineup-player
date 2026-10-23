@@ -36,7 +36,7 @@ public struct Track: Identifiable, Hashable, Sendable {
     public let artist: String
     public let title: String
     public let duration: Int
-    public let mark: MarkColor?
+    public var mark: MarkColor?
     public var url: URL?
     public var album: String?
     public var year: String?
@@ -44,10 +44,12 @@ public struct Track: Identifiable, Hashable, Sendable {
     /// Trecho dentro do arquivo (faixas de CUE): início e fim em segundos.
     public var start: Double?
     public var end: Double?
+    /// Chave na biblioteca quando difere do arquivo (faixa de CUE: "<arquivo.cue>#<n>").
+    public var libraryPath: String?
 
     public init(id: TrackID = TrackID(), artist: String, title: String, duration: Int,
                 mark: MarkColor?, url: URL? = nil, album: String? = nil, year: String? = nil,
-                genre: String? = nil, start: Double? = nil, end: Double? = nil) {
+                genre: String? = nil, start: Double? = nil, end: Double? = nil, libraryPath: String? = nil) {
         self.id = id
         self.artist = artist
         self.title = title
@@ -59,7 +61,11 @@ public struct Track: Identifiable, Hashable, Sendable {
         self.genre = genre
         self.start = start
         self.end = end
+        self.libraryPath = libraryPath
     }
+
+    /// Chave usada para tags de cor, playlists e sessão.
+    public var storeKey: String? { libraryPath ?? url?.path }
 
     /// Faixa que é um trecho de um arquivo maior (CUE).
     public var isSegment: Bool { start != nil }

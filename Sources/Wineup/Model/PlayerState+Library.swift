@@ -7,30 +7,30 @@ import WineupLibrary
 extension PlayerState {
 
     func setMark(_ color: MarkColor?, on track: Track) {
-        guard let url = track.url else { return }
-        browser.setMark(color, path: url.path)
-        let replaced = Track(id: track.id, artist: track.artist, title: track.title, duration: track.duration,
-                             mark: color, url: track.url, album: track.album, year: track.year)
+        guard let key = track.storeKey else { return }
+        browser.setMark(color, path: key)
+        var replaced = track
+        replaced.mark = color
         tracks = tracks.map { $0.id == track.id ? replaced : $0 }
     }
 
     func addToPlaylist(_ track: Track, playlistID: Int64) {
-        guard let url = track.url else { return }
-        browser.add(paths: [url.path], toPlaylist: playlistID)
+        guard let key = track.storeKey else { return }
+        browser.add(paths: [key], toPlaylist: playlistID)
     }
 
     /// Pede o nome e cria a playlist (opcionalmente já com uma faixa).
     func newPlaylist(with track: Track?) {
         guard let name = TextPrompt.ask(title: "Nova playlist", value: "Nova playlist") else { return }
-        if let created = browser.createPlaylist(named: name, paths: track?.url.map { [$0.path] } ?? []) {
+        if let created = browser.createPlaylist(named: name, paths: track?.storeKey.map { [$0] } ?? []) {
             statusMessage = "Playlist \u{201C}\(created.name)\u{201D} criada."
         }
     }
 
     /// Remove a faixa da playlist aberta (no banco) ou só da lista atual.
     func removeFromList(_ track: Track) {
-        if let id = browser.openPlaylistID, let url = track.url {
-            browser.remove(path: url.path, fromPlaylist: id)
+        if let id = browser.openPlaylistID, let key = track.storeKey {
+            browser.remove(path: key, fromPlaylist: id)
             tracks = tracks.filter { $0.id != track.id }
         } else {
             tracks = tracks.filter { $0.id != track.id }

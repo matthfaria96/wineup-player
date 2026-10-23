@@ -80,7 +80,8 @@ public final class Scanner: Sendable {
         let files = try FileEnumerator.enumerate(root: rootURL, isCancelled: { Task.isCancelled })
         try Task.checkCancellation()
         let known = try await pool.read { db in
-            try AudioFileRecord.filter(Column("root_id") == rootRowID).fetchAll(db)
+            // Faixas de CUE (media_path) são cuidadas pelo CueIndexer, não pela enumeração de arquivos.
+            try AudioFileRecord.filter(Column("root_id") == rootRowID && Column("media_path") == nil).fetchAll(db)
         }
         let knownByPath = Dictionary(known.map { ($0.path, $0) }, uniquingKeysWith: { a, _ in a })
         let enumeratedPaths = Set(files.map(\.path))
@@ -199,6 +200,8 @@ public final class Scanner: Sendable {
             }
         }
         state.missing = vanished.count
+        try Task.checkCancellation()
+        try await CueIndexer.index(root: rootURL, rootID: rootRowID, pool: pool, now: now)
         try await pool.write { try $0.execute(sql: "UPDATE library_root SET last_scan_at = ? WHERE id = ?",
                                               arguments: [now, rootRowID]) }
         state.finished = true

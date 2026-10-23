@@ -50,7 +50,7 @@ public struct CollectionsStore: Sendable {
             let rows = try Row.fetchAll(db, sql: """
                 SELECT tm.color AS color, COUNT(*) AS n
                 FROM track_mark tm JOIN audio_file af ON af.id = tm.audio_file_id
-                WHERE af.status = 'present' GROUP BY tm.color
+                WHERE af.status = 'present' AND af.hidden = 0 GROUP BY tm.color
                 """)
             return Dictionary(uniqueKeysWithValues: rows.map { ($0["color"] as String, $0["n"] as Int) })
         }
@@ -61,7 +61,7 @@ public struct CollectionsStore: Sendable {
             try Row.fetchAll(db, sql: LibraryTrack.baseSelect + """
 
                 JOIN track_mark tm ON tm.audio_file_id = af.id
-                WHERE tm.color = ? AND af.status = 'present'
+                WHERE tm.color = ? AND af.status = 'present' AND af.hidden = 0
                 ORDER BY rec.title COLLATE NOCASE
                 """, arguments: [color]).map(LibraryTrack.make)
         }
@@ -174,7 +174,7 @@ public struct CollectionsStore: Sendable {
         return try database.pool.read { db in
             try Row.fetchAll(db, sql: LibraryTrack.baseSelect + """
 
-                WHERE af.status = 'present' AND af.path LIKE ? ESCAPE '\\'
+                WHERE af.status = 'present' AND af.hidden = 0 AND af.path LIKE ? ESCAPE '\\'
                 ORDER BY ar.name COLLATE NOCASE, rel.title COLLATE NOCASE, rt.disc_number, rt.track_number, rec.title
                 """, arguments: [escaped + "%"]).map(LibraryTrack.make)
         }
@@ -200,7 +200,7 @@ public struct CollectionsStore: Sendable {
         try database.pool.read { db in
             try Row.fetchAll(db, sql: """
                 SELECT substr(path, 1, length(rtrim(path, replace(path, '/', ''))) - 1) AS dir, COUNT(*) AS n
-                FROM audio_file WHERE status = 'present' GROUP BY dir ORDER BY dir COLLATE NOCASE
+                FROM audio_file WHERE status = 'present' AND hidden = 0 GROUP BY dir ORDER BY dir COLLATE NOCASE
                 """).map { FolderSummary(path: $0["dir"], trackCount: $0["n"]) }
         }
     }
@@ -216,7 +216,7 @@ public struct CollectionsStore: Sendable {
                 JOIN release_track rt ON rt.audio_file_id = af.id
                 JOIN recording rec ON rec.id = rt.recording_id
                 LEFT JOIN artist ar ON ar.id = rec.artist_id
-                WHERE af.status = 'present' AND rec.title = ? COLLATE NOCASE
+                WHERE af.status = 'present' AND af.hidden = 0 AND rec.title = ? COLLATE NOCASE
                   AND COALESCE(ar.name, '') = ? COLLATE NOCASE
                 LIMIT 1
                 """, arguments: [title, artist])

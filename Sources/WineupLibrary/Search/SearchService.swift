@@ -12,7 +12,7 @@ public struct SearchService: Sendable {
         let sql = LibraryTrack.baseSelect + """
 
             JOIN track_fts ON track_fts.rowid = af.id
-            WHERE track_fts MATCH ? AND af.status = 'present'
+            WHERE track_fts MATCH ? AND af.status = 'present' AND af.hidden = 0
             ORDER BY rank LIMIT ?
             """
         return try await database.pool.read { db in

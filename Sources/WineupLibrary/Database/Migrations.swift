@@ -140,6 +140,15 @@ enum LibraryMigrations {
                     tokenize='unicode61 remove_diacritics 2', prefix='2 3')
                 """)
         }
+        // v2: faixas de CUE (trechos de um arquivo) e arquivos escondidos (divididos por um CUE).
+        m.registerMigration("v2") { db in
+            try db.alter(table: "audio_file") { t in
+                t.add(column: "media_path", .text)           // arquivo de áudio real (faixa de CUE)
+                t.add(column: "segment_start", .double)      // início do trecho (s)
+                t.add(column: "segment_end", .double)        // fim do trecho (s); nil = até o fim
+                t.add(column: "hidden", .integer).notNull().defaults(to: 0)
+            }
+        }
         return m
     }
 }

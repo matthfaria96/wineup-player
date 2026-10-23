@@ -358,15 +358,16 @@ final class LibraryBrowser: ObservableObject {
     }
 
     func track(from item: LibraryTrack) -> Track {
-        Track(id: TrackID(stableKey: item.url.standardizedFileURL.path),
+        Track(id: TrackID(stableKey: item.mediaPath == nil ? item.url.standardizedFileURL.path : item.path),
               artist: item.artist, title: item.title, duration: Int(item.duration ?? 0),
-              mark: marks[item.url.path], url: item.url, album: item.album, genre: item.genre)
+              mark: marks[item.path], url: item.url, album: item.album, genre: item.genre,
+              start: item.start, end: item.end, libraryPath: item.mediaPath == nil ? nil : item.path)
     }
 
     private func withMark(_ t: Track) -> Track {
-        Track(id: t.id, artist: t.artist, title: t.title, duration: t.duration,
-              mark: t.url.flatMap { marks[$0.path] }, url: t.url, album: t.album, year: t.year, genre: t.genre,
-              start: t.start, end: t.end)
+        var copy = t
+        copy.mark = t.storeKey.flatMap { marks[$0] }
+        return copy
     }
 
     // MARK: Agrupamentos
@@ -452,6 +453,7 @@ final class LibraryBrowser: ObservableObject {
         return (folders, cueTracks + files.map(TrackLoader.track(url:)))
     }
 
+
     /// Faixas de uma folha CUE (o arquivo de áudio precisa existir).
     private static func cueTracksFor(_ cueURL: URL) -> [Track] {
         guard let data = try? Data(contentsOf: cueURL),
@@ -463,9 +465,12 @@ final class LibraryBrowser: ObservableObject {
             let total = fileDurations[entry.file] ?? Double(TrackLoader.track(url: entry.file).duration)
             fileDurations[entry.file] = total
             let length = (entry.end ?? total) - entry.start
-            return Track(id: TrackID(stableKey: entry.file.standardizedFileURL.path + "#\(entry.number)"),
+            // Mesma chave do índice (CueIndexer): "<arquivo.cue>#<n>".
+            let key = cueURL.standardizedFileURL.path + "#\(entry.number)"
+            return Track(id: TrackID(stableKey: key),
                          artist: entry.performer, title: entry.title, duration: Int(max(length, 0).rounded()),
-                         mark: nil, url: entry.file, album: sheet.album, start: entry.start, end: entry.end)
+                         mark: nil, url: entry.file, album: sheet.album, start: entry.start, end: entry.end,
+                         libraryPath: key)
         }
     }
 

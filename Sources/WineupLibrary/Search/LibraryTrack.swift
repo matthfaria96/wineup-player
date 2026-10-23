@@ -13,8 +13,13 @@ public struct LibraryTrack: Sendable, Equatable, Identifiable {
     public let discNumber: Int?
     public let duration: Double?
     public let status: FileStatus
+    /// Faixa de CUE: arquivo de áudio real e trecho. `path` é a chave na biblioteca.
+    public let mediaPath: String?
+    public let start: Double?
+    public let end: Double?
 
-    public var url: URL { URL(fileURLWithPath: path) }
+    /// Arquivo a tocar (o real, para faixas de CUE).
+    public var url: URL { URL(fileURLWithPath: mediaPath ?? path) }
 
     /// SELECT base compartilhado por busca e navegação. O chamador acrescenta JOIN/WHERE/ORDER.
     static let baseSelect = """
@@ -22,7 +27,8 @@ public struct LibraryTrack: Sendable, Equatable, Identifiable {
                COALESCE(ar.name, 'Unknown Artist') AS artist, rel.title AS album,
                NULLIF(rt.genre, '') AS genre, rt.track_number AS track_number,
                rt.disc_number AS disc_number, COALESCE(rec.duration, af.duration) AS duration,
-               af.status AS status
+               af.status AS status, af.media_path AS media_path,
+               af.segment_start AS segment_start, af.segment_end AS segment_end
         FROM audio_file af
         JOIN release_track rt ON rt.audio_file_id = af.id
         JOIN recording rec ON rec.id = rt.recording_id
@@ -36,6 +42,7 @@ public struct LibraryTrack: Sendable, Equatable, Identifiable {
             album: row["album"] ?? "Unknown Album", genre: row["genre"],
             trackNumber: row["track_number"], discNumber: row["disc_number"],
             duration: row["duration"],
-            status: FileStatus(rawValue: row["status"] as String) ?? .present)
+            status: FileStatus(rawValue: row["status"] as String) ?? .present,
+            mediaPath: row["media_path"], start: row["segment_start"], end: row["segment_end"])
     }
 }

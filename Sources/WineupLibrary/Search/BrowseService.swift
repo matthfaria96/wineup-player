@@ -27,7 +27,7 @@ public struct BrowseService: Sendable {
     public init(database: LibraryDatabase) { self.database = database }
 
     private func statusClause(_ includeMissing: Bool) -> String {
-        includeMissing ? "1=1" : "af.status = 'present'"
+        includeMissing ? "af.hidden = 0" : "af.status = 'present' AND af.hidden = 0"
     }
     private static let order = "ORDER BY rel.title, rt.disc_number, rt.track_number, rec.title"
     private static let genreExpr = "COALESCE(NULLIF(rt.genre, ''), ?)"
@@ -132,7 +132,7 @@ public struct BrowseService: Sendable {
         return """
             \(st) AND (rel.id IS NULL OR rel.title = 'Unknown Album' OR
               (SELECT COUNT(*) FROM release_track rt2 JOIN audio_file af2 ON af2.id = rt2.audio_file_id
-               WHERE rt2.release_id = rt.release_id AND \(includeMissing ? "1=1" : "af2.status = 'present'")) = 1)
+               WHERE rt2.release_id = rt.release_id AND \(includeMissing ? "af2.hidden = 0" : "af2.status = 'present' AND af2.hidden = 0")) = 1)
             """
     }
 
