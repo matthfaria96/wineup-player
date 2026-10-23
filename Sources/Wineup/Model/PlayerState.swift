@@ -639,7 +639,8 @@ final class PlayerState: ObservableObject {
         lyricsOrigin = .searching
         lyricLines = ["Procurando a letra…"]
         let duration = track.end.map { $0 - (track.start ?? 0) } ?? Double(track.duration)
-        Task { [weak self] in
+        // Na thread principal: estas propriedades redesenham a tela e o menu (fora dela o app fechava).
+        Task { @MainActor [weak self] in
             let found = try? await LyricsService.standard().best(title: track.title, artist: track.artist, album: track.album,
                                                        duration: duration > 0 ? duration : nil)
             guard let self, self.currentID == track.id else { return }

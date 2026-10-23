@@ -11,10 +11,11 @@ public final class WaveformAnalyzer: @unchecked Sendable {
     private let cache = OSAllocatedUnfairLock(initialState: [String: [Float]]())
 
     /// Volume em dBFS de cada trecho. Lento (decodifica o arquivo todo): chame fora da thread principal.
-    public func levels(_ url: URL) -> [Float]? {
+    /// `isCancelled` interrompe a leitura (ex.: o usuário já trocou de música); nada é guardado nesse caso.
+    public func levels(_ url: URL, isCancelled: () -> Bool = { false }) -> [Float]? {
         let key = Self.key(url)
         if let hit = cache.withLock({ $0[key] }) { return hit }
-        guard let result = Self.analyze(url) else { return nil }
+        guard let result = Self.analyze(url, isCancelled: isCancelled) else { return nil }
         cache.withLock { c in
             if c.count > 200 { c.removeAll() }
             c[key] = result
@@ -28,10 +29,10 @@ public final class WaveformAnalyzer: @unchecked Sendable {
     }
 
     /// Soma de quadrados por janela de ~50 ms; depois agrupa em `bucketCount` trechos e converte para dB.
-    static func analyze(_ url: URL) -> [Float]? {
+    static func analyze(_ url: URL, isCancelled: () -> Bool = { false }) -> [Float]? {
         var windows: [Float] = []
         var acc: Float = 0, count = 0, window = 2_205
-        let ok = AudioFileReader.read(url) { planar, rate in
+        let ok = AudioFileReader.read(url, isCancelled: isCancelled) { planar, rate in
             window = max(1, Int(rate / 20))
             let frames = planar.first?.count ?? 0
             for i in 0..<frames {

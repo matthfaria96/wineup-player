@@ -23,9 +23,13 @@ struct WaveformView: View {
             .task(id: url) {
                 heights = []
                 guard let url else { return }
-                let loaded = await Task.detached(priority: .utility) {
-                    WaveformAnalyzer.shared.levels(url).map { Waveform.heights($0) } ?? []
-                }.value
+                // Espera um instante: pulando de música em música, só a última é lida.
+                try? await Task.sleep(for: .milliseconds(350))
+                guard !Task.isCancelled else { return }
+                let work = Task.detached(priority: .utility) {
+                    WaveformAnalyzer.shared.levels(url, isCancelled: { Task.isCancelled }).map { Waveform.heights($0) } ?? []
+                }
+                let loaded = await withTaskCancellationHandler { await work.value } onCancel: { work.cancel() }
                 guard !Task.isCancelled else { return }
                 withAnimation(.easeOut(duration: 0.35)) { heights = loaded }
             }

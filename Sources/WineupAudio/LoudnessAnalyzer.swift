@@ -72,10 +72,44 @@ public final class LoudnessAnalyzer: @unchecked Sendable {
 }
 
 /// Lê um arquivo de áudio inteiro em blocos, já em Float32 não intercalado (até 2 canais).
+/// Uma leitura por vez em todo o app (forma de onda e medição de volume): decodificadores como o do MP3
+/// (mpg123) não aguentam várias aberturas simultâneas fora do player, e trocar de música rápido empilhava leituras.
 enum AudioFileReader {
-    /// Chama `body` para cada bloco decodificado. false se o arquivo não pôde ser aberto.
+    private static let lock = NSLock()
+    /// Formatos que o Core Audio lê sozinho; os outros (Ogg, Opus, APE...) passam pelo SFB.
+    private static let coreAudioTypes: Set<String> = ["mp3", "m4a", "aac", "mp4", "wav", "aif", "aiff", "aifc", "caf", "flac", "alac"]
+
+    /// Chama `body` para cada bloco decodificado. false se o arquivo não pôde ser aberto ou a leitura foi cancelada.
     @discardableResult
-    static func read(_ url: URL, _ body: ([UnsafeBufferPointer<Float>], Double) -> Void) -> Bool {
+    static func read(_ url: URL, isCancelled: () -> Bool = { false },
+                     _ body: ([UnsafeBufferPointer<Float>], Double) -> Void) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        if isCancelled() { return false }
+        if coreAudioTypes.contains(url.pathExtension.lowercased()), let ok = readWithCoreAudio(url, isCancelled, body) {
+            return ok
+        }
+        return readWithSFB(url, isCancelled, body)
+    }
+
+    /// nil se o Core Audio não abriu o arquivo (aí tenta o SFB).
+    private static func readWithCoreAudio(_ url: URL, _ isCancelled: () -> Bool,
+                                          _ body: ([UnsafeBufferPointer<Float>], Double) -> Void) -> Bool? {
+        guard let file = try? AVAudioFile(forReading: url) else { return nil }
+        let format = file.processingFormat
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 65_536) else { return nil }
+        while true {
+            if isCancelled() { return false }
+            guard (try? file.read(into: buffer)) != nil, buffer.frameLength > 0, let data = buffer.floatChannelData else { break }
+            let frames = Int(buffer.frameLength)
+            let channels = min(Int(format.channelCount), 2)
+            body((0..<channels).map { UnsafeBufferPointer(start: data[$0], count: frames) }, format.sampleRate)
+        }
+        return true
+    }
+
+    private static func readWithSFB(_ url: URL, _ isCancelled: () -> Bool,
+                                    _ body: ([UnsafeBufferPointer<Float>], Double) -> Void) -> Bool {
         guard let decoder = try? AudioDecoder(url: url), (try? decoder.open()) != nil else { return false }
         defer { try? decoder.close() }
         let source = decoder.processingFormat
@@ -86,6 +120,7 @@ enum AudioFileReader {
         guard let input = AVAudioPCMBuffer(pcmFormat: source, frameCapacity: chunk),
               let output = AVAudioPCMBuffer(pcmFormat: target, frameCapacity: chunk) else { return false }
         while true {
+            if isCancelled() { return false }
             guard (try? decoder.decode(into: input, length: chunk)) != nil, input.frameLength > 0 else { break }
             let buffer: AVAudioPCMBuffer
             if let converter {

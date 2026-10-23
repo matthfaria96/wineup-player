@@ -54,3 +54,29 @@ struct WaveformRealTests {
         }
     }
 }
+
+/// Trocar de música rápido: várias leituras de MP3 ao mesmo tempo, a maioria cancelada no meio, junto com a
+/// medição de volume. Antes, o mpg123 derrubava o app. `WINEUP_WAVEFORM_DIR=<pasta com mp3> scripts/test.sh --filter WaveformStress`.
+@Suite("Forma de onda: estresse", .enabled(if: ProcessInfo.processInfo.environment["WINEUP_WAVEFORM_DIR"] != nil))
+struct WaveformStressTests {
+    @Test func rapidSwitchingDoesNotCrash() async throws {
+        let dir = URL(fileURLWithPath: ProcessInfo.processInfo.environment["WINEUP_WAVEFORM_DIR"]!)
+        let files = try FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)
+            .filter { ["mp3", "m4a", "flac"].contains($0.pathExtension.lowercased()) }
+        try #require(!files.isEmpty)
+        let analyzer = WaveformAnalyzer()
+        await withTaskGroup(of: Void.self) { group in
+            for round in 0..<40 {
+                let url = files[round % files.count]
+                let task = Task.detached { analyzer.levels(url, isCancelled: { Task.isCancelled }) }
+                group.addTask {
+                    try? await Task.sleep(for: .milliseconds(round % 3 == 0 ? 400 : 15))
+                    if round % 3 != 0 { task.cancel() }
+                    _ = await task.value
+                }
+                group.addTask { _ = LoudnessAnalyzer(directory: FileManager.default.temporaryDirectory).measure(url) }
+            }
+        }
+        #expect(analyzer.levels(files[0]) != nil)
+    }
+}
