@@ -22,9 +22,7 @@ struct TrackRow: View {
     var body: some View {
         HStack(spacing: 6) {
             if detailed {
-                Image(systemName: "music.note")
-                    .frame(width: 30, height: 30)
-                    .background(RoundedRectangle(cornerRadius: 4).fill(theme.artworkTint))
+                RowCover(url: track.url)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(track.title).lineLimit(1)
                     Text([track.artist, track.album].compactMap { $0 }.joined(separator: " · "))
@@ -61,6 +59,27 @@ struct TrackRow: View {
         }
         .padding(.horizontal, 6)
         .contentShape(Rectangle())
+    }
+}
+
+/// Miniatura da capa no modo "Com detalhes" (nota musical enquanto carrega ou sem capa).
+private struct RowCover: View {
+    let url: URL?
+    @StateObject private var covers = CoverLoader()
+    @Environment(\.theme) private var theme
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 4).fill(theme.artworkTint)
+            .frame(width: 30, height: 30)
+            .overlay {
+                if let image = covers.image {
+                    Image(nsImage: image).resizable().scaledToFill()
+                } else {
+                    Image(systemName: "music.note")
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 4))
+            .onAppear { covers.load(url) }
     }
 }
 
