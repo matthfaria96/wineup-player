@@ -1,0 +1,198 @@
+{
+ "format": "wineup-skin",
+ "version": 1,
+ "id": "classico",
+ "name": "Clássico",
+ "author": "Wineup",
+ "description": "O player clássico de 1998: metal cinza-arroxeado em bisel, tiras douradas estriadas, telas pretas com dígitos e texto verde-fósforo, cabos e fendas de ventilação. Tecnologia velha, do jeito que era.",
+ "credits": [
+  {
+   "work": "VT323 (fonte de terminal/visor)",
+   "author": "Peter Hull",
+   "license": "SIL Open Font License 1.1",
+   "source": "https://github.com/google/fonts/tree/main/ofl/vt323"
+  }
+ ],
+ "colors": {
+  "windowTop": "#2E2E46",
+  "windowBottom": "#1C1C2C",
+  "panelFill": "#4A4A68E6",
+  "panelBorder": "#8A8AAA99",
+  "text": "#B8F5C4",
+  "mutedText": "#6FC886",
+  "accent": "#00FF40",
+  "rowSelection": "#0000C8AA",
+  "currentRow": "#FFFFFF",
+  "lyricsActive": "#00FF40",
+  "lyricsIdle": "#7FD894BB",
+  "control": "#8C8CAC",
+  "artworkTint": "#2C2C42",
+  "display": "#00FF40",
+  "buttonText": "#E6E6F0",
+  "buttonTextOn": "#B0FFC0",
+  "meterLow": "#00FF40",
+  "meterMid": "#E8E43A",
+  "meterPeak": "#FF3A2A"
+ },
+ "window": {
+  "background": {
+   "image": "background.jpg",
+   "dim": 0.0
+  },
+  "layers": [
+   {
+    "kind": "glow",
+    "name": "fósforo",
+    "points": [
+     {
+      "x": 0.62,
+      "y": 0.14,
+      "r": 0.22
+     }
+    ],
+    "color": "#00FF40",
+    "speed": 0.6,
+    "intensity": 0.1
+   }
+  ]
+ },
+ "panels": {
+  "default": {
+   "fill": {
+    "image": "panel-metal.jpg",
+    "dim": 0.0
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 2
+  },
+  "playlist": {
+   "fill": {
+    "image": "panel-screen.jpg",
+    "dim": 0.0
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 2
+  },
+  "player": {
+   "fill": {
+    "image": "panel-metal.jpg",
+    "dim": 0.0
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 2,
+   "layers": [
+    {
+     "kind": "image",
+     "name": "LED",
+     "image": "led.png",
+     "points": [
+      {
+       "x": 0.955,
+       "y": 0.09,
+       "r": 0.018
+      }
+     ],
+     "motion": "pulse",
+     "speed": 1.6,
+     "intensity": 1.0,
+     "react": true
+    }
+   ]
+  },
+  "equalizer": {
+   "fill": {
+    "image": "panel-metal-dark.jpg",
+    "dim": 0.0
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 2
+  },
+  "artwork": {
+   "fill": {
+    "image": "panel-metal.jpg",
+    "dim": 0.0
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 2,
+   "layers": []
+  },
+  "lyrics": {
+   "fill": {
+    "image": "panel-screen.jpg",
+    "dim": 0.0
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 2,
+   "layers": [
+    {
+     "kind": "glow",
+     "name": "brilho verde",
+     "points": [
+      {
+       "x": 0.5,
+       "y": 0.06,
+       "r": 0.35
+      }
+     ],
+     "color": "#00FF40",
+     "speed": 0.8,
+     "intensity": 0.12
+    }
+   ]
+  }
+ },
+ "controls": {
+  "button": {
+   "image": "button.png",
+   "slice": 14,
+   "width": 7
+  },
+  "buttonOn": {
+   "image": "button-on.png",
+   "slice": 14,
+   "width": 7
+  },
+  "field": {
+   "image": "field.png",
+   "slice": 14,
+   "width": 7
+  },
+  "knob": "knob.png",
+  "knobSize": 22
+ },
+ "display": {
+  "glow": 0.8
+ },
+ "fonts": [
+  "VT323-Regular.ttf"
+ ],
+ "titleFont": {
+  "name": "VT323",
+  "size": 15
+ },
+ "artwork": "artwork.jpg"
+}
