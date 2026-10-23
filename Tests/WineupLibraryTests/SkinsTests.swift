@@ -19,7 +19,7 @@ struct SkinsTests {
     @Test func everyBuiltInSkinIsCompleteAndReadable() throws {
         let (s, user) = store()
         defer { try? FileManager.default.removeItem(at: user.deletingLastPathComponent()) }
-        #expect(s.skins.map(\.id) == ["neon-gotico", "noite-estrelada", "pixelart-8bit"])
+        #expect(s.skins.map(\.id) == ["neon-gotico", "noite-estrelada", "pixelart-16bit"])
         for skin in s.skins {
             #expect(skin.builtIn)
             for file in skin.manifest.referencedFiles {

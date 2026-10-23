@@ -1,10 +1,10 @@
 {
  "format": "wineup-skin",
  "version": 1,
- "id": "pixelart-8bit",
- "name": "Pixelart 8bit",
+ "id": "pixelart-16bit",
+ "name": "PixelArt 16bit",
  "author": "Wineup",
- "description": "Aventura em pixel art de 8 bits: masmorra de tijolos verdes, cerca de madeira, botões dourados e corações que batem com a música. Pixels limpos, sem ruído.",
+ "description": "Aventura em pixel art de 16 bits: masmorra de tijolos verdes, cerca de madeira, botões dourados e corações que batem com a música. Pixels limpos, sem ruído.",
  "credits": [
   {
    "work": "Press Start 2P (fonte pixel)",
