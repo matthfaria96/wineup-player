@@ -48,12 +48,18 @@ private func sine(_ hz: Double, rate: Double = 44_100, count: Int = 1024) -> [Fl
     #expect(MeterMath.dbToMeter(-30) < MeterMath.dbToMeter(-10))
 }
 
-/// O vermelho do medidor (3 de 24 barras) começa em −7,5 dB: um pico de −1 dBFS precisa chegar lá,
-/// e uma média típica de música (RMS −12 dBFS) não.
-@Test func peaksReachTheRedZone() {
-    let redStart: Float = 21.0 / 24.0
-    #expect(MeterMath.peakToMeter(pow(10, -1.0 / 20)) > redStart)
-    #expect(MeterMath.peakToMeter(-0.95) > redStart)
-    #expect(MeterMath.dbToMeter(-12) < redStart)
-    #expect(MeterMath.peakToMeter(0) == 0)
+/// Medidor de barras (24 barras: verde até 15, amarelo até 21, vermelho nas 3 últimas). Música alta e
+/// constante não fica presa no vermelho: na média fica no amarelo; acima da média sobe ao vermelho;
+/// abaixo, desce ao verde. Silêncio zera.
+@Test func barMeterFollowsTheMusicDynamics() {
+    let yellowStart: Float = 15.0 / 24.0, redStart: Float = 21.0 / 24.0, dt: Float = 1.0 / 30
+    func amp(_ db: Float) -> Float { pow(10, db / 20) }
+    var m = BarMeter()
+    for _ in 0..<300 { _ = m.next(rms: amp(-9), dt: dt) }              // 10 s de música alta e constante
+    #expect((yellowStart..<redStart).contains(m.value))
+    #expect(m.next(rms: amp(-3), dt: dt) > redStart)                   // batida bem acima da média
+    for _ in 0..<30 { _ = m.next(rms: amp(-20), dt: dt) }             // trecho calmo
+    #expect(m.value < yellowStart)
+    for _ in 0..<60 { _ = m.next(rms: 0, dt: dt) }
+    #expect(m.value == 0)
 }

@@ -132,7 +132,7 @@ private struct LiveMeter: View {
     let tap: LevelTap
 
     var body: some View {
-        LevelMeter(levels: meter.peaks)
+        LevelMeter(levels: meter.bars)
             .accessibilityHidden(true)
             .onAppear { meter.start(tap: tap) }
             .onDisappear { meter.stop() }

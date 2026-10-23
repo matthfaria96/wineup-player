@@ -86,12 +86,6 @@ public enum MeterMath {
         return min(1, max(0, (db - floorDB) / -floorDB))
     }
 
-    /// Pico de amostra (amplitude 0...1) na escala do medidor. É o pico, não a média (RMS), que chega ao fim
-    /// da escala: música masterizada tem média por volta de −9 a −14 dBFS, mas os picos encostam em 0 dBFS.
-    public static func peakToMeter(_ amplitude: Float) -> Float {
-        dbToMeter(20 * log10(max(abs(amplitude), 1e-9)))
-    }
-
     public static func isStale(timestamp: TimeInterval, now: TimeInterval, maxAge: TimeInterval = 0.1) -> Bool {
         now - timestamp > maxAge
     }
@@ -100,5 +94,34 @@ public enum MeterMath {
     public static func ballistic(current: Float, target: Float, dt: Float, decayPerSecond: Float = 1.5) -> Float {
         if target >= current { return target }
         return max(target, current - decayPerSecond * max(0, dt))
+    }
+}
+
+/// Medidor de barras que acompanha a dinâmica da música: mistura o volume absoluto (−40…−6 dBFS) com a
+/// distância do volume atual à média dos últimos ~2,5 s. Assim a barra passeia pelas três cores em qualquer
+/// música: trechos abaixo da média no verde, na média no amarelo e só os picos acima dela no vermelho.
+/// Calibrado em faixas reais: música alta fica ~30% verde, ~50% amarelo e ~18% vermelho.
+public struct BarMeter: Sendable {
+    public static let absoluteWeight: Float = 0.3
+    public static let spanDB: Float = 12
+    public static let center: Float = 0.5
+    public static let averageSeconds: Float = 2.5
+    public static let decayPerSecond: Float = 1.6
+    public static let silenceDB: Float = -55
+
+    public private(set) var value: Float = 0
+    private var averageDB: Float = -20
+
+    public init() {}
+
+    /// Avança um quadro com o RMS (amplitude 0...1) e devolve o nível da barra (0...1).
+    public mutating func next(rms: Float, dt: Float) -> Float {
+        let db = 20 * log10(max(abs(rms), 1e-9))
+        if db > Self.silenceDB { averageDB += (db - averageDB) * min(1, dt / Self.averageSeconds) }
+        let absolute = min(1, max(0, (db + 40) / 34))
+        let relative = db <= Self.silenceDB ? 0 : min(1, max(0, Self.center + (db - averageDB) / Self.spanDB))
+        let target = Self.absoluteWeight * absolute + (1 - Self.absoluteWeight) * relative
+        value = MeterMath.ballistic(current: value, target: target, dt: dt, decayPerSecond: Self.decayPerSecond)
+        return value
     }
 }
