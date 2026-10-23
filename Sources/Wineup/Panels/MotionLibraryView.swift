@@ -16,7 +16,11 @@ struct MotionLibraryView: View {
     @State private var confirmDelete: VideoCategory?
 
     private static let scenes: [VisualMode] = [.aurora, .fjord, .city, .universe]
-    private let grid = [GridItem(.adaptive(minimum: 150, maximum: 200), spacing: 14)]
+    private static let columns = 4
+    private static let gap: CGFloat = 14
+    /// Largura útil (720 − margens) dividida em 4 colunas fixas: assim o balão sabe onde apontar.
+    private static let cellWidth: CGFloat = (680 - gap * CGFloat(columns - 1)) / CGFloat(columns)
+    private let grid = Array(repeating: GridItem(.fixed(cellWidth), spacing: gap), count: columns)
 
     private var selectedScene: VisualMode? {
         motion.hasPrefix("scene:") ? VisualMode(rawValue: String(motion.dropFirst(6))) : nil
@@ -42,16 +46,7 @@ struct MotionLibraryView: View {
                         }
                     }
                     section("Vídeos", "Sem som, um clipe diferente a cada música.") {
-                        LazyVGrid(columns: grid, spacing: 14) {
-                            ForEach(store.categories) { c in categoryCard(c) }
-                            addCard
-                        }
-                    }
-                    if let c = selectedCategory {
-                        clipList(c)
-                            .id("clips")
-                            .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity),
-                                                    removal: .opacity))
+                        videoGrid
                     }
                 }
                 .padding(20)
@@ -59,7 +54,9 @@ struct MotionLibraryView: View {
             }
             .onChange(of: motion) { _, new in
                 guard new.hasPrefix("video:") else { return }
-                withAnimation(.easeInOut(duration: 0.45)) { proxy.scrollTo("clips", anchor: .bottom) }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    withAnimation(.easeInOut(duration: 0.45)) { proxy.scrollTo("clips", anchor: .bottom) }
+                }
             }
             }
         }
@@ -127,8 +124,32 @@ struct MotionLibraryView: View {
         .buttonStyle(.plain)
     }
 
-    /// Os vídeos da categoria escolhida, com miniatura e nome.
-    private func clipList(_ c: VideoCategory) -> some View {
+    /// Grade de categorias em linhas; abaixo da linha do card escolhido abre um balão
+    /// com a ponta apontando para ele, com os vídeos tocando em players pequenos.
+    private var videoGrid: some View {
+        let items: [VideoCategory?] = store.categories.map { Optional($0) } + [nil]
+        let rows = stride(from: 0, to: items.count, by: Self.columns).map { Array(items[$0..<min($0 + Self.columns, items.count)]) }
+        return VStack(alignment: .leading, spacing: Self.gap) {
+            ForEach(rows.indices, id: \.self) { r in
+                HStack(alignment: .top, spacing: Self.gap) {
+                    ForEach(rows[r].indices, id: \.self) { i in
+                        Group {
+                            if let c = rows[r][i] { categoryCard(c) } else { addCard }
+                        }
+                        .frame(width: Self.cellWidth)
+                    }
+                }
+                if let c = selectedCategory, let col = rows[r].firstIndex(where: { $0?.id == c.id }) {
+                    clipBubble(c, arrowX: CGFloat(col) * (Self.cellWidth + Self.gap) + Self.cellWidth / 2)
+                        .id("clips")
+                        .transition(.asymmetric(insertion: .scale(scale: 0.96, anchor: .top).combined(with: .opacity),
+                                                removal: .opacity))
+                }
+            }
+        }
+    }
+
+    private func clipBubble(_ c: VideoCategory, arrowX: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("Vídeos em \(c.name)").font(.headline)
@@ -145,22 +166,26 @@ struct MotionLibraryView: View {
                     HStack(spacing: 12) {
                         ForEach(c.clips, id: \.self) { url in
                             VStack(alignment: .leading, spacing: 5) {
-                                VideoThumbnail(url: url)
-                                    .frame(width: 168, height: 96)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                                    .overlay(alignment: .bottomTrailing) {
-                                        Image(systemName: "play.fill").font(.system(size: 9)).foregroundStyle(.white)
-                                            .padding(5).background(.black.opacity(0.45), in: Circle()).padding(6)
-                                    }
+                                ZStack {
+                                    VideoThumbnail(url: url)
+                                    VideoWall(clips: [url], trackKey: 0)
+                                }
+                                .frame(width: 176, height: 99)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.white.opacity(0.08)))
                                 Text(Self.clipTitle(url, category: c)).font(.callout).lineLimit(1)
                             }
-                            .frame(width: 168)
+                            .frame(width: 176)
                         }
                     }
-                    .padding(12)
                 }
-                .background(RoundedRectangle(cornerRadius: 12).fill(.quaternary.opacity(0.5)))
             }
+        }
+        .padding(.horizontal, 14).padding(.bottom, 14).padding(.top, 14 + Callout.arrow)
+        .background {
+            Callout(arrowX: arrowX).fill(.regularMaterial)
+                .overlay(Callout(arrowX: arrowX).stroke(.separator, lineWidth: 0.5))
+                .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
         }
     }
 
@@ -203,6 +228,27 @@ struct MotionLibraryView: View {
     }
 }
 
+/// Balão com ponta no topo (como os menus da barra do macOS), apontando para `arrowX`.
+private struct Callout: Shape {
+    static let arrow: CGFloat = 9
+    var arrowX: CGFloat
+    var animatableData: CGFloat { get { arrowX } set { arrowX = newValue } }
+
+    func path(in rect: CGRect) -> Path {
+        let a = Self.arrow, r: CGFloat = 12
+        let body = CGRect(x: rect.minX, y: rect.minY + a, width: rect.width, height: rect.height - a)
+        let x = min(max(arrowX, body.minX + r + a), body.maxX - r - a)
+        var p = Path(roundedRect: body, cornerRadius: r, style: .continuous)
+        var tip = Path()
+        tip.move(to: CGPoint(x: x - a - 2, y: body.minY + 0.5))
+        tip.addQuadCurve(to: CGPoint(x: x, y: rect.minY), control: CGPoint(x: x - 3, y: body.minY))
+        tip.addQuadCurve(to: CGPoint(x: x + a + 2, y: body.minY + 0.5), control: CGPoint(x: x + 3, y: body.minY))
+        tip.closeSubpath()
+        p.addPath(tip)
+        return p.union(tip)
+    }
+}
+
 /// Cartão de miniatura com título e legenda; o escolhido ganha borda de destaque.
 private struct Card<Preview: View>: View {
     let title: String
@@ -214,12 +260,10 @@ private struct Card<Preview: View>: View {
     var body: some View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 6) {
-                ZStack {
-                    Color.black
-                    preview()
-                }
-                .aspectRatio(16 / 10, contentMode: .fit)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+                Color.black
+                    .aspectRatio(16 / 10, contentMode: .fit)
+                    .overlay { preview() }
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
                         .strokeBorder(selected ? Color.accentColor : .clear, lineWidth: 3)

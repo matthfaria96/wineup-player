@@ -22,10 +22,20 @@ struct ChromeSlider: View {
         }
     }
 
+    /// Comprimento real do puxador no eixo: o do skin quando há imagem (senão o puxador
+    /// passava do trilho nos extremos, ex.: presets com bandas em ±12 dB).
+    private var effectiveKnobLength: CGFloat {
+        if let art = theme.art, art.image(art.manifest.controls.knob) != nil {
+            return CGFloat(art.manifest.controls.knobSize ?? 20)
+        }
+        return knobLength
+    }
+
     var body: some View {
         GeometryReader { geo in
             let horizontal = axis == .horizontal
             let length = horizontal ? geo.size.width : geo.size.height
+            let knobLength = effectiveKnobLength
             let travel = max(length - knobLength, 1)
             let span = range.upperBound - range.lowerBound
             let fraction = span == 0 ? 0 : (value - range.lowerBound) / span

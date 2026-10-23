@@ -41,7 +41,7 @@ struct EqualizerPanel: View {
             .help(state.soundCorrection ? "Correção de Som ligada: todas as músicas no mesmo volume"
                                         : "Correção de Som: deixar todas as músicas no mesmo volume")
             SkinMenu(help: "Preset do equalizador") {
-                Picker("Preset", selection: Binding(get: { state.preset }, set: { state.apply(preset: $0) })) {
+                Picker("Preset", selection: Binding(get: { state.preset }, set: { p in withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { state.apply(preset: p) } })) {
                     ForEach((state.presets.map(\.name) + ["Custom"]), id: \.self) { Text($0).tag($0) }
                 }
                 .pickerStyle(.inline)
@@ -50,7 +50,7 @@ struct EqualizerPanel: View {
                 Text(state.preset).lineLimit(1).truncationMode(.tail).frame(maxWidth: 62, alignment: .leading)
             }
             .frame(maxWidth: .infinity)
-            ChromeButton("Reset") { state.apply(preset: "Flat"); state.preamp = 0 }
+            ChromeButton("Reset") { withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { state.apply(preset: "Flat"); state.preamp = 0 } }
                 .frame(width: 48)
             presetBar
         }
