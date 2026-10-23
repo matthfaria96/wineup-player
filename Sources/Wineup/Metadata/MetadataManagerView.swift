@@ -18,7 +18,7 @@ struct MetadataManagerView: View {
     var body: some View {
         HSplitView {
             MetadataSidebar(model: model, onPickMatch: { pickerRow = $0 })
-                .frame(minWidth: 290, idealWidth: 320, maxWidth: 380)
+                .frame(minWidth: 250, idealWidth: 280, maxWidth: 360)
             VStack(spacing: 0) {
                 MetadataTable(model: model, onPickMatch: { pickerRow = $0 })
                 Divider()
@@ -46,20 +46,20 @@ struct MetadataManagerView: View {
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItemGroup(placement: .navigation) {
-            Button { model.chooseFolder() } label: { Label("Pasta", systemImage: "folder").labelStyle(.titleAndIcon) }
+            Button { model.chooseFolder() } label: { Label("Pasta", systemImage: "folder") }
                 .help("Escolher outra pasta")
-            Button { model.reload() } label: { Label("Analisar", systemImage: "arrow.clockwise").labelStyle(.titleAndIcon) }
+            Button { model.reload() } label: { Label("Analisar", systemImage: "arrow.clockwise") }
                 .help("Ler de novo e analisar a pasta")
                 .disabled(model.folder == nil || model.isLoading)
         }
         ToolbarItemGroup {
             Button { model.autoFix(onlySelection: false) } label: {
-                Label("Corrigir tudo", systemImage: "wand.and.stars").labelStyle(.titleAndIcon)
+                Label("Corrigir tudo", systemImage: "wand.and.stars")
             }
             .help("Buscar metadados, capas e letras para todas as músicas com problemas")
             .disabled(model.rows.isEmpty || model.isBusy)
             Button { showAlbumSearch = true } label: {
-                Label("Buscar álbum", systemImage: "square.stack").labelStyle(.titleAndIcon)
+                Label("Buscar álbum", systemImage: "square.stack")
             }
             .help("Escolher o álbum no MusicBrainz e preencher todas as faixas de uma vez (seleção ou lista)")
             .disabled(model.rows.isEmpty || model.isBusy)
@@ -72,11 +72,11 @@ struct MetadataManagerView: View {
                     .disabled(model.selection.isEmpty)
                 Button("Buscar letras de todas sem letra sincronizada") { model.fetchLyrics(onlySelection: false) }
             } label: {
-                Label("Buscar", systemImage: "magnifyingglass").labelStyle(.titleAndIcon)
+                Label("Buscar", systemImage: "magnifyingglass")
             }
             .disabled(model.rows.isEmpty || model.isBusy)
             Button { model.save(onlySelection: false) } label: {
-                Label("Salvar tudo", systemImage: "square.and.arrow.down").labelStyle(.titleAndIcon)
+                Label("Salvar tudo", systemImage: "square.and.arrow.down")
             }
             .help("Gravar todas as alterações pendentes (com backup)")
             .disabled(model.dirtyCount == 0 || model.isBusy)
@@ -91,7 +91,7 @@ struct MetadataManagerView: View {
                 .pickerStyle(.inline)
             } label: {
                 Label(model.filter.title, systemImage: "line.3.horizontal.decrease.circle")
-                    .labelStyle(.titleAndIcon)
+                    
             }
             .fixedSize()
             .help("Mostrar todas, só as com problemas, as alteradas ou as duplicadas")
@@ -105,6 +105,10 @@ struct MetadataManagerView: View {
 
     private var statusBar: some View {
         HStack(spacing: 10) {
+            Text(model.footer)
+                .monospacedDigit()
+                .help("Seleção e total: quantidade (duração | tamanho)")
+            Spacer()
             if let p = model.progress {
                 ProgressView(value: Double(p.done), total: Double(max(p.total, 1)))
                     .frame(width: 140)
@@ -114,16 +118,13 @@ struct MetadataManagerView: View {
                 ProgressView().controlSize(.small)
                 Text("Analisando a pasta…")
             } else if let m = model.message {
-                Text(m)
+                Text(m).lineLimit(1)
             }
-            Spacer()
-            Text(model.footer)
-                .monospacedDigit()
         }
         .font(.system(size: 11))
         .foregroundStyle(.secondary)
         .padding(.horizontal, 10)
-        .frame(height: 26)
+        .frame(height: 24)
     }
 }
 
@@ -138,6 +139,11 @@ struct MetadataSettings: View {
                 Text("Substituir também o que já existe").tag(FillPolicy.overwrite)
             }
             .pickerStyle(.radioGroup)
+            Section("Letras: conta Musixmatch (opcional)") {
+                SecureField("Token da sua conta", text: $model.musixmatchToken)
+                Text("Usado só quando o catálogo principal não tem a letra. O Musixmatch bloqueia o acesso sem conta.")
+                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
             Section("Reconhecer pelo som (AcoustID)") {
                 TextField("Chave de aplicativo", text: $model.acoustIDKey)
                 Text(model.fpcalcFound
@@ -147,7 +153,7 @@ struct MetadataSettings: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            Text("Só consulta a internet quando você pede (Corrigir tudo, Buscar, Ver resultados). Envia título, artista, álbum e duração para MusicBrainz, Cover Art Archive, LRCLIB e a busca do iTunes (só para descobrir o álbum); com AcoustID, também a impressão digital do áudio. Antes de gravar, o Wineup guarda um backup de cada arquivo.")
+            Text("Só consulta a internet quando você pede (Corrigir tudo, Buscar, Ver resultados). Envia título, artista, álbum e duração aos serviços de metadados, capas e letras; com AcoustID, também a impressão digital do áudio. Antes de gravar, o Wineup guarda um backup de cada arquivo.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

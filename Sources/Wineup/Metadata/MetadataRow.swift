@@ -45,6 +45,14 @@ struct MetadataRow: Identifiable, Equatable {
     var sortTrack: Int { (Int(value("discNumber")) ?? 1) * 1000 + (Int(value("trackNumber")) ?? 999) }
     var sortYear: Int { Int(value("year").prefix(4)) ?? 0 }
     var sortConfidence: Double { confidence ?? -1 }
+    var sortPath: String { url.deletingLastPathComponent().path.lowercased() }
+    var sortAlbumArtist: String { value("albumArtist").lowercased() }
+    var sortComment: String { value("comment").lowercased() }
+    var sortComposer: String { value("composer").lowercased() }
+    var sortDisc: Int { Int(value("discNumber")) ?? 0 }
+    var sortBitrate: Int { file.tech.bitrate ?? 0 }
+    var sortSampleRate: Double { file.tech.sampleRate ?? 0 }
+    var sortDuration: Double { file.duration ?? 0 }
     func isEdited(_ field: String) -> Bool { edits[field] != nil }
 
     var hasTagChanges: Bool { !edits.isEmpty || cover != nil }

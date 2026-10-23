@@ -178,7 +178,7 @@ struct CoverBox: View {
     }
 }
 
-/// Letra: a nova (pendente) ou a atual do .lrc; busca e escolha manual no LRCLIB.
+/// Letra: a nova (pendente) ou a atual do .lrc; busca e escolha manual no catálogo online.
 struct LyricsBox: View {
     @ObservedObject var model: MetadataManagerModel
     let row: MetadataRow
@@ -190,7 +190,7 @@ struct LyricsBox: View {
     /// Letras disponíveis para ver, a nova primeiro.
     private var sources: [LyricsSource] {
         var out: [LyricsSource] = []
-        if let text = row.lyrics?.text { out.append(LyricsSource(id: "new", title: "Nova (LRCLIB)", text: text)) }
+        if let text = row.lyrics?.text { out.append(LyricsSource(id: "new", title: "Nova", text: text)) }
         if let current { out.append(LyricsSource(id: "lrc", title: "Atual (.lrc)", text: current)) }
         let embedded = row.file.value("lyrics")
         if !embedded.isEmpty { out.append(LyricsSource(id: "tag", title: "Embutida", text: embedded)) }
@@ -263,7 +263,7 @@ struct LyricsBox: View {
         Task {
             options = Array(await model.lyricsOptions(for: row).prefix(8))
             searching = false
-            if options.isEmpty { model.message = "Nenhuma letra encontrada no LRCLIB." }
+            if options.isEmpty { model.message = "Não encontramos letra para esta faixa." }
         }
     }
 
@@ -295,7 +295,7 @@ struct CollectionSummary: View {
                     }
                 }
                 Divider()
-                Text("Corrigir tudo busca metadados (MusicBrainz), capas (Cover Art Archive) e letras sincronizadas (LRCLIB) para as músicas com problemas. Resultados com confiança alta já entram como alteração; os outros ficam marcados para revisar. Nada é gravado até você salvar.")
+                Text("Corrigir tudo busca metadados, capas e letras sincronizadas para as músicas com problemas. Resultados com confiança alta já entram como alteração; os outros ficam marcados para revisar. Nada é gravado até você salvar.")
                     .font(.system(size: 11)).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 Text("Para editar à mão, selecione uma ou mais músicas na lista. Clique duas vezes numa música para escolher entre os resultados.")

@@ -14,12 +14,36 @@ final class MetadataManagerModel: ObservableObject {
     @Published var selection: Set<MetadataRow.ID> = []
     @Published var filter: MetadataFilter = .all
     @Published var query = ""
+    /// Colunas visíveis/ordem/largura (clique direito no cabeçalho), lembradas entre aberturas.
+    @Published var columnCustomization: TableColumnCustomization<MetadataRow> = MetadataManagerModel.loadColumns() {
+        didSet {
+            if let data = try? JSONEncoder().encode(columnCustomization) {
+                UserDefaults.standard.set(data, forKey: Self.columnsKey)
+            }
+        }
+    }
+    static let columnsKey = "metadata.columns.v1"
+
+    static func loadColumns() -> TableColumnCustomization<MetadataRow> {
+        if let data = UserDefaults.standard.data(forKey: columnsKey),
+           let saved = try? JSONDecoder().decode(TableColumnCustomization<MetadataRow>.self, from: data) {
+            return saved
+        }
+        // Começa como o Mp3tag: técnicas visíveis, extras do Wineup escondidas até o usuário pedir.
+        var c = TableColumnCustomization<MetadataRow>()
+        for id in ["comment", "composer", "samplerate", "size"] { c[visibility: id] = .hidden }
+        return c
+    }
+
     @Published var sortOrder: [KeyPathComparator<MetadataRow>] = [KeyPathComparator(\.sortFile)]
     @Published private(set) var isLoading = false
     @Published private(set) var progress: (done: Int, total: Int)?
     @Published var message: String?
     @Published var policy: FillPolicy {
         didSet { UserDefaults.standard.set(policy.rawValue, forKey: Self.policyDefaults) }
+    }
+    @Published var musixmatchToken = UserDefaults.standard.string(forKey: LyricsService.musixmatchTokenKey) ?? "" {
+        didSet { UserDefaults.standard.set(musixmatchToken, forKey: LyricsService.musixmatchTokenKey) }
     }
     @Published var acoustIDKey: String {
         didSet { UserDefaults.standard.set(acoustIDKey, forKey: Self.acoustIDKeyDefaults) }
@@ -191,7 +215,7 @@ final class MetadataManagerModel: ObservableObject {
             let proposal = try await fixer.propose(for: file, wantCover: policy == .overwrite ? true : nil)
             guard let i = model.index(of: id) else { return }
             model.rows[i].proposal = proposal
-            // A letra é conferida à parte (título, artista e duração no LRCLIB): entra mesmo se os
+            // A letra é conferida à parte (título, artista e duração no catálogo): entra mesmo se os
             // metadados ficarem para revisão.
             if let lyrics = proposal.lyrics, lyrics.text != nil,
                !file.hasSidecarLyrics || (file.lyricsSynced == false && lyrics.isSynced) {
@@ -271,11 +295,11 @@ final class MetadataManagerModel: ObservableObject {
 
     // MARK: Letras em lote
 
-    /// Só letras (LRCLIB), para quem não tem letra ou só tem a estática.
+    /// Só letras (catálogo online), para quem não tem letra ou só tem a estática.
     func fetchLyrics(onlySelection: Bool) {
         let targets = (onlySelection ? selectedRows : rows).filter { onlySelection || $0.file.lyricsSynced != true }
         guard !targets.isEmpty else { message = "Todas já têm letra sincronizada."; return }
-        let client = LRCLibClient()
+        let client = LyricsService.standard()
         run(targets.map(\.id)) { model, _, id in
             guard let row = model.rows.first(where: { $0.id == id }) else { return }
             let q = MetadataFixer.query(for: row.file)
@@ -294,7 +318,7 @@ final class MetadataManagerModel: ObservableObject {
 
     // MARK: Rodapé
 
-    /// "3 (12:04 | 48,2 MB) · 12 (1:02:10 | 190 MB)", como o rodapé do Mp3tag.
+    /// "3 (12:04 | 48,2 MB)   12 (1:02:10 | 190 MB)": seleção e total, como o rodapé do Mp3tag.
     var footer: String {
         func sum(_ rows: [MetadataRow]) -> String {
             let seconds = Int(rows.compactMap(\.file.duration).reduce(0, +))
@@ -303,7 +327,7 @@ final class MetadataManagerModel: ObservableObject {
             let size = ByteCountFormatter.string(fromByteCount: rows.reduce(0) { $0 + $1.file.size }, countStyle: .file)
             return "\(rows.count) (\(time) | \(size))"
         }
-        return (selection.isEmpty ? "" : "Seleção: \(sum(selectedRows)) · ") + "Total: \(sum(rows))"
+        return "\(sum(selectedRows))     \(sum(rows))"
     }
 
     /// Valores distintos de um campo nas linhas selecionadas (para o menu do campo).

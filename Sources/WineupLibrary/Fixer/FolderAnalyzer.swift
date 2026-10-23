@@ -1,5 +1,6 @@
 import Foundation
 import SFBAudioEngine
+import WineupID3
 
 /// Lê todos os arquivos de áudio de uma pasta e aponta o que falta em cada um.
 public enum FolderAnalyzer {
@@ -21,7 +22,9 @@ public enum FolderAnalyzer {
     public static func read(_ url: URL) -> FixerFile {
         let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init) ?? 0
         var file = FixerFile(url: url, size: size, isWritable: TagBackends.backend(for: url) != nil)
-        if let snap = try? TagSnapshot.read(url) {
+        if let audio = try? AudioFile(readingPropertiesAndMetadataFrom: url) {
+            let snap = TagSnapshot.read(file: audio)
+            file.tech = tech(audio, url: url)
             file.fields = snap.fields
             file.pictureCount = snap.pictures.count
             file.coverBytes = snap.pictures.first?.byteCount ?? 0
@@ -33,6 +36,38 @@ public enum FolderAnalyzer {
         if let text, !text.isEmpty { file.lyricsSynced = LyricsInfo(text).isSynced }
         file.issues = issues(of: file)
         return file
+    }
+
+    static func tech(_ audio: AudioFile, url: URL) -> AudioTech {
+        let p = audio.properties
+        var t = AudioTech()
+        t.codec = p.formatName ?? url.pathExtension.uppercased()
+        t.bitrate = p.bitrate.map { Int($0.rounded()) }
+        t.sampleRate = p.sampleRate
+        t.channels = p.channelCount.map { Int($0) }
+        t.bitDepth = p.bitDepth.flatMap { $0 > 0 ? Int($0) : nil }
+        t.tagFormat = tagFormat(url)
+        return t
+    }
+
+    /// Como o Mp3tag mostra na coluna "Etiqueta": ID3v2.3, ID3v2.4 (+ID3v1), FLAC, MP4, Vorbis…
+    static func tagFormat(_ url: URL) -> String {
+        switch url.pathExtension.lowercased() {
+        case "mp3":
+            let v = url.path.withCString { wid3_tag_version($0) }
+            let v1 = url.path.withCString { wid3_has_id3v1($0) } == 1
+            let main = v > 0 ? "ID3v2.\(v)" : (v1 ? "" : "sem tag")
+            return [main, v1 ? "ID3v1" : ""].filter { !$0.isEmpty }.joined(separator: " + ")
+        case "wav", "wave":
+            let v = url.path.withCString { wid3_tag_version($0) }
+            return v > 0 ? "RIFF + ID3v2.\(v)" : "RIFF INFO"
+        case "flac": return "FLAC (Vorbis)"
+        case "ogg", "oga", "opus": return "Vorbis Comment"
+        case "m4a", "mp4", "aac", "alac": return "MP4"
+        case "aif", "aiff": return "AIFF (ID3)"
+        case "ape", "wv", "mpc": return "APEv2"
+        default: return url.pathExtension.uppercased()
+        }
     }
 
     /// Bytes da capa embutida (frontal, senão a primeira), para mostrar na tela.

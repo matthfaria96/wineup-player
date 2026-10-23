@@ -37,6 +37,8 @@ public struct FixerFile: Sendable, Identifiable, Equatable {
     /// true = letra com marcas de tempo, false = estática, nil = sem letra.
     public var lyricsSynced: Bool?
     public var isWritable: Bool
+    /// Informações técnicas (colunas do gerenciador, como no Mp3tag).
+    public var tech = AudioTech()
     public var issues: Set<FixerIssue>
     public var duplicateGroup: Int?
 
@@ -54,6 +56,27 @@ public struct FixerFile: Sendable, Identifiable, Equatable {
     public var hasCover: Bool { pictureCount > 0 }
     public var hasLyrics: Bool { hasSidecarLyrics || hasEmbeddedLyrics }
     public func value(_ field: String) -> String { fields[field] ?? "" }
+}
+
+/// Formato, codec e qualidade do arquivo.
+public struct AudioTech: Sendable, Equatable {
+    public var tagFormat = ""
+    public var codec = ""
+    public var bitrate: Int?
+    public var sampleRate: Double?
+    public var channels: Int?
+    public var bitDepth: Int?
+
+    public init() {}
+
+    public var bitrateText: String { bitrate.map { "\($0) kbit/s" } ?? "" }
+    public var sampleRateText: String {
+        guard let r = sampleRate else { return "" }
+        return r.truncatingRemainder(dividingBy: 1000) == 0 ? "\(Int(r / 1000)) kHz" : String(format: "%.1f kHz", r / 1000)
+    }
+    public var channelsText: String {
+        switch channels { case 1: "Mono"; case 2: "Estéreo"; case let n?: "\(n) canais"; default: "" }
+    }
 }
 
 /// Resultado de uma base de metadados para uma faixa.
@@ -99,9 +122,9 @@ public struct MatchCandidate: Sendable, Identifiable, Equatable {
     }
 }
 
-/// Letra encontrada (LRCLIB).
+/// Letra encontrada num catálogo online. `id` = "<fonte>:<id na fonte>" (a fonte nunca aparece na tela).
 public struct LyricsCandidate: Sendable, Identifiable, Equatable {
-    public let id: Int
+    public let id: String
     public let title: String
     public let artist: String
     public let album: String?
@@ -110,7 +133,7 @@ public struct LyricsCandidate: Sendable, Identifiable, Equatable {
     public let plain: String?
     public let instrumental: Bool
 
-    public init(id: Int, title: String, artist: String, album: String? = nil, duration: Double? = nil,
+    public init(id: String, title: String, artist: String, album: String? = nil, duration: Double? = nil,
                 synced: String? = nil, plain: String? = nil, instrumental: Bool = false) {
         self.id = id; self.title = title; self.artist = artist; self.album = album
         self.duration = duration; self.synced = synced; self.plain = plain; self.instrumental = instrumental

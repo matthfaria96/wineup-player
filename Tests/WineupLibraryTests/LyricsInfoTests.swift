@@ -48,7 +48,52 @@ struct LyricsSearchTests {
             ("lrclib.net/api/get", 200, #"{"id":1,"trackName":"A","artistName":"B","plainLyrics":"só texto"}"#),
             ("lrclib.net/api/search", 200, #"[{"id":2,"trackName":"A","artistName":"B","duration":200,"syncedLyrics":"[00:01.00] x"}]"#)])
         let c = LRCLibClient(fetcher: stub)
-        #expect(try await c.best(title: "A", artist: "B", album: nil, duration: 200)?.id == 1)
-        #expect(try await c.best(title: "A", artist: "B", album: nil, duration: 200, syncedOnly: true)?.id == 2)
+        #expect(try await c.best(title: "A", artist: "B", album: nil, duration: 200)?.id == "lrclib:1")
+        #expect(try await c.best(title: "A", artist: "B", album: nil, duration: 200, syncedOnly: true)?.id == "lrclib:2")
+    }
+}
+
+@Suite("Letras: fontes de reserva")
+struct LyricsFallbackTests {
+    private let neteaseSearch = """
+    {"result":{"songs":[{"id":17292978,"name":"Shut Me Up","artists":[{"name":"Mindless Self Indulgence"}],
+      "album":{"name":"You'll Rebel To Anything"},"duration":168000},
+      {"id":5,"name":"Outra","artists":[{"name":"X"}],"duration":100000}]}}
+    """
+    private let neteaseLyric = #"{"lrc":{"lyric":"[00:00.00] 作词 : James Euringer\n[00:00.00] 作曲 : James Euringer\n[00:12.51]The mic, the treble\n[00:13.95]I like my coffee black\n"}}"#
+
+    @Test func netEaseIsUsedWhenPrimaryHasNothingAndCreditsAreRemoved() async throws {
+        let stub = StubFetcher([
+            ("lrclib.net/api/get", 404, "{}"), ("lrclib.net/api/search", 200, "[]"),
+            ("music.163.com/api/search", 200, neteaseSearch), ("music.163.com/api/song/lyric", 200, neteaseLyric)])
+        let service = LyricsService(primary: LRCLibClient(fetcher: stub), backup: NetEaseLyricsClient(fetcher: stub))
+        let found = try #require(try await service.best(title: "Shut Me Up", artist: "Mindless Self Indulgence",
+                                                        album: nil, duration: 168))
+        #expect(found.id == "netease:17292978" && found.isSynced)
+        #expect(found.synced?.contains("作词") == false)
+        #expect(LyricsInfo(found.synced!).lines.first?.text == "The mic, the treble")
+    }
+
+    @Test func netEaseRejectsOtherSongs() {
+        let s = NetEaseLyricsClient.Song(id: 1, title: "Mastermind", artist: "Mindless Self Indulgence", album: nil, duration: 179)
+        #expect(!NetEaseLyricsClient.matches(s, title: "Shut Me Up", artist: "Mindless Self Indulgence", duration: 168))
+    }
+
+    @Test func musixmatchDecoyAnswerIsIgnored() throws {
+        // Sem conta, o Musixmatch responde com outra música ("NOKIA"): não pode virar letra.
+        let json: [String: Any] = ["message": ["header": ["status_code": 200], "body": ["macro_calls": [
+            "matcher.track.get": ["message": ["body": ["track": ["track_name": "NOKIA", "artist_name": "Drake", "track_id": 1]]]],
+            "track.subtitles.get": ["message": ["body": ["subtitle_list": [["subtitle": ["subtitle_body": "[00:12.00]Wob"]]]]]]]]]]
+        #expect(try MusixmatchClient.parse(json, title: "Shut Me Up", artist: "Mindless Self Indulgence", duration: 168) == nil)
+        let ok: [String: Any] = ["message": ["header": ["status_code": 200], "body": ["macro_calls": [
+            "matcher.track.get": ["message": ["body": ["track": ["track_name": "Shut Me Up", "artist_name": "Mindless Self Indulgence",
+                                                                  "track_id": 7, "track_length": 168]]]],
+            "track.subtitles.get": ["message": ["body": ["subtitle_list": [["subtitle": ["subtitle_body": "[00:12.51]The mic"]]]]]]]]]]
+        let found = try MusixmatchClient.parse(ok, title: "Shut Me Up", artist: "Mindless Self Indulgence", duration: 168)
+        #expect(found?.id == "musixmatch:7" && found?.isSynced == true)
+        let denied: [String: Any] = ["message": ["header": ["status_code": 401]]]
+        #expect(throws: MusixmatchClient.Failure.invalidToken) {
+            try MusixmatchClient.parse(denied, title: "A", artist: "B", duration: nil)
+        }
     }
 }

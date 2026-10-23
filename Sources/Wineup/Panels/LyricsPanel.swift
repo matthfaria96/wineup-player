@@ -18,17 +18,28 @@ struct LyricsPanel: View {
                     ScrollView {
                         VStack(spacing: 18) {
                             if state.lyricLines.isEmpty {
-                                Text(state.currentTrack == nil ? "Toque uma música para ver a letra" : "Sem letra para esta faixa")
+                                Text(state.currentTrack == nil ? "Toque uma música para ver a letra" : "Letra indisponível")
                                     .font(.system(size: 13))
                                     .foregroundStyle(theme.mutedText)
                                     .padding(.top, 30)
                             }
                             if isStatusMessage {
-                                Text(state.lyricLines.first ?? "")
-                                    .font(.system(size: 13))
-                                    .foregroundStyle(theme.mutedText)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.top, 30)
+                                // "Título\nexplicação": título discreto e a explicação menor.
+                                let parts = (state.lyricLines.first ?? "").components(separatedBy: "\n")
+                                VStack(spacing: 6) {
+                                    if state.lyricsOrigin == .searching { ProgressView().controlSize(.small) }
+                                    Text(parts.first ?? "")
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundStyle(theme.mutedText)
+                                    if parts.count > 1 {
+                                        Text(parts.dropFirst().joined(separator: " "))
+                                            .font(.system(size: 12))
+                                            .foregroundStyle(theme.mutedText.opacity(0.8))
+                                    }
+                                }
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 24)
+                                .padding(.top, 30)
                             } else {
                             ForEach(Array(state.lyricLines.enumerated()), id: \.offset) { index, line in
                                 let active = index == state.activeLyricIndex
@@ -78,27 +89,27 @@ struct LyricsPanel: View {
         }
     }
 
-    /// Tipo e origem da letra: sincronizada/estática, do arquivo ou do LRCLIB (com opção de salvar).
+    /// Tipo e origem da letra: sincronizada/estática, do arquivo ou online (com opção de salvar).
     @ViewBuilder private var origin: some View {
         switch state.lyricsOrigin {
         case .local(let synced):
             kind(synced)
         case .online(let lyrics, _):
             kind(lyrics.isSynced)
-            Text("LRCLIB").font(.system(size: 10)).foregroundStyle(theme.mutedText)
+            Text("Online").font(.system(size: 10)).foregroundStyle(theme.mutedText)
             Button("Salvar .lrc") { state.saveOnlineLyrics() }
                 .buttonStyle(.borderless).font(.system(size: 10))
                 .help("Gravar esta letra como .lrc ao lado da música")
         case .searching:
-            ProgressView().controlSize(.mini)
+            EmptyView()
         case .none:
             EmptyView()
         }
         Menu {
-            Toggle("Buscar letras na internet (LRCLIB)", isOn: $state.lyricsOnline)
+            Toggle("Buscar letras online quando a faixa não tiver", isOn: $state.lyricsOnline)
         } label: { Image(systemName: "ellipsis.circle") }
             .menuStyle(.borderlessButton).fixedSize()
-            .help("Quando a música não tem letra, procurar no LRCLIB (envia título, artista, álbum e duração)")
+            .help("Quando a música não tem letra, procurar online (envia título, artista, álbum e duração)")
     }
 
     private func kind(_ synced: Bool) -> some View {

@@ -16,7 +16,11 @@ public struct TagSnapshot: Sendable, Equatable, Codable {
     public var duration: Double?
 
     public static func read(_ url: URL) throws -> TagSnapshot {
-        let file = try AudioFile(readingPropertiesAndMetadataFrom: url)
+        try read(file: AudioFile(readingPropertiesAndMetadataFrom: url))
+    }
+
+    /// A partir de um arquivo já aberto (o gerenciador lê tags e propriedades numa abertura só).
+    public static func read(file: AudioFile) -> TagSnapshot {
         let m = file.metadata
         var f: [String: String] = [:]
         // Vazio equivale a ausente: o SFB devolve "" para campos que o TagLib cria vazios.

@@ -63,7 +63,7 @@ public struct LRCLibClient: Sendable {
     static func candidate(_ o: [String: Any]) -> LyricsCandidate? {
         guard let id = o["id"] as? Int else { return nil }
         return LyricsCandidate(
-            id: id, title: o["trackName"] as? String ?? "", artist: o["artistName"] as? String ?? "",
+            id: "lrclib:\(id)", title: o["trackName"] as? String ?? "", artist: o["artistName"] as? String ?? "",
             album: o["albumName"] as? String, duration: (o["duration"] as? Double) ?? (o["duration"] as? Int).map(Double.init),
             synced: o["syncedLyrics"] as? String, plain: o["plainLyrics"] as? String,
             instrumental: o["instrumental"] as? Bool ?? false)

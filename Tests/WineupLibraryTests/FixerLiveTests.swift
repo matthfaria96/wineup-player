@@ -55,3 +55,13 @@ struct ReleaseLiveTests {
         #expect(d.tracks.count >= 12)
     }
 }
+
+@Suite("Letras reserva ao vivo", .enabled(if: ProcessInfo.processInfo.environment["WINEUP_LIVE"] == "1"))
+struct NetEaseLiveTests {
+    @Test func mindlessSelfIndulgence() async throws {
+        let found = try await NetEaseLyricsClient().best(title: "Shut Me Up", artist: "Mindless Self Indulgence",
+                                                         album: nil, duration: 168)
+        print("netease:", found?.id ?? "nil", found?.isSynced ?? false, found?.synced?.prefix(60) ?? "")
+        #expect(found?.isSynced == true)
+    }
+}

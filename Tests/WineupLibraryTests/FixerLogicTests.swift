@@ -89,7 +89,7 @@ struct FixerLogicTests {
             """)])
         let client = LRCLibClient(fetcher: stub)
         let best = try await client.best(title: "All Melody", artist: "Nils Frahm", album: nil, duration: 552)
-        #expect(best?.id == 2 && best?.isSynced == true)
+        #expect(best?.id == "lrclib:2" && best?.isSynced == true)
         #expect(best?.text == "[00:01.00] hi")
     }
 
@@ -129,11 +129,11 @@ struct FixerLogicTests {
             ("coverartarchive.org/release/rel-1/front", 200, String(decoding: tinyPNG, as: UTF8.self)),
             ("lrclib.net/api/get", 200, #"{"id":9,"trackName":"All Melody","artistName":"Nils Frahm","syncedLyrics":"[00:01.00] a"}"#)])
         let fixer = MetadataFixer(musicBrainz: MusicBrainzClient(fetcher: stub, minimumInterval: 0),
-                                  covers: CoverArtClient(fetcher: stub), lyrics: LRCLibClient(fetcher: stub), fpcalc: nil)
+                                  covers: CoverArtClient(fetcher: stub), lyrics: LyricsService(primary: LRCLibClient(fetcher: stub), backup: nil), fpcalc: nil)
         let file = FixerFile(url: URL(fileURLWithPath: "/m/07 - Nils Frahm - All Melody.mp3"), duration: 553)
         let p = try await fixer.propose(for: file)
         #expect(p.match?.recordingID == "rec-1")
-        #expect(p.lyrics?.id == 9)
+        #expect(p.lyrics?.id == "lrclib:9")
         let mbURL = try #require(stub.requested.first { $0.host == "musicbrainz.org" })
         #expect(mbURL.absoluteString.removingPercentEncoding!.contains("artist:\"Nils Frahm\""))
     }

@@ -2,7 +2,7 @@ import SFBAudioEngine
 import SwiftUI
 import WineupLibrary
 
-/// Uma letra para ver: a nova (vinda do LRCLIB), a do .lrc ou a embutida no arquivo.
+/// Uma letra para ver: a nova (encontrada online), a do .lrc ou a embutida no arquivo.
 struct LyricsSource: Identifiable, Hashable {
     let id: String
     let title: String

@@ -18,20 +18,20 @@ public enum FillPolicy: String, Sendable, CaseIterable {
     case missingOnly, overwrite
 }
 
-/// Junta MusicBrainz (+ AcoustID), Cover Art Archive e LRCLIB para um arquivo.
+/// Junta MusicBrainz (+ AcoustID), Cover Art Archive e o catálogo de letras para um arquivo.
 public struct MetadataFixer: Sendable {
     /// Abaixo disso a correspondência não é aplicada sozinha (vai para revisão).
     public static let autoApplyConfidence = 0.8
 
     private let musicBrainz: MusicBrainzClient
     private let covers: CoverArtClient
-    private let lyrics: LRCLibClient
+    private let lyrics: LyricsService
     private let acoustID: AcoustIDClient?
     private let fpcalc: String?
     private let hints: ITunesHintClient?
 
     public init(musicBrainz: MusicBrainzClient = MusicBrainzClient(), covers: CoverArtClient = CoverArtClient(),
-                lyrics: LRCLibClient = LRCLibClient(), acoustID: AcoustIDClient? = nil,
+                lyrics: LyricsService = LyricsService.standard(), acoustID: AcoustIDClient? = nil,
                 fpcalc: String? = AcoustIDClient.fpcalcPath(), hints: ITunesHintClient? = ITunesHintClient()) {
         self.musicBrainz = musicBrainz; self.covers = covers; self.lyrics = lyrics
         self.acoustID = acoustID; self.fpcalc = fpcalc; self.hints = hints
