@@ -12,6 +12,17 @@ public enum TextMatch {
         return String(kept).split(separator: " ").joined(separator: " ")
     }
 
+    /// Título sem anotações de edição: "(Remastered 2011)", "[Live]", " - 2011 Remaster", "(feat. X)".
+    public static func cleanTitle(_ s: String) -> String {
+        let words = "remaster|remastered|live|ao vivo|mono|stereo|version|versão|edit|mix|deluxe|bonus|feat|ft\\.|demo|acoustic|explicit"
+        var t = s.replacingOccurrences(of: #"\s*[\(\[][^\)\]]*(\#(words))[^\)\]]*[\)\]]"#, with: "",
+                                       options: [.regularExpression, .caseInsensitive])
+        t = t.replacingOccurrences(of: #"\s+-\s+[^-]*(\#(words))[^-]*$"#, with: "",
+                                   options: [.regularExpression, .caseInsensitive])
+        let out = t.trimmingCharacters(in: .whitespaces)
+        return out.isEmpty ? s : out
+    }
+
     /// 0...1 (1 = iguais depois de normalizar).
     public static func similarity(_ a: String, _ b: String) -> Double {
         let x = Array(normalize(a)), y = Array(normalize(b))

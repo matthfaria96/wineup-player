@@ -107,13 +107,16 @@ public struct MetadataFixer: Sendable {
         let match = candidates.first
         let q = Self.query(for: file)
         let title = match?.title ?? q.title, artist = match?.artist ?? q.artist
-        let needCover = wantCover ?? !file.hasCover, needLyrics = (wantLyrics ?? !file.hasLyrics) && !title.isEmpty
+        // Letra estática também conta como "falta": busca a sincronizada.
+        let staticOnly = file.hasLyrics && file.lyricsSynced == false
+        let needCover = wantCover ?? !file.hasCover
+        let needLyrics = (wantLyrics ?? (!file.hasLyrics || staticOnly)) && !title.isEmpty
         // Capa e letra vêm de serviços diferentes: em paralelo.
         async let cover: CoverImage? = needCover && match != nil
             ? (try? await covers.frontCover(releaseID: match?.releaseID, releaseGroupID: match?.releaseGroupID)) : nil
         async let words: LyricsCandidate? = needLyrics
             ? (try? await lyrics.best(title: title, artist: artist, album: match?.album ?? q.album,
-                                      duration: file.duration)) : nil
+                                      duration: file.duration, syncedOnly: staticOnly)) : nil
         return FixProposal(match: match, candidates: candidates, cover: await cover, lyrics: await words)
     }
 

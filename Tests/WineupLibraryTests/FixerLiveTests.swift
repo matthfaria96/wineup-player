@@ -36,3 +36,21 @@ struct ShazamLiveTests {
         #expect(heard != nil || state != .unknown)
     }
 }
+
+@Suite("Letras ao vivo", .enabled(if: ProcessInfo.processInfo.environment["WINEUP_LIVE"] == "1"))
+struct LyricsLiveTests {
+    @Test func lyricsForKnownSongs() async throws {
+        let client = LRCLibClient()
+        for (t, a, al, d) in [("Karma Police", "Radiohead", "OK Computer", 264.0), ("Says", "Nils Frahm", "Spaces", 30.0),
+                              ("Karma Police", "Radiohead", nil, 30.0)] as [(String, String, String?, Double)] {
+            do {
+                let best = try await client.best(title: t, artist: a, album: al, duration: d)
+                let list = try await client.search(title: t, artist: a, duration: d)
+                print("lyr:", t, "| best:", best.map { "\($0.id) synced=\($0.isSynced)" } ?? "nil", "| search:", list.count)
+            } catch { print("lyr:", t, "ERRO", error) }
+        }
+        let file = FixerFile(url: URL(fileURLWithPath: "/m/Radiohead - Karma Police.flac"), duration: 264)
+        let p = try await MetadataFixer(fpcalc: nil).propose(for: file)
+        print("propose lyrics:", p.lyrics.map { "\($0.id) synced=\($0.isSynced)" } ?? "nil", "match:", p.match?.album ?? "-")
+    }
+}

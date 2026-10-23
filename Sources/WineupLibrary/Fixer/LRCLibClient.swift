@@ -9,6 +9,7 @@ public struct LRCLibClient: Sendable {
 
     /// Correspondência exata (artista, título, álbum, duração); nil se o LRCLIB não tem.
     public func exact(title: String, artist: String, album: String?, duration: Double?) async throws -> LyricsCandidate? {
+        let title = TextMatch.cleanTitle(title)
         var q = [("track_name", title), ("artist_name", artist)]
         if let album, !album.isEmpty { q.append(("album_name", album)) }
         if let duration, duration > 0 { q.append(("duration", String(Int(duration.rounded())))) }
@@ -23,6 +24,7 @@ public struct LRCLibClient: Sendable {
 
     /// Lista para escolha manual, sincronizadas e de duração próxima primeiro.
     public func search(title: String, artist: String, duration: Double?) async throws -> [LyricsCandidate] {
+        let title = TextMatch.cleanTitle(title)
         var q = [("track_name", title)]
         if !artist.isEmpty { q.append(("artist_name", artist)) }
         guard let url = FixerHTTP.url("\(base)/search", q) else { return [] }
@@ -34,14 +36,19 @@ public struct LRCLibClient: Sendable {
         }
     }
 
-    /// Melhor letra: exata; senão a primeira da busca com duração até 3 s de diferença.
-    public func best(title: String, artist: String, album: String?, duration: Double?) async throws -> LyricsCandidate? {
-        if let hit = try await exact(title: title, artist: artist, album: album, duration: duration), hit.text != nil {
-            return hit
-        }
+    /// Melhor letra: exata (com álbum, depois sem); senão a da busca com título e artista iguais e
+    /// duração até 5 s de diferença. `syncedOnly` para quem já tem letra estática.
+    public func best(title: String, artist: String, album: String?, duration: Double?,
+                     syncedOnly: Bool = false) async throws -> LyricsCandidate? {
+        func ok(_ c: LyricsCandidate?) -> Bool { c?.text != nil && (!syncedOnly || c?.isSynced == true) }
+        let hit = try await exact(title: title, artist: artist, album: album, duration: duration)
+        if ok(hit) { return hit }
+        if album != nil, let noAlbum = try await exact(title: title, artist: artist, album: nil, duration: duration),
+           ok(noAlbum) { return noAlbum }
+        let clean = TextMatch.cleanTitle(title)
         return try await search(title: title, artist: artist, duration: duration).first { c in
-            c.text != nil && Self.gap(c, duration) <= 3
-                && TextMatch.similarity(c.title, title) > 0.8
+            ok(c) && Self.gap(c, duration) <= 5
+                && TextMatch.similarity(TextMatch.cleanTitle(c.title), clean) > 0.8
                 && (artist.isEmpty || TextMatch.similarity(c.artist, artist) > 0.7)
         }
     }

@@ -52,3 +52,23 @@ struct ShazamTests {
         #expect(!ShazamRecognizer.isEntitlementError(NSError(domain: SHErrorDomain, code: 201)))
     }
 }
+
+@Suite("Letras: busca")
+struct LyricsSearchTests {
+    @Test func cleanTitleDropsEditionNotes() {
+        #expect(TextMatch.cleanTitle("Karma Police (Remastered 2011)") == "Karma Police")
+        #expect(TextMatch.cleanTitle("Paranoid Android - 2017 Remaster") == "Paranoid Android")
+        #expect(TextMatch.cleanTitle("Song [Live at Wembley]") == "Song")
+        #expect(TextMatch.cleanTitle("Love Me Do (feat. X)") == "Love Me Do")
+        #expect(TextMatch.cleanTitle("Live and Let Die") == "Live and Let Die")
+    }
+
+    @Test func staticLyricsAskForSyncedVersion() async throws {
+        let stub = StubFetcher([
+            ("lrclib.net/api/get", 200, #"{"id":1,"trackName":"A","artistName":"B","plainLyrics":"só texto"}"#),
+            ("lrclib.net/api/search", 200, #"[{"id":2,"trackName":"A","artistName":"B","duration":200,"syncedLyrics":"[00:01.00] x"}]"#)])
+        let c = LRCLibClient(fetcher: stub)
+        #expect(try await c.best(title: "A", artist: "B", album: nil, duration: 200)?.id == 1)
+        #expect(try await c.best(title: "A", artist: "B", album: nil, duration: 200, syncedOnly: true)?.id == 2)
+    }
+}

@@ -77,6 +77,15 @@ final class PlayerState: ObservableObject {
     @Published var lyricsScale = 1.0
     @Published var cover: NSImage?
     @Published var lyricLines: [String] = []
+    /// De onde veio a letra exibida: arquivo local ou LRCLIB (ainda não salva).
+    @Published var lyricsOrigin: LyricsOrigin = .none
+    /// Buscar no LRCLIB quando a faixa não tem letra local (envia título, artista, álbum e duração).
+    @Published var lyricsOnline = UserDefaults.standard.object(forKey: "lyrics.online") as? Bool ?? true {
+        didSet {
+            UserDefaults.standard.set(lyricsOnline, forKey: "lyrics.online")
+            if let track = currentTrack { refreshDetails(for: track) }
+        }
+    }
     @Published var statusMessage: String?
     /// Nome do que está na lista agora (álbum, banda, pasta, estilo ou playlist).
     @Published var listTitle = "Playlist"
@@ -580,8 +589,43 @@ final class PlayerState: ObservableObject {
                 self.cover = image
                 NowPlaying.update(self)
                 self.timedLyrics = timed
-                self.lyricLines = (lines?.isEmpty == false ? lines : nil) ?? ["Sem letra nesta faixa"]
+                let found = lines?.isEmpty == false
+                self.lyricLines = found ? lines! : ["Sem letra nesta faixa"]
+                self.lyricsOrigin = found ? .local(synced: timed != nil) : .none
+                if !found, self.lyricsOnline { self.fetchOnlineLyrics(for: track, url: url) }
             }
+        }
+    }
+
+    /// Sem letra local: procura no LRCLIB e mostra (sem gravar nada; o painel oferece salvar o .lrc).
+    private func fetchOnlineLyrics(for track: Track, url: URL) {
+        lyricsOrigin = .searching
+        lyricLines = ["Procurando a letra no LRCLIB…"]
+        let duration = track.end.map { $0 - (track.start ?? 0) } ?? Double(track.duration)
+        Task { [weak self] in
+            let found = try? await LRCLibClient().best(title: track.title, artist: track.artist, album: track.album,
+                                                       duration: duration > 0 ? duration : nil)
+            guard let self, self.currentID == track.id else { return }
+            guard let found, let text = found.text else {
+                self.lyricsOrigin = .none
+                self.lyricLines = ["Sem letra nesta faixa (nem no LRCLIB)"]
+                return
+            }
+            let timed = LRCParser.parse(text)
+            self.timedLyrics = timed
+            self.lyricLines = timed.map { $0.lines.map(\.text) } ?? text.split(whereSeparator: \.isNewline).map(String.init)
+            self.lyricsOrigin = .online(found, url: url)
+        }
+    }
+
+    /// Grava a letra vinda do LRCLIB como .lrc ao lado da música.
+    func saveOnlineLyrics() {
+        guard case .online(let lyrics, let url) = lyricsOrigin, let text = lyrics.text else { return }
+        do {
+            _ = try LyricsFileWriter.write(text, for: url, replace: false)
+            lyricsOrigin = .local(synced: lyrics.isSynced)
+        } catch {
+            statusMessage = "Não foi possível salvar o .lrc"
         }
     }
 }
@@ -594,4 +638,11 @@ final class PlaybackClock: ObservableObject {
 /// Faixa selecionada, publicada à parte da lista.
 final class SelectionModel: ObservableObject {
     @Published var selectedID: TrackID?
+}
+
+/// Origem da letra do painel.
+enum LyricsOrigin: Equatable {
+    case none, searching
+    case local(synced: Bool)
+    case online(LyricsCandidate, url: URL)
 }

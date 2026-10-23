@@ -199,15 +199,22 @@ final class MetadataManagerModel: ObservableObject {
             let proposal = try await fixer.propose(for: file, wantCover: policy == .overwrite ? true : nil)
             guard let i = model.index(of: id) else { return }
             model.rows[i].proposal = proposal
-            guard let match = proposal.match else { model.rows[i].status = .notFound; return }
+            // A letra é conferida à parte (título, artista e duração no LRCLIB): entra mesmo se os
+            // metadados ficarem para revisão.
+            if let lyrics = proposal.lyrics, lyrics.text != nil,
+               !file.hasSidecarLyrics || (file.lyricsSynced == false && lyrics.isSynced) {
+                model.rows[i].lyrics = lyrics
+                model.rows[i].replaceLyrics = file.hasSidecarLyrics
+            }
+            guard let match = proposal.match else {
+                model.rows[i].status = model.rows[i].isDirty ? .ready : .notFound
+                return
+            }
             if match.confidence >= MetadataFixer.autoApplyConfidence {
                 for (field, value) in MetadataFixer.fieldChanges(match, file: file, policy: policy) {
                     model.rows[i].set(field, value)
                 }
                 if let cover = proposal.cover { model.rows[i].cover = cover }
-                if let lyrics = proposal.lyrics, lyrics.text != nil, !file.hasSidecarLyrics {
-                    model.rows[i].lyrics = lyrics
-                }
                 model.rows[i].status = model.rows[i].isDirty ? .ready : .idle
             } else {
                 model.rows[i].status = .review
@@ -267,7 +274,8 @@ final class MetadataManagerModel: ObservableObject {
         progress = nil
         let ready = rows.filter(\.isDirty).count
         let review = rows.filter { $0.status == .review }.count
-        message = "\(ready) prontas para salvar" + (review > 0 ? " · \(review) para revisar (confiança baixa)" : "")
+        let lyrics = rows.filter { $0.lyrics?.text != nil }.count
+        message = "\(ready) prontas para salvar · \(lyrics) letras encontradas" + (review > 0 ? " · \(review) para revisar (confiança baixa)" : "")
     }
 
     // MARK: Gravação
