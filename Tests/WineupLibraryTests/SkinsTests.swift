@@ -1,3 +1,5 @@
+import CoreGraphics
+import ImageIO
 import Foundation
 import Testing
 @testable import WineupLibrary
@@ -68,3 +70,49 @@ struct SkinsTests {
         #expect(throws: (any Error).self) { try s.importSkin(from: zip) }
     }
 }
+
+@Suite("Skins: gerar a partir de imagem e legibilidade")
+struct SkinGeneratorTests {
+    private func photo(_ dir: URL, light: Bool) throws -> URL {
+        let ctx = SkinGenerator.context(400, 300)
+        let colors = light ? [CGColor(srgbRed: 0.95, green: 0.92, blue: 0.85, alpha: 1), CGColor(srgbRed: 1, green: 0.6, blue: 0.2, alpha: 1)]
+                           : [CGColor(srgbRed: 0.05, green: 0.1, blue: 0.3, alpha: 1), CGColor(srgbRed: 0.9, green: 0.3, blue: 0.5, alpha: 1)]
+        ctx.setFillColor(colors[0]); ctx.fill(CGRect(x: 0, y: 0, width: 400, height: 300))
+        ctx.setFillColor(colors[1]); ctx.fillEllipse(in: CGRect(x: 150, y: 100, width: 100, height: 100))
+        let url = dir.appendingPathComponent(light ? "claro.png" : "escuro.png")
+        let dest = CGImageDestinationCreateWithURL(url as CFURL, "public.png" as CFString, 1, nil)!
+        CGImageDestinationAddImage(dest, ctx.makeImage()!, nil); CGImageDestinationFinalize(dest)
+        return url
+    }
+
+    @Test(arguments: SkinGenerator.Style.allCases)
+    func generatesCompleteReadableSkin(_ style: SkinGenerator.Style) throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let store = SkinStore(builtInFolder: nil, userFolder: dir.appendingPathComponent("Skins"))
+        let skin = try store.createFromImage(try photo(dir, light: false), name: "Minha Foto", style: style)
+        #expect(skin.id == "minha-foto" && !skin.builtIn)
+        for f in skin.manifest.referencedFiles { #expect(FileManager.default.fileExists(atPath: skin.file(f).path), "falta \(f)") }
+        let accent = try #require(SkinLegibility.rgb(skin.manifest.colors["accent"]))
+        #expect(accent.r > 0.6 && accent.b > 0.3)   // rosa da imagem
+        let onAccent = try #require(SkinLegibility.rgb(skin.manifest.colors["buttonTextOn"]))
+        #expect(SkinGenerator.contrast(onAccent, accent) >= 4.5)
+        #expect(SkinLegibility.issues(skin.manifest, folder: skin.folder).isEmpty)
+    }
+
+    @Test func lightImageIsDetectedAndFixed() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let img = try photo(dir, light: true)
+        var m = SkinManifest(id: "x", name: "X")
+        m.colors["text"] = "#FFFFFF"
+        m.panels["default"] = .init(fill: .init(image: img.lastPathComponent, dim: 0))
+        #expect(SkinLegibility.issues(m, folder: dir).count == 1)
+        let fixed = SkinLegibility.autoFix(m, folder: dir)
+        #expect(SkinLegibility.issues(fixed, folder: dir).isEmpty)
+        #expect((fixed.panels["default"]?.fill?.dim ?? 0) < 0.92)
+    }
+}
+

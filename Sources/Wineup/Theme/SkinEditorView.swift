@@ -12,6 +12,7 @@ struct SkinEditorView: View {
     @State private var error: String?
     @State private var confirmDelete = false
     @State private var tab = Tab.art
+    @State private var showNew = false
 
     enum Tab: String, CaseIterable { case art = "Arte", layers = "Animação", colors = "Cores", about = "Créditos" }
 
@@ -25,7 +26,8 @@ struct SkinEditorView: View {
             }
             .frame(minWidth: 600, maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(minWidth: 860, minHeight: 620)
+        .frame(minWidth: 900, minHeight: 720)
+        .sheet(isPresented: $showNew) { NewSkinFromImageView { skin in selectedID = skin.id; activeID = skin.id } }
         .onAppear { selectedID = selectedID ?? activeID }
         .alert("Não foi possível", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
             Button("OK") {}
@@ -60,6 +62,8 @@ struct SkinEditorView: View {
             }
             Divider()
             HStack(spacing: 4) {
+                Button { showNew = true } label: { Image(systemName: "plus") }
+                    .help("Novo skin a partir de uma imagem")
                 Button { run { if let s = selected { selectedID = try store.duplicate(s.id, name: "\(s.name) (cópia)").id } } } label: {
                     Image(systemName: "plus.square.on.square")
                 }
@@ -97,11 +101,11 @@ struct SkinEditorView: View {
                     .disabled(skin.id == activeID)
             }
             .padding([.horizontal, .top], 18)
-            SkinThumb(skin: skin)
-                .frame(height: 150)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+            SkinPreview(skin: skin)
+                .frame(height: 250)
                 .padding(.horizontal, 18)
                 .padding(.top, 12)
+            legibilityBanner(skin)
             Picker("", selection: $tab) { ForEach(Tab.allCases, id: \.self) { Text($0.rawValue).tag($0) } }
                 .pickerStyle(.segmented).labelsHidden().padding(18)
             ScrollView {
@@ -115,6 +119,27 @@ struct SkinEditorView: View {
                 }
                 .padding(.horizontal, 18).padding(.bottom, 18)
             }
+        }
+    }
+
+    /// Aviso quando o texto fica difícil de ler sobre algum painel, com correção automática.
+    @ViewBuilder private func legibilityBanner(_ skin: Skin) -> some View {
+        let issues = SkinLegibility.issues(skin.manifest, folder: skin.folder)
+        if !issues.isEmpty {
+            HStack(spacing: 10) {
+                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                Text("Texto difícil de ler em: " + issues.map { Self.panelName($0.panel) }.joined(separator: ", ") + ".")
+                    .font(.system(size: 11))
+                Spacer()
+                Button("Ajustar automaticamente") {
+                    mutate(skin) { $0 = SkinLegibility.autoFix($0, folder: skin.folder) }
+                }
+                .controlSize(.small)
+            }
+            .padding(10)
+            .background(RoundedRectangle(cornerRadius: 8).fill(Color.orange.opacity(0.12)))
+            .padding(.horizontal, 18)
+            .padding(.top, 8)
         }
     }
 

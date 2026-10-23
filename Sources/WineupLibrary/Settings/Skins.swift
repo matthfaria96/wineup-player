@@ -364,6 +364,8 @@ public final class SkinStore: ObservableObject, @unchecked Sendable {
         guard p.terminationStatus == 0 else { throw CocoaError(.fileWriteUnknown) }
     }
 
+    public func uniqueIDPublic(from name: String) -> String { uniqueID(from: name) }
+
     private func uniqueID(from name: String) -> String {
         let base = name.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil).lowercased()
             .map { $0.isLetter || $0.isNumber ? $0 : "-" }.reduce(into: "") { $0.append($1) }
