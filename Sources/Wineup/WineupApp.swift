@@ -86,13 +86,7 @@ struct WineupApp: App {
                 }
             }
             CommandMenu("Exibição") {
-                Button("Modo mini") {
-                    if NSApp.windows.contains(where: { $0.identifier?.rawValue.hasPrefix("mini") == true && $0.isVisible }) {
-                        MiniMode.exit(openWindow: openWindow)
-                    } else {
-                        MiniMode.enter(openWindow: openWindow)
-                    }
-                }
+                Button("Tocar pela barra de menus") { TrayMode.enter(state: state, openWindow: openWindow) }
                 .keyboardShortcut("m", modifiers: [.command, .option])
                 Divider()
                 Picker("Ver pasta por", selection: Binding(get: { state.browser.view }, set: { state.browser.setView($0) })) {
@@ -121,13 +115,6 @@ struct WineupApp: App {
                 .preferredColorScheme(.dark)
         }
         .defaultSize(width: 1240, height: 760)
-        .handlesExternalEvents(matching: [])
-
-        Window("Wineup mini", id: "mini") {
-            MiniPlayerView(state: state) { MiniMode.exit(openWindow: openWindow) }
-        }
-        .windowResizability(.contentSize)
-        .windowStyle(.hiddenTitleBar)
         .handlesExternalEvents(matching: [])
 
         Window("Sobre o Wineup Player", id: "about") {
@@ -174,7 +161,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             for window in NSApp.windows {
                 window.isRestorable = false
                 let id = window.identifier?.rawValue ?? ""
-                if id.hasPrefix("metadata") || id.hasPrefix("about") || id.hasPrefix("mini") { window.close() }
+                if id.hasPrefix("metadata") || id.hasPrefix("about") { window.close() }
             }
         }
     }

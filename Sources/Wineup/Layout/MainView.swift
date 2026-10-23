@@ -89,11 +89,11 @@ struct MainView: View {
             .background(RoundedRectangle(cornerRadius: 7).fill(Color.white.opacity(0.06)))
             .overlay(RoundedRectangle(cornerRadius: 7).stroke(theme.panelBorder, lineWidth: 1))
             Spacer(minLength: 8)
-            Button { MiniMode.enter(openWindow: openWindow) } label: { Image(systemName: "pip") }
+            Button { TrayMode.enter(state: state, openWindow: openWindow) } label: { Image(systemName: "menubar.arrow.up.rectangle") }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
-                .help("Modo mini: barra pequena sempre por cima (⌥⌘M)")
-                .accessibilityLabel("Modo mini")
+                .help("Tocar pela barra de menus: fecha a janela e deixa o player no topo do Mac (⌥⌘M)")
+                .accessibilityLabel("Tocar pela barra de menus")
             // Seletor de layout que mostra o modo atual (no Compacto, só o ícone).
             Menu {
                 Picker("Layout", selection: $layoutRaw) {
