@@ -34,8 +34,8 @@ struct SkinEditorView: View {
         .sheet(isPresented: $showNew) { NewSkinFromImageView { skin in selectedID = skin.id; activeID = skin.id } }
         .onAppear {
             // Skin em uso pode ter sido apagado: cai no primeiro disponível.
-            if store.skin(activeID) == nil { activeID = store.skins.first?.id ?? SkinStore.defaultID }
-            selectedID = selectedID ?? activeID
+            if activeID != Theme.noneID, store.skin(activeID) == nil { activeID = store.skins.first?.id ?? SkinStore.defaultID }
+            selectedID = selectedID ?? (activeID == Theme.noneID ? store.skins.first?.id : activeID)
         }
         .alert("Não foi possível", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
             Button("OK") {}
@@ -323,6 +323,7 @@ struct SkinEditorView: View {
             ("Texto", [.text, .mutedText]),
             ("Destaques e lista", [.accent, .rowSelection, .currentRow]),
             ("Botões e controles", [.buttonText, .buttonTextOn, .control, .display]),
+            ("Medidor de som", [.meterLow, .meterMid, .meterPeak]),
             ("Letras e capa", [.lyricsActive, .lyricsIdle, .artworkTint]),
         ]
         ForEach(groups, id: \.0) { title, tokens in

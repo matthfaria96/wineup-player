@@ -105,6 +105,9 @@ struct Theme: Identifiable, Equatable {
     let display: Color
     let buttonText: Color
     let buttonTextOn: Color
+    let meterLow: Color
+    let meterMid: Color
+    let meterPeak: Color
     let art: SkinArt?
 
     init(manifest: SkinManifest, art: SkinArt?) {
@@ -118,6 +121,7 @@ struct Theme: Identifiable, Equatable {
         lyricsIdle = c(.lyricsIdle); control = c(.control); artworkTint = c(.artworkTint); display = c(.display)
         buttonText = manifest.colors["buttonText"].flatMap(Color.init(hexString:)) ?? c(.text)
         buttonTextOn = manifest.colors["buttonTextOn"].flatMap(Color.init(hexString:)) ?? buttonText
+        meterLow = c(.meterLow); meterMid = c(.meterMid); meterPeak = c(.meterPeak)
         self.art = art
     }
 
@@ -126,12 +130,16 @@ struct Theme: Identifiable, Equatable {
     static func == (a: Theme, b: Theme) -> Bool { a.id == b.id && a.art === b.art }
 
     /// Sem nenhum skin instalado (não deve acontecer): cores neutras, sem arte.
-    static let plain = Theme(manifest: SkinManifest(id: "plain", name: "Neutro"), art: nil)
+    static let plain = Theme(manifest: SkinManifest(id: "none", name: "Sem skin"), art: nil)
     static let graphite = plain
 
     static var all: [Theme] { SkinStore.shared.skins.map(Theme.init) }
 
+    /// Id para o visual padrão do app, sem skin.
+    static let noneID = "none"
+
     static func named(_ id: String) -> Theme {
+        if id == noneID { return plain }
         if let s = SkinStore.shared.skin(id) ?? SkinStore.shared.skin(SkinStore.defaultID) ?? SkinStore.shared.skins.first {
             return Theme(s)
         }

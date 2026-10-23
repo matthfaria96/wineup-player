@@ -1,4 +1,5 @@
 import SwiftUI
+import WineupLibrary
 import WineupCore
 
 /// Playlist com a navegação da biblioteca embutida: grupos (álbuns, bandas...) ↔ faixas.
@@ -251,8 +252,15 @@ struct PlaylistPanel: View {
             }
             .frame(height: 22)
             Menu {
+                let current = UserDefaults.standard.string(forKey: DisplayKeys.theme) ?? SkinStore.defaultID
+                Button { UserDefaults.standard.set(Theme.noneID, forKey: DisplayKeys.theme) } label: {
+                    Label("Sem skin (visual padrão)", systemImage: current == Theme.noneID ? "checkmark" : "circle.slash")
+                }
+                Divider()
                 ForEach(Theme.all) { theme in
-                    Button(theme.name) { UserDefaults.standard.set(theme.id, forKey: DisplayKeys.theme) }
+                    Button { UserDefaults.standard.set(theme.id, forKey: DisplayKeys.theme) } label: {
+                        Label(theme.name, systemImage: current == theme.id ? "checkmark" : "paintpalette")
+                    }
                 }
                 Divider()
                 Button("Editar, criar, importar ou exportar skins…") { openWindow(id: "themes") }

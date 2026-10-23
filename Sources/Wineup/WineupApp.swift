@@ -110,6 +110,8 @@ struct WineupApp: App {
                 }
                 Divider()
                 // Atalhos ⌥⌘1…9 para os 9 primeiros temas; os demais ficam no editor.
+                Button("Sem skin") { themeID = Theme.noneID }
+                    .keyboardShortcut("0", modifiers: [.command, .option, .shift])
                 ForEach(Array(skinStore.skins.prefix(9).enumerated()), id: \.element.id) { index, skin in
                     Button("Skin \(skin.name)") { themeID = skin.id }
                         .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: [.command, .option])

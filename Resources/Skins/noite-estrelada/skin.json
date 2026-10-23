@@ -41,7 +41,10 @@
   "artworkTint": "#1B3A8A",
   "display": "#FFD95A",
   "buttonText": "#FFF6D8",
-  "buttonTextOn": "#2A1A04"
+  "buttonTextOn": "#2A1A04",
+  "meterLow": "#8DB4FF",
+  "meterMid": "#FFE27A",
+  "meterPeak": "#FFB347"
  },
  "window": {
   "background": {

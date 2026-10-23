@@ -13,9 +13,10 @@ struct LevelMeter: View {
     /// Altura das duas fileiras juntas (o visor de tempo usa a mesma altura).
     static var totalHeight: CGFloat { rowHeight * 2 + rowSpacing }
 
-    private let lit = Color(hex: 0xF3E2B8)
-    private let peak = Color(hex: 0xE5322D)
-    private let loud = Color(hex: 0xF2C230)
+    @Environment(\.theme) private var theme
+    private var lit: Color { theme.meterLow }
+    private var loud: Color { theme.meterMid }
+    private var peak: Color { theme.meterPeak }
 
     var body: some View {
         // Um único Canvas (em vez de 48 views): barato de redesenhar 30× por segundo.

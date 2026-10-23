@@ -62,17 +62,24 @@ struct ArtworkPanel: View {
             Section("Animação") {
                 ForEach([VisualMode.aurora, .fjord, .city, .universe]) { m in pick(m, m.title, subtitle: nil) }
             }
-            Section("Vídeos") {
-                ForEach(videoStore.enabled) { c in
-                    Button {
-                        videoCategory = c.id
-                        modeRaw = VisualMode.videos.rawValue
-                    } label: {
-                        Label(c.name, systemImage: mode == .videos && videoCategory == c.id ? "checkmark" : c.symbol)
+            Section("Vídeo") {
+                // Submenu: o item e a categoria escolhida ficam marcados.
+                Menu {
+                    ForEach(videoStore.enabled) { c in
+                        Button {
+                            videoCategory = c.id
+                            modeRaw = VisualMode.videos.rawValue
+                        } label: {
+                            Label(c.name, systemImage: mode == .videos && currentVideo?.id == c.id ? "checkmark" : c.symbol)
+                        }
                     }
+                    if videoStore.enabled.isEmpty { Text("Nenhuma categoria ligada") }
+                    Divider()
+                    Button { showVideoSettings = true } label: { Label("Configurar categorias…", systemImage: "gearshape") }
+                } label: {
+                    Label(mode == .videos ? "Vídeos: \(currentVideo?.name ?? "")" : "Vídeos",
+                          systemImage: mode == .videos ? "checkmark" : "film")
                 }
-                if videoStore.enabled.isEmpty { Text("Nenhuma categoria ligada") }
-                Button { showVideoSettings = true } label: { Label("Configurar categorias…", systemImage: "gearshape") }
             }
         } label: {
             Image(systemName: mode.symbol)
@@ -84,6 +91,8 @@ struct ArtworkPanel: View {
         .accessibilityLabel("Escolher o que aparece no lugar da capa")
         .sheet(isPresented: $showVideoSettings) { VideoCategoriesView() }
     }
+
+    private var currentVideo: VideoCategory? { videoStore.category(videoCategory) ?? videoStore.enabled.first }
 
     private func pick(_ m: VisualMode, _ title: String, subtitle: String?) -> some View {
         Button { modeRaw = m.rawValue } label: {

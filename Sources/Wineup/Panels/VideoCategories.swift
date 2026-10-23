@@ -18,17 +18,20 @@ struct VideoCategory: Codable, Identifiable, Equatable {
     var bundled: [String] = []
 
     static let builtIns: [VideoCategory] = [
-        VideoCategory(id: "animacao", name: "Animação clássica", symbol: "sparkles.tv", builtIn: true,
-                      bundled: ["animacao-namakura.mp4"]),
-        VideoCategory(id: "cinema", name: "Cinema clássico", symbol: "film", builtIn: true,
+        VideoCategory(id: "universo", name: "Galáxia", symbol: "sparkle", builtIn: true,
+                      bundled: ["universo-buracos-negros.mp4", "universo-colisao.mp4"]),
+        VideoCategory(id: "cinema", name: "Séries e filmes", symbol: "film", builtIn: true,
                       bundled: ["cinema-hooligan.mp4", "cinema-melies.mp4"]),
-        VideoCategory(id: "natureza", name: "Natureza", symbol: "leaf", builtIn: true,
-                      bundled: ["natureza-aurora.mp4", "natureza-floresta.mp4", "natureza-praia.mp4"]),
         VideoCategory(id: "cidades", name: "Cidades", symbol: "building.2", builtIn: true,
                       bundled: ["cidade-nyc.mp4"]),
-        VideoCategory(id: "universo", name: "Universo", symbol: "sparkle", builtIn: true,
-                      bundled: ["universo-buracos-negros.mp4", "universo-colisao.mp4"]),
+        VideoCategory(id: "natureza", name: "Natureza", symbol: "leaf", builtIn: true,
+                      bundled: ["natureza-aurora.mp4", "natureza-floresta.mp4", "natureza-praia.mp4"]),
+        VideoCategory(id: "animacao", name: "Anime", symbol: "sparkles.tv", builtIn: true,
+                      bundled: ["animacao-namakura.mp4"]),
     ]
+
+    /// Nomes antigos das embutidas: não contam como renomeação do usuário.
+    static let oldNames: Set<String> = ["Animação clássica", "Cinema clássico", "Universo"]
 
     /// Clipes prontos para tocar: os embutidos que existem no app + os da pasta do usuário.
     var clips: [URL] {
@@ -72,7 +75,9 @@ final class VideoCategoryStore: ObservableObject {
         // Embutidas: lista de clipes sempre a do app; o que o usuário mexeu (ligada, pasta, nome) vem do salvo.
         let builtIns = VideoCategory.builtIns.map { b -> VideoCategory in
             guard let s = byID[b.id] else { return b }
-            var c = b; c.enabled = s.enabled; c.folder = s.folder; c.name = s.name; return c
+            var c = b; c.enabled = s.enabled; c.folder = s.folder
+            if !VideoCategory.oldNames.contains(s.name) { c.name = s.name }
+            return c
         }
         categories = builtIns + saved.filter { !$0.builtIn }
     }

@@ -159,7 +159,7 @@ public struct SkinManifest: Codable, Equatable, Sendable, Identifiable {
     public enum ColorToken: String, CaseIterable, Identifiable, Sendable {
         case windowTop, windowBottom, panelFill, panelBorder, text, mutedText, accent
         case rowSelection, currentRow, lyricsActive, lyricsIdle, control, artworkTint, display
-        case buttonText, buttonTextOn
+        case buttonText, buttonTextOn, meterLow, meterMid, meterPeak
 
         public var id: String { rawValue }
 
@@ -181,6 +181,9 @@ public struct SkinManifest: Codable, Equatable, Sendable, Identifiable {
             case .display: "Visor (relógio)"
             case .buttonText: "Texto dos botões"
             case .buttonTextOn: "Texto dos botões ligados"
+            case .meterLow: "Medidor de som: normal"
+            case .meterMid: "Medidor de som: alto"
+            case .meterPeak: "Medidor de som: pico"
             }
         }
     }
@@ -191,7 +194,8 @@ public struct SkinManifest: Codable, Equatable, Sendable, Identifiable {
         "text": "#FFFFFF", "mutedText": "#9A9A9E", "accent": "#E5322D", "rowSelection": "#FFFFFF24",
         "currentRow": "#FF3B30", "lyricsActive": "#FFFFFF", "lyricsIdle": "#FFFFFFC7", "control": "#BDBDC2",
         "artworkTint": "#3A3A3E", "display": "#BFC8EE",
-        "buttonText": "#FFFFFF", "buttonTextOn": "#FFFFFF"]
+        "buttonText": "#FFFFFF", "buttonTextOn": "#FFFFFF",
+        "meterLow": "#F3E2B8", "meterMid": "#F2C230", "meterPeak": "#E5322D"]
 
     public func panelStyle(_ panel: String) -> PanelStyle? { panels[panel] ?? panels["default"] }
 
