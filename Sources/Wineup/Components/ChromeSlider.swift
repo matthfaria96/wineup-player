@@ -10,6 +10,18 @@ struct ChromeSlider: View {
 
     @Environment(\.theme) private var theme
 
+    /// Puxador: imagem do skin (centralizada, tamanho do skin) ou o retângulo padrão.
+    @ViewBuilder private func knob(horizontal: Bool) -> some View {
+        if let art = theme.art, let image = art.image(art.manifest.controls.knob) {
+            let size = CGFloat(art.manifest.controls.knobSize ?? 20)
+            Image(nsImage: image).resizable().interpolation(.high).frame(width: size, height: size)
+        } else {
+            RoundedRectangle(cornerRadius: 3)
+                .fill(theme.control)
+                .frame(width: horizontal ? knobLength : knobThickness, height: horizontal ? knobThickness : knobLength)
+        }
+    }
+
     var body: some View {
         GeometryReader { geo in
             let horizontal = axis == .horizontal
@@ -24,12 +36,7 @@ struct ChromeSlider: View {
                     .fill(theme.mutedText.opacity(0.45))
                     .frame(width: horizontal ? nil : 3, height: horizontal ? 3 : nil)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                RoundedRectangle(cornerRadius: 3)
-                    .fill(theme.control)
-                    .frame(
-                        width: horizontal ? knobLength : knobThickness,
-                        height: horizontal ? knobThickness : knobLength
-                    )
+                knob(horizontal: horizontal)
                     .position(
                         x: horizontal ? along : geo.size.width / 2,
                         y: horizontal ? geo.size.height / 2 : along

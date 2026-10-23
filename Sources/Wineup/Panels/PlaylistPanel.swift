@@ -257,7 +257,7 @@ struct PlaylistPanel: View {
                     Button(theme.name) { UserDefaults.standard.set(theme.id, forKey: DisplayKeys.theme) }
                 }
                 Divider()
-                Button("Editar, criar, importar ou exportar temas…") { openWindow(id: "themes") }
+                Button("Editar, criar, importar ou exportar skins…") { openWindow(id: "themes") }
             } label: {
                 Image(systemName: "paintpalette")
             }

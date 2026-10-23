@@ -9,7 +9,7 @@ struct MainView: View {
     @StateObject private var model = MainViewModel()
     @Environment(\.openWindow) private var openWindow
     /// Editar um tema no editor redesenha a janela na hora.
-    @ObservedObject private var themes = ThemeStore.shared
+    @ObservedObject private var skins = SkinStore.shared
 
     var body: some View {
         let theme = Theme.named(themeID)
@@ -22,10 +22,17 @@ struct MainView: View {
         }
         .ignoresSafeArea(.container, edges: .top)
         .environment(\.theme, theme)
-        .background(
-            LinearGradient(colors: [theme.windowTop, theme.windowBottom], startPoint: .top, endPoint: .bottom)
-                .ignoresSafeArea()
-        )
+        .background {
+            ZStack {
+                LinearGradient(colors: [theme.windowTop, theme.windowBottom], startPoint: .top, endPoint: .bottom)
+                // Skin: arte de fundo da janela e as camadas animadas (estrelas, redemoinhos...).
+                if let art = theme.art, art.manifest.window.background != nil || !art.manifest.window.layers.isEmpty {
+                    SkinFillView(art: art, fill: art.manifest.window.background, layers: art.manifest.window.layers,
+                                 energy: SkinEnergy.value)
+                }
+            }
+            .ignoresSafeArea()
+        }
         .frame(minWidth: layout.minSize.width, minHeight: layout.minSize.height)
         .background(WindowAccessor(onWindow: { window in
             let first = model.window == nil

@@ -9,6 +9,7 @@ struct SevenSegmentText: View {
     var color: Color?
     @Environment(\.theme) private var theme
     private var ink: Color { color ?? theme.display }
+    private var glow: Double { theme.art?.manifest.display.glow ?? 0 }
 
     private var digitWidth: CGFloat { digitHeight * 0.55 }
     private var thickness: CGFloat { max(digitHeight * 0.11, 2) }
@@ -19,6 +20,8 @@ struct SevenSegmentText: View {
                 glyph(ch)
             }
         }
+        .shadow(color: ink.opacity(glow * 0.9), radius: 6 * glow)
+        .shadow(color: ink.opacity(glow * 0.5), radius: 14 * glow)
         .accessibilityElement()
         .accessibilityLabel(text.hasPrefix("-") ? "Tempo restante" : "Tempo")
         .accessibilityValue(text.trimmingCharacters(in: CharacterSet(charactersIn: "-")))

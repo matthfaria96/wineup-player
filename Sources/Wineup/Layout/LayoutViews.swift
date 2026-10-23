@@ -112,6 +112,7 @@ struct ArrangedLayout: View {
 
     private func slot(_ kind: PanelKind) -> some View {
         panel(kind)
+            .environment(\.panelKind, kind.rawValue)
             .frame(minWidth: 0, maxWidth: .infinity)
             .frame(height: kind.fixedHeight)
             .clipped()

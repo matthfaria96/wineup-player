@@ -8,8 +8,8 @@ struct WineupApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var state = PlayerState()
     @AppStorage("layoutMode.v2") private var layoutRaw = LayoutMode.standard.rawValue
-    @AppStorage("themeID") private var themeID = Theme.graphite.id
-    @ObservedObject private var themeStore = ThemeStore.shared
+    @AppStorage("themeID") private var themeID = SkinStore.defaultID
+    @ObservedObject private var skinStore = SkinStore.shared
     @Environment(\.openWindow) private var openWindow
 
     var body: some Scene {
@@ -21,6 +21,7 @@ struct WineupApp: App {
                     appDelegate.onOpen = { [weak state] urls in state?.load(urls: urls) }
                     appDelegate.reopenMain = { [openWindow] in openWindow(id: "main") }
                     ClassicKeys.install(state: state)
+                    SkinEnergy.meter = state.meterModel
                 }
                 .task { await state.startLibrary() }
         }
@@ -109,12 +110,12 @@ struct WineupApp: App {
                 }
                 Divider()
                 // Atalhos ⌥⌘1…9 para os 9 primeiros temas; os demais ficam no editor.
-                ForEach(Array(themeStore.files.prefix(9).enumerated()), id: \.element.id) { index, file in
-                    Button("Tema \(file.name)") { themeID = file.id }
+                ForEach(Array(skinStore.skins.prefix(9).enumerated()), id: \.element.id) { index, skin in
+                    Button("Skin \(skin.name)") { themeID = skin.id }
                         .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: [.command, .option])
                 }
                 Button("Configurar categorias de vídeo…") { openWindow(id: "videos") }
-                Button("Editar temas…") { openWindow(id: "themes") }
+                Button("Editar skins…") { openWindow(id: "themes") }
                     .keyboardShortcut("t", modifiers: [.command, .option])
             }
         }
@@ -132,8 +133,8 @@ struct WineupApp: App {
         .windowResizability(.contentSize)
         .handlesExternalEvents(matching: [])
 
-        Window("Temas", id: "themes") {
-            ThemeEditorView()
+        Window("Skins", id: "themes") {
+            SkinEditorView()
                 .preferredColorScheme(.dark)
         }
         .defaultSize(width: 900, height: 640)

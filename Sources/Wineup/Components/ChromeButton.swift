@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// Botão de contorno fino, usado nas barras de controle.
@@ -10,6 +11,22 @@ struct ChromeButton<Label: View>: View {
 
     @Environment(\.theme) private var theme
 
+    /// Botão desenhado pelo skin (normal / ligado), em 9 fatias.
+    private var skinSlice: (image: NSImage, inset: CGFloat)? {
+        guard let art = theme.art else { return nil }
+        let c = art.manifest.controls
+        return art.nineSlice(isOn ? (c.buttonOn ?? c.button) : c.button)
+    }
+
+    @ViewBuilder private var skinBackground: some View {
+        if let s = skinSlice {
+            Image(nsImage: s.image)
+                .resizable(capInsets: EdgeInsets(top: s.inset, leading: s.inset, bottom: s.inset, trailing: s.inset), resizingMode: .stretch)
+        } else {
+            RoundedRectangle(cornerRadius: 6).fill(isOn ? theme.rowSelection : Color.white.opacity(0.04))
+        }
+    }
+
     var body: some View {
         Button(action: action) {
             label
@@ -19,14 +36,12 @@ struct ChromeButton<Label: View>: View {
                 .padding(.horizontal, 7)
                 .frame(minHeight: 22)
                 .frame(maxWidth: .infinity)
-                .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(isOn ? theme.rowSelection : Color.white.opacity(0.04))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(theme.control.opacity(0.75), lineWidth: 1)
-                )
+                .background { skinBackground }
+                .overlay {
+                    if skinSlice == nil {
+                        RoundedRectangle(cornerRadius: 6).stroke(theme.control.opacity(0.75), lineWidth: 1)
+                    }
+                }
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isOn ? .isSelected : [])

@@ -21,6 +21,8 @@ cp Resources/WineUp.icns "$APP/Contents/Resources/WineUp.icns"
 cp Resources/THIRD_PARTY_NOTICES.md "$APP/Contents/Resources/"
 # Clipes embutidos do painel visual (domínio público / CC, ver THIRD_PARTY_NOTICES.md).
 cp -R Resources/Videos "$APP/Contents/Resources/Videos"
+# Skins embutidos (arte, fontes OFL e skin.json).
+cp -R Resources/Skins "$APP/Contents/Resources/Skins"
 
 # Frameworks dinâmicos (inclui os LGPL, que precisam continuar substituíveis).
 mkdir -p "$APP/Contents/Frameworks"
