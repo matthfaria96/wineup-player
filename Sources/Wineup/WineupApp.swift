@@ -1,3 +1,4 @@
+import WineupLibrary
 import AppKit
 import SwiftUI
 import WineupCore
@@ -8,6 +9,7 @@ struct WineupApp: App {
     @StateObject private var state = PlayerState()
     @AppStorage("layoutMode.v2") private var layoutRaw = LayoutMode.standard.rawValue
     @AppStorage("themeID") private var themeID = Theme.graphite.id
+    @ObservedObject private var themeStore = ThemeStore.shared
     @Environment(\.openWindow) private var openWindow
 
     var body: some Scene {
@@ -75,6 +77,9 @@ struct WineupApp: App {
                 Button("Parar") { state.stop() }.keyboardShortcut(".")
                 Button("Faixa aleatória") { state.playRandom() }.keyboardShortcut("s", modifiers: [.command, .option])
                 Divider()
+                Toggle("Correção de Som", isOn: Binding(get: { state.soundCorrection }, set: { state.soundCorrection = $0 }))
+                    .keyboardShortcut("l", modifiers: [.command, .option])
+                Divider()
                 Button("Mais rápido") { state.changeRate(by: 5) }.keyboardShortcut("=", modifiers: [.command, .option])
                 Button("Mais devagar") { state.changeRate(by: -5) }.keyboardShortcut("-", modifiers: [.command, .option])
                 Button("Velocidade normal") { state.setRate(1) }.keyboardShortcut("0", modifiers: [.command, .option])
@@ -103,10 +108,13 @@ struct WineupApp: App {
                         .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: .command)
                 }
                 Divider()
-                ForEach(Array(Theme.all.enumerated()), id: \.element.id) { index, theme in
-                    Button("Tema \(theme.name)") { themeID = theme.id }
+                // Atalhos ⌥⌘1…9 para os 9 primeiros temas; os demais ficam no editor.
+                ForEach(Array(themeStore.files.prefix(9).enumerated()), id: \.element.id) { index, file in
+                    Button("Tema \(file.name)") { themeID = file.id }
                         .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: [.command, .option])
                 }
+                Button("Editar temas…") { openWindow(id: "themes") }
+                    .keyboardShortcut("t", modifiers: [.command, .option])
             }
         }
 
@@ -115,6 +123,13 @@ struct WineupApp: App {
                 .preferredColorScheme(.dark)
         }
         .defaultSize(width: 1240, height: 760)
+        .handlesExternalEvents(matching: [])
+
+        Window("Temas", id: "themes") {
+            ThemeEditorView()
+                .preferredColorScheme(.dark)
+        }
+        .defaultSize(width: 900, height: 640)
         .handlesExternalEvents(matching: [])
 
         Window("Sobre o Wineup Player", id: "about") {
@@ -161,7 +176,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             for window in NSApp.windows {
                 window.isRestorable = false
                 let id = window.identifier?.rawValue ?? ""
-                if id.hasPrefix("metadata") || id.hasPrefix("about") { window.close() }
+                if id.hasPrefix("metadata") || id.hasPrefix("about") || id.hasPrefix("themes") { window.close() }
             }
         }
     }

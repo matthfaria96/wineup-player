@@ -1,3 +1,4 @@
+import WineupLibrary
 import AppKit
 import SwiftUI
 
@@ -7,6 +8,8 @@ struct MainView: View {
     @Binding var themeID: String
     @StateObject private var model = MainViewModel()
     @Environment(\.openWindow) private var openWindow
+    /// Editar um tema no editor redesenha a janela na hora.
+    @ObservedObject private var themes = ThemeStore.shared
 
     var body: some View {
         let theme = Theme.named(themeID)

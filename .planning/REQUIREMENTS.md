@@ -68,7 +68,7 @@
 ### Interface (UI)
 
 - [x] **UI-01**: Os painéis atuais (AMP, FX, Playlist, Search, Lyrics, Capa) passam a ser alimentados pelos serviços reais
-- [ ] **UI-02**: Temas são definidos por um formato de skin próprio documentado; Grafite, Vinho e Verde viram skins embutidas
+- [x] **UI-02**: Temas são definidos por um formato de skin próprio documentado; Grafite, Vinho e Verde viram skins embutidas
 - [x] **UI-03**: Os controles customizados (sliders, botões, listas) funcionam com VoiceOver e teclado
 - [x] **UI-04**: Disposição, tema e tamanho de janela persistem entre sessões
 - [x] **UI-05**: Usuário altera o design de exibição da janela e do conteúdo (disposição dos painéis, tema/skin e estilo da lista: compacta, com capas ou em grade) num seletor de exibição

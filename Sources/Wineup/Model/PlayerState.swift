@@ -75,6 +75,22 @@ final class PlayerState: ObservableObject {
     var resumeFraction: Double?
     @Published var replayGainMode: ReplayGainMode = .track { didSet { audio.replayGainMode = replayGainMode } }
     @Published var preventClipping = true { didSet { audio.preventClipping = preventClipping } }
+    /// Correção de Som: todas as músicas no mesmo volume percebido (mede cada uma, sem mexer no arquivo).
+    @Published var soundCorrection = UserDefaults.standard.bool(forKey: "soundCorrection") {
+        didSet {
+            UserDefaults.standard.set(soundCorrection, forKey: "soundCorrection")
+            audio.soundCorrection = soundCorrection
+        }
+    }
+    /// Nível alvo em LUFS (-18 baixo, -14 padrão, -11 alto).
+    @Published var correctionTarget = PlayerState.saved("soundCorrectionTarget", SoundCorrection.defaultTarget) {
+        didSet {
+            UserDefaults.standard.set(correctionTarget, forKey: "soundCorrectionTarget")
+            audio.correctionTarget = correctionTarget
+        }
+    }
+    @Published var loudnessProgress: (done: Int, total: Int)?
+    private var loudnessTask: Task<Void, Never>?
     @Published var outputSampleRate: Double?
     @Published var eqBypass = false { didSet { syncEqualizer() } }
     @Published var preset = "Custom"
@@ -143,6 +159,8 @@ final class PlayerState: ObservableObject {
         if side != 0 { audio.setSide(side) }
         audio.replayGainMode = replayGainMode
         audio.preventClipping = preventClipping
+        audio.correctionTarget = correctionTarget
+        audio.soundCorrection = soundCorrection
         restoreEqualizer()
         syncEqualizer()
         browser.onShowTracks = { [weak self] title, items in self?.showTracks(title: title, items: items) }
@@ -668,4 +686,30 @@ enum LyricsOrigin: Equatable {
     case none, searching, askConsent
     case local(synced: Bool)
     case online(LyricsCandidate, url: URL)
+}
+
+extension PlayerState {
+    static let correctionLevels: [(name: String, lufs: Double)] = [("Baixo", -18), ("Padrão", -14), ("Alto", -11)]
+
+    /// Mede o volume das músicas da lista em segundo plano (para a Correção de Som já valer na primeira vez).
+    func measureLoudness(of tracks: [Track]) {
+        loudnessTask?.cancel()
+        let urls = Array(Set(tracks.compactMap(\.url))).filter { LoudnessAnalyzer.shared.cached($0) == nil }
+        guard !urls.isEmpty else { statusMessage = "Correção de Som: todas estas músicas já estão medidas."; return }
+        loudnessProgress = (0, urls.count)
+        loudnessTask = Task { [weak self] in
+            for (n, url) in urls.enumerated() {
+                if Task.isCancelled { break }
+                _ = await Task.detached(priority: .utility) { LoudnessAnalyzer.shared.measure(url) }.value
+                await MainActor.run {
+                    self?.loudnessProgress = (n + 1, urls.count)
+                    self?.statusMessage = "Correção de Som: medindo \(n + 1) de \(urls.count)…"
+                }
+            }
+            await MainActor.run {
+                self?.loudnessProgress = nil
+                self?.statusMessage = "Correção de Som: \(urls.count) músicas medidas."
+            }
+        }
+    }
 }

@@ -5,7 +5,10 @@ import SwiftUI
 struct SevenSegmentText: View {
     let text: String
     var digitHeight: CGFloat = 30
-    var color = Color(hex: 0xBFC8EE)
+    /// nil = cor do visor do tema.
+    var color: Color?
+    @Environment(\.theme) private var theme
+    private var ink: Color { color ?? theme.display }
 
     private var digitWidth: CGFloat { digitHeight * 0.55 }
     private var thickness: CGFloat { max(digitHeight * 0.11, 2) }
@@ -32,7 +35,7 @@ struct SevenSegmentText: View {
                 let on = Self.segments(for: ch)
                 for (index, path) in segmentPaths(in: size).enumerated() {
                     let ghost = ch == "-" ? 0 : 0.07   // o sinal de menos não tem "8" fantasma
-                    context.fill(path, with: .color(color.opacity(on.contains(index) ? 1 : ghost)))
+                    context.fill(path, with: .color(ink.opacity(on.contains(index) ? 1 : ghost)))
                 }
             }
             .frame(width: digitWidth, height: digitHeight)
@@ -40,7 +43,7 @@ struct SevenSegmentText: View {
     }
 
     private var dot: some View {
-        RoundedRectangle(cornerRadius: 1).fill(color).frame(width: thickness, height: thickness)
+        RoundedRectangle(cornerRadius: 1).fill(ink).frame(width: thickness, height: thickness)
     }
 
     /// Segmentos a b c d e f g (0...6) acesos para cada caractere.

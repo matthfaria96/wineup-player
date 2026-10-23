@@ -33,6 +33,13 @@ struct EqualizerPanel: View {
                 }
             }
             .frame(width: 84)
+            ChromeButton(isOn: state.soundCorrection, spoken: "Correção de Som",
+                         action: { state.soundCorrection.toggle() }) {
+                Image(systemName: "dial.medium")
+            }
+            .frame(width: 30)
+            .help(state.soundCorrection ? "Correção de Som ligada: todas as músicas no mesmo volume"
+                                        : "Correção de Som: deixar todas as músicas no mesmo volume")
             Picker("", selection: Binding(get: { state.preset }, set: { state.apply(preset: $0) })) {
                 ForEach((state.presets.map(\.name) + ["Custom"]), id: \.self) { Text($0).tag($0) }
             }
@@ -52,11 +59,21 @@ struct EqualizerPanel: View {
                 .disabled(!state.isUserPreset)
             Button("Apagar preset") { dialogs.showDelete = true }.disabled(!state.isUserPreset)
             Divider()
-            Picker("ReplayGain", selection: $state.replayGainMode) {
+            Toggle("Correção de Som", isOn: $state.soundCorrection)
+            Picker("Nível da Correção de Som", selection: $state.correctionTarget) {
+                ForEach(PlayerState.correctionLevels, id: \.lufs) { level in
+                    Text("\(level.name) (\(Int(level.lufs)) LUFS)").tag(level.lufs)
+                }
+            }
+            .disabled(!state.soundCorrection)
+            Button("Medir o volume das músicas da lista") { state.measureLoudness(of: state.tracks) }
+            Divider()
+            Picker("ReplayGain das tags", selection: $state.replayGainMode) {
                 Text("Desligado").tag(ReplayGainMode.off)
                 Text("Por faixa").tag(ReplayGainMode.track)
                 Text("Por álbum").tag(ReplayGainMode.album)
             }
+            .disabled(state.soundCorrection)
             Toggle("Evitar clipping", isOn: $state.preventClipping)
         } label: {
             Image(systemName: "slider.horizontal.3").foregroundStyle(theme.text)

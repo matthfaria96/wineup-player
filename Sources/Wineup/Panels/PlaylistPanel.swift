@@ -6,6 +6,7 @@ struct PlaylistPanel: View {
     @ObservedObject var state: PlayerState
     @ObservedObject var browser: LibraryBrowser
     @Environment(\.theme) private var theme
+    @Environment(\.openWindow) private var openWindow
     /// Página do artista: lançamento escolhido (nil = todas as músicas).
     @State private var artistRelease: String?
 
@@ -255,6 +256,8 @@ struct PlaylistPanel: View {
                 ForEach(Theme.all) { theme in
                     Button(theme.name) { UserDefaults.standard.set(theme.id, forKey: DisplayKeys.theme) }
                 }
+                Divider()
+                Button("Editar, criar, importar ou exportar temas…") { openWindow(id: "themes") }
             } label: {
                 Image(systemName: "paintpalette")
             }

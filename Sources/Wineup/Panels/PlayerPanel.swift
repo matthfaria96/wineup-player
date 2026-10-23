@@ -64,7 +64,7 @@ struct PlayerPanel: View {
                 Text(Self.lcdTotal(state.currentTrack?.duration ?? 0))
                     .font(.system(size: 11, weight: .medium, design: .monospaced))
             }
-            .foregroundStyle(Color(hex: 0xBFC8EE).opacity(0.6))
+            .foregroundStyle(theme.display.opacity(0.6))
             // Barras e tempo restante com a mesma altura: topo e base na mesma linha.
             HStack(alignment: .center, spacing: 10) {
                 LiveMeter(meter: state.meterModel, tap: state.meter)

@@ -12,12 +12,17 @@ public final class SFBAudioEngineAdapter: NSObject, AudioEngine, AudioPlayer.Del
         var rgCache: [URL: ReplayGainInfo] = [:]
         var mode: ReplayGainMode = .off
         var preventClipping = true
+        /// Correção de Som: todas as faixas no mesmo volume percebido (alvo em LUFS).
+        var correction = false
+        var target = SoundCorrection.defaultTarget
+        var current: URL?
     }
 
     private let player = AudioPlayer()
     private let chain = EffectChain()
     private let state = OSAllocatedUnfairLock(initialState: State())
     private let utility = DispatchQueue(label: "wineup.audio.replaygain", qos: .utility)
+    private let analysis = DispatchQueue(label: "wineup.audio.loudness", qos: .utility)
 
     public let meter = LevelTap()
 
@@ -28,7 +33,17 @@ public final class SFBAudioEngineAdapter: NSObject, AudioEngine, AudioPlayer.Del
 
     public var replayGainMode: ReplayGainMode {
         get { state.withLock { $0.mode } }
-        set { state.withLock { $0.mode = newValue } }
+        set { state.withLock { $0.mode = newValue }; refreshGain() }
+    }
+
+    public var soundCorrection: Bool {
+        get { state.withLock { $0.correction } }
+        set { state.withLock { $0.correction = newValue }; refreshGain() }
+    }
+
+    public var correctionTarget: Double {
+        get { state.withLock { $0.target } }
+        set { state.withLock { $0.target = newValue }; refreshGain() }
     }
 
     public var preventClipping: Bool {
@@ -132,6 +147,8 @@ public final class SFBAudioEngineAdapter: NSObject, AudioEngine, AudioPlayer.Del
         let id = ObjectIdentifier(decoder)
         state.withLock { $0.tokens[id] = url }
         utility.async { [weak self] in _ = self?.replayGain(for: url) }
+        // Mede o volume já ao entrar na fila (a próxima faixa fica pronta antes de tocar).
+        analysis.async { [weak self] in self?.measured(url) }
         return decoder
     }
 
@@ -142,6 +159,31 @@ public final class SFBAudioEngineAdapter: NSObject, AudioEngine, AudioPlayer.Del
         return info
     }
 
+    // MARK: Correção de Som
+
+    /// Medida pronta: se for a faixa tocando, aplica o ganho na hora.
+    private func measured(_ url: URL) {
+        guard LoudnessAnalyzer.shared.measure(url) != nil else { return }
+        if state.withLock({ $0.current == url && $0.correction }) { refreshGain() }
+    }
+
+    /// Ganho da faixa atual: Correção de Som (medida, ou estimada pelas tags) ou ReplayGain das tags.
+    private func refreshGain() {
+        let (url, mode, clip, correction, target) = state.withLock {
+            ($0.current, $0.mode, $0.preventClipping, $0.correction, $0.target)
+        }
+        guard let url else { return }
+        let tags = replayGain(for: url)
+        let linear: Double
+        if correction {
+            let info = LoudnessAnalyzer.shared.cached(url) ?? SoundCorrection.estimate(from: tags)
+            linear = info.map { SoundCorrection.linearGain(target: target, loudness: $0) } ?? 1
+        } else {
+            linear = ReplayGainMath.linearGain(mode: mode, info: tags, preventClipping: clip)
+        }
+        chain.setGain(linear: Float(linear))
+    }
+
     // MARK: AudioPlayer.Delegate
 
     public func audioPlayer(_ audioPlayer: AudioPlayer, nowPlayingChanged nowPlaying: PCMDecoding?) {
@@ -150,9 +192,8 @@ public final class SFBAudioEngineAdapter: NSObject, AudioEngine, AudioPlayer.Del
             return state.withLock { $0.tokens[id] }
         }
         if let url {
-            let (mode, clip) = state.withLock { ($0.mode, $0.preventClipping) }
-            let linear = ReplayGainMath.linearGain(mode: mode, info: replayGain(for: url), preventClipping: clip)
-            chain.setGain(linear: Float(linear))
+            state.withLock { $0.current = url }
+            refreshGain()
         } else {
             // Nada tocando nem na fila: libera os tokens de decoders.
             state.withLock { $0.tokens.removeAll() }

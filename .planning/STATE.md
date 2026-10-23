@@ -70,3 +70,9 @@ Feito e testado (189 testes, conferência visual no app):
 
 Pendentes conscientes:
 - DISC-02 (ordem de capas com imagem da pasta), UI-02 (formato de skin documentado), SYS-04 (assinatura: sem certificado), SYS-05 (conferir versões nos avisos), NET-01 (liga/desliga por provedor; hoje é um consentimento geral), NET-04 (opção de salvar capa ao lado em vez de embutir).
+
+## Atualização 2026-10-23 (2)
+- Correção de Som: medidor EBU R128 próprio (calibrado: seno 997 Hz = -3,01/-20 LUFS), medição em cache (loudness.json), ganho na reprodução com alvo -18/-14/-11 LUFS, sem estourar; mede ao entrar na fila e em lote.
+- Visual no lugar da capa: cenas desenhadas pelo app (aurora, fiorde, cidade, universo) reagindo ao som; "Seus vídeos" toca clipes de uma pasta do usuário (sem som). Conteúdo de terceiros (anime/filmes) não é embutido.
+- Temas: formato .wineuptheme (JSON, 14 cores), editor com prévia, embutidos editáveis com restaurar, importar/exportar (UI-02).
+- Player na barra de menus substituiu o modo mini.
