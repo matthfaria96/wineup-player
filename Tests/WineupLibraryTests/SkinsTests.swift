@@ -11,13 +11,14 @@ struct SkinsTests {
         .deletingLastPathComponent().appendingPathComponent("Resources/Skins")
 
     private func store() -> (SkinStore, URL) {
-        let user = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        // Cada teste numa pasta própria (os ajustes dos oficiais ficam ao lado de Skins).
+        let user = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathComponent("Skins")
         return (SkinStore(builtInFolder: Self.builtIns, userFolder: user), user)
     }
 
     @Test func starryNightIsCompleteAndAllFilesExist() throws {
         let (s, user) = store()
-        defer { try? FileManager.default.removeItem(at: user) }
+        defer { try? FileManager.default.removeItem(at: user.deletingLastPathComponent()) }
         let skin = try #require(s.skin(SkinStore.defaultID))
         #expect(skin.builtIn && skin.name == "Noite Estrelada")
         for file in skin.manifest.referencedFiles {
@@ -38,13 +39,15 @@ struct SkinsTests {
 
     @Test func editRestoreDuplicateExportImport() throws {
         let (s, user) = store()
-        defer { try? FileManager.default.removeItem(at: user) }
+        defer { try? FileManager.default.removeItem(at: user.deletingLastPathComponent()) }
         var m = try #require(s.skin(SkinStore.defaultID)).manifest
         m.colors["accent"] = "#00FF00"
         try s.save(m)
-        #expect(s.skin(m.id)?.manifest.colors["accent"] == "#00FF00" && !s.skin(m.id)!.builtIn && s.isModifiedBuiltIn(m.id))
-        try s.delete(m.id)
-        #expect(s.skin(m.id)?.builtIn == true && !s.isModifiedBuiltIn(m.id))
+        #expect(s.skin(m.id)?.manifest.colors["accent"] == "#00FF00" && s.skin(m.id)!.builtIn && s.isModifiedBuiltIn(m.id))
+        #expect(throws: (any Error).self) { try s.delete(m.id) }   // oficial não se apaga
+        #expect(!FileManager.default.fileExists(atPath: user.appendingPathComponent(m.id).path))  // ajustes ficam em pasta separada
+        try s.restoreOfficial(m.id)
+        #expect(s.skin(m.id)?.manifest.colors["accent"] != "#00FF00" && !s.isModifiedBuiltIn(m.id))
 
         let copy = try s.duplicate(m.id, name: "Minha Noite")
         #expect(copy.id == "minha-noite" && FileManager.default.fileExists(atPath: copy.file("frame.png").path))
@@ -58,7 +61,7 @@ struct SkinsTests {
 
     @Test func rejectsPathsOutsideTheSkin() throws {
         let (s, user) = store()
-        defer { try? FileManager.default.removeItem(at: user) }
+        defer { try? FileManager.default.removeItem(at: user.deletingLastPathComponent()) }
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         let pkg = dir.appendingPathComponent("mal")
         try FileManager.default.createDirectory(at: pkg, withIntermediateDirectories: true)
@@ -120,9 +123,9 @@ struct SkinGeneratorTests {
 @Suite("Skins: inspecionar antes de instalar")
 struct SkinInspectTests {
     @Test func inspectDoesNotInstall() throws {
-        let user = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let user = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathComponent("Skins")
         let s = SkinStore(builtInFolder: SkinsTests.builtIns, userFolder: user)
-        defer { try? FileManager.default.removeItem(at: user) }
+        defer { try? FileManager.default.removeItem(at: user.deletingLastPathComponent()) }
         let zip = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).wineupskin")
         defer { try? FileManager.default.removeItem(at: zip) }
         try s.export(SkinStore.defaultID, to: zip)
@@ -130,5 +133,22 @@ struct SkinInspectTests {
         defer { try? FileManager.default.removeItem(at: preview.folder.deletingLastPathComponent()) }
         #expect(preview.name == "Noite Estrelada" && FileManager.default.fileExists(atPath: preview.file("frame.png").path))
         #expect(s.skins.count == 1 && s.isInstalled(preview.id))
+    }
+}
+
+@Suite("Skins: oficiais protegidos")
+struct OfficialSkinTests {
+    @Test func oldEditsAreMovedOutOfUserFolder() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let user = root.appendingPathComponent("Skins")
+        try FileManager.default.createDirectory(at: user, withIntermediateDirectories: true)
+        try FileManager.default.copyItem(at: SkinsTests.builtIns.appendingPathComponent(SkinStore.defaultID),
+                                         to: user.appendingPathComponent(SkinStore.defaultID))
+        let s = SkinStore(builtInFolder: SkinsTests.builtIns, userFolder: user)
+        #expect(!FileManager.default.fileExists(atPath: user.appendingPathComponent(SkinStore.defaultID).path))
+        #expect(s.isModifiedBuiltIn(SkinStore.defaultID) && s.skin(SkinStore.defaultID)?.builtIn == true)
+        let copy = try s.duplicate(SkinStore.defaultID, name: "Noite Estrelada")
+        #expect(copy.id != SkinStore.defaultID && !copy.builtIn)
     }
 }

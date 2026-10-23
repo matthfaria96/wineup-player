@@ -228,7 +228,10 @@ public final class SkinStore: ObservableObject, @unchecked Sendable {
     public static let defaultID = "noite-estrelada"
 
     public let builtInFolder: URL?
+    /// Skins do usuário (criados, duplicados, importados).
     public let userFolder: URL
+    /// Ajustes do usuário nos skins oficiais: pasta separada, para nunca se misturarem com os dele.
+    public let officialEditsFolder: URL
     @Published public private(set) var skins: [Skin] = []
 
     public init(builtInFolder: URL? = Bundle.main.resourceURL?.appendingPathComponent("Skins"),
@@ -236,26 +239,40 @@ public final class SkinStore: ObservableObject, @unchecked Sendable {
                     .appendingPathComponent("Wineup/Skins", isDirectory: true)) {
         self.builtInFolder = builtInFolder
         self.userFolder = userFolder
+        officialEditsFolder = userFolder.deletingLastPathComponent().appendingPathComponent("Ajustes dos skins oficiais", isDirectory: true)
+        migrateOfficialEdits()
         reload()
+    }
+
+    /// Versões antigas guardavam o oficial editado junto dos skins do usuário: move para a pasta própria.
+    private func migrateOfficialEdits() {
+        let officialIDs = Set(Self.load(in: builtInFolder, builtIn: true).map(\.id))
+        for skin in Self.load(in: userFolder, builtIn: false) where officialIDs.contains(skin.id) {
+            try? FileManager.default.createDirectory(at: officialEditsFolder, withIntermediateDirectories: true)
+            let dest = officialEditsFolder.appendingPathComponent(skin.id, isDirectory: true)
+            if FileManager.default.fileExists(atPath: dest.path) { try? FileManager.default.removeItem(at: skin.folder) }
+            else { try? FileManager.default.moveItem(at: skin.folder, to: dest) }
+        }
     }
 
     public func reload() {
         let builtIns = Self.load(in: builtInFolder, builtIn: true)
-        let user = Self.load(in: userFolder, builtIn: false)
-        let userIDs = Set(user.map(\.id))
-        skins = builtIns.map { b in user.first { $0.id == b.id } ?? b }
-            + user.filter { u in !builtIns.contains { $0.id == u.id } }
+        let edits = Self.load(in: officialEditsFolder, builtIn: true)
+        let officialIDs = Set(builtIns.map(\.id))
+        skins = builtIns.map { b in edits.first { $0.id == b.id } ?? b }
+            + Self.load(in: userFolder, builtIn: false).filter { !officialIDs.contains($0.id) }
                 .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-        _ = userIDs
     }
 
     public func skin(_ id: String) -> Skin? { skins.first { $0.id == id } }
 
+    /// Skin oficial (vem com o app): pode ser ajustado e restaurado, nunca apagado.
     public func isBuiltInID(_ id: String) -> Bool { Self.load(in: builtInFolder, builtIn: true).contains { $0.id == id } }
+    public func isOfficial(_ id: String) -> Bool { isBuiltInID(id) }
 
-    /// Editado pelo usuário por cima de um embutido.
+    /// O usuário ajustou este oficial.
     public func isModifiedBuiltIn(_ id: String) -> Bool {
-        isBuiltInID(id) && FileManager.default.fileExists(atPath: userFolder.appendingPathComponent(id).path)
+        isBuiltInID(id) && FileManager.default.fileExists(atPath: officialEditsFolder.appendingPathComponent(id).path)
     }
 
     static func load(in folder: URL?, builtIn: Bool) -> [Skin] {
@@ -270,13 +287,14 @@ public final class SkinStore: ObservableObject, @unchecked Sendable {
 
     // MARK: Editar
 
-    /// Garante uma cópia editável do skin na pasta do usuário e devolve a pasta.
+    /// Pasta onde as edições deste skin são gravadas (cópia do oficial na pasta de ajustes, ou o próprio do usuário).
     @discardableResult
     public func editableFolder(for id: String) throws -> URL {
-        let dest = userFolder.appendingPathComponent(id, isDirectory: true)
+        let base = isOfficial(id) ? officialEditsFolder : userFolder
+        let dest = base.appendingPathComponent(id, isDirectory: true)
         if FileManager.default.fileExists(atPath: dest.path) { return dest }
         guard let source = skin(id) else { throw CocoaError(.fileNoSuchFile) }
-        try FileManager.default.createDirectory(at: userFolder, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
         try FileManager.default.copyItem(at: source.folder, to: dest)
         return dest
     }
@@ -312,9 +330,17 @@ public final class SkinStore: ObservableObject, @unchecked Sendable {
         return skin(manifest.id)!
     }
 
-    /// Apaga um skin do usuário, ou desfaz as edições de um embutido.
+    /// Apaga um skin do usuário. Oficiais não podem ser apagados (use `restoreOfficial`).
     public func delete(_ id: String) throws {
+        guard !isOfficial(id) else { throw CocoaError(.fileWriteNoPermission) }
         let dir = userFolder.appendingPathComponent(id, isDirectory: true)
+        if FileManager.default.fileExists(atPath: dir.path) { try FileManager.default.removeItem(at: dir) }
+        reload()
+    }
+
+    /// Desfaz todos os ajustes do usuário num skin oficial.
+    public func restoreOfficial(_ id: String) throws {
+        let dir = officialEditsFolder.appendingPathComponent(id, isDirectory: true)
         if FileManager.default.fileExists(atPath: dir.path) { try FileManager.default.removeItem(at: dir) }
         reload()
     }
@@ -388,7 +414,7 @@ public final class SkinStore: ObservableObject, @unchecked Sendable {
             .split(separator: "-").joined(separator: "-")
         var id = base.isEmpty ? "skin" : base
         var n = 2
-        while skin(id) != nil { id = "\(base)-\(n)"; n += 1 }
+        while skin(id) != nil || isOfficial(id) { id = "\(base)-\(n)"; n += 1 }
         return id
     }
 

@@ -13,6 +13,9 @@ struct SkinEditorView: View {
     @State private var confirmDelete = false
     @State private var tab = Tab.art
     @State private var showNew = false
+    /// Duplicar pede o nome antes (evita cópia por clique sem querer).
+    @State private var duplicateName: String?
+    @State private var confirmRestore = false
 
     enum Tab: String, CaseIterable { case art = "Arte", layers = "Animação", colors = "Cores", about = "Créditos" }
 
@@ -36,15 +39,23 @@ struct SkinEditorView: View {
         .alert("Não foi possível", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
             Button("OK") {}
         } message: { Text(error ?? "") }
-        .confirmationDialog(confirmTitle, isPresented: $confirmDelete) {
-            Button(selected?.builtIn == false && store.isBuiltInID(selected?.id ?? "") ? "Restaurar" : "Apagar", role: .destructive) { deleteSelected() }
+        .confirmationDialog("Apagar o skin “\(selected?.name ?? "")”?", isPresented: $confirmDelete) {
+            Button("Apagar", role: .destructive) { deleteSelected() }
             Button("Cancelar", role: .cancel) {}
-        }
-    }
-
-    private var confirmTitle: String {
-        guard let s = selected else { return "" }
-        return store.isBuiltInID(s.id) ? "Desfazer todas as suas mudanças em “\(s.name)”?" : "Apagar o skin “\(s.name)”?"
+        } message: { Text("O skin e as imagens dele saem do Mac. Exporte antes se quiser guardar uma cópia.") }
+        .confirmationDialog("Restaurar “\(selected?.name ?? "")” ao padrão?", isPresented: $confirmRestore) {
+            Button("Restaurar padrão", role: .destructive) { if let s = selected { run { try store.restoreOfficial(s.id) } } }
+            Button("Cancelar", role: .cancel) {}
+        } message: { Text("Todos os seus ajustes neste skin oficial serão desfeitos.") }
+        .alert("Duplicar skin", isPresented: Binding(get: { duplicateName != nil }, set: { if !$0 { duplicateName = nil } })) {
+            TextField("Nome da cópia", text: Binding(get: { duplicateName ?? "" }, set: { duplicateName = $0 }))
+            Button("Duplicar") {
+                let name = (duplicateName ?? "").trimmingCharacters(in: .whitespaces)
+                if let s = selected, !name.isEmpty { run { selectedID = try store.duplicate(s.id, name: name).id } }
+                duplicateName = nil
+            }
+            Button("Cancelar", role: .cancel) { duplicateName = nil }
+        } message: { Text("A cópia entra em Meus skins, onde pode ser editada e apagada à vontade.") }
     }
 
     // MARK: Lista
@@ -52,36 +63,40 @@ struct SkinEditorView: View {
     private var sidebar: some View {
         VStack(spacing: 0) {
             List(selection: $selectedID) {
-                ForEach(store.skins) { skin in
-                    HStack(spacing: 8) {
-                        SkinThumb(skin: skin).frame(width: 46, height: 30)
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(skin.name).lineLimit(1)
-                            if skin.id == activeID { Text("Em uso").font(.caption2).foregroundStyle(Color.accentColor) }
-                            else if store.isModifiedBuiltIn(skin.id) { Text("Editado").font(.caption2).foregroundStyle(.secondary) }
-                        }
+                Section("Oficiais") {
+                    ForEach(store.skins.filter { store.isOfficial($0.id) }) { sidebarRow($0) }
+                }
+                Section("Meus skins") {
+                    let mine = store.skins.filter { !store.isOfficial($0.id) }
+                    if mine.isEmpty {
+                        Text("Crie com + ou duplique um oficial").font(.caption).foregroundStyle(.secondary)
                     }
-                    .tag(skin.id)
+                    ForEach(mine) { sidebarRow($0) }
                 }
             }
             Divider()
             HStack(spacing: 4) {
                 Button { showNew = true } label: { Image(systemName: "plus") }
                     .help("Novo skin a partir de uma imagem")
-                Button { run { if let s = selected { selectedID = try store.duplicate(s.id, name: "\(s.name) (cópia)").id } } } label: {
+                Button { duplicateName = selected.map { "\($0.name) (cópia)" } } label: {
                     Image(systemName: "plus.square.on.square")
                 }
-                .help("Duplicar (para criar um skin novo a partir deste)")
+                .help("Duplicar (pede o nome da cópia)")
                 .disabled(selected == nil)
                 Button { confirmDelete = true } label: { Image(systemName: "minus") }
-                    .help("Apagar skin (ou desfazer edições de um embutido)")
-                    .disabled(selected.map { $0.builtIn } ?? true)
+                    .help(selected.map { store.isOfficial($0.id) } == true ? "Skins oficiais não podem ser apagados" : "Apagar skin")
+                    .disabled(selected.map { store.isOfficial($0.id) } ?? true)
                 Spacer()
                 Menu {
                     Button("Importar skin…") { importSkin() }
                     Button("Exportar skin…") { exportSkin() }.disabled(selected == nil)
                     Divider()
+                    Button("Mostrar a pasta dos meus skins") {
+                        try? FileManager.default.createDirectory(at: store.userFolder, withIntermediateDirectories: true)
+                        NSWorkspace.shared.open(store.userFolder)
+                    }
                     Button("Mostrar a pasta deste skin") { if let s = selected { NSWorkspace.shared.open(s.folder) } }
+                        .disabled(selected.map { store.isOfficial($0.id) && !store.isModifiedBuiltIn($0.id) } ?? true)
                 } label: { Image(systemName: "ellipsis.circle") }
                     .menuStyle(.borderlessButton).fixedSize()
             }
@@ -90,7 +105,29 @@ struct SkinEditorView: View {
         }
     }
 
-    // MARK: Editor
+    private func sidebarRow(_ skin: Skin) -> some View {
+        HStack(spacing: 8) {
+            SkinThumb(skin: skin).frame(width: 46, height: 30).clipShape(RoundedRectangle(cornerRadius: 5))
+            VStack(alignment: .leading, spacing: 1) {
+                Text(skin.name).lineLimit(1)
+                HStack(spacing: 4) {
+                    if skin.id == activeID { Text("Em uso").foregroundStyle(Color.accentColor) }
+                    if store.isModifiedBuiltIn(skin.id) { Text("Ajustado").foregroundStyle(.secondary) }
+                }
+                .font(.caption2)
+            }
+        }
+        .tag(skin.id)
+    }
+
+    /// Etiqueta de skin oficial (vem com o app).
+    private var officialBadge: some View {
+        Label("Oficial", systemImage: "checkmark.seal.fill")
+            .font(.system(size: 10, weight: .semibold))
+            .padding(.horizontal, 6).padding(.vertical, 2)
+            .background(Capsule().fill(Color.accentColor.opacity(0.18)))
+            .foregroundStyle(Color.accentColor)
+    }
 
     // MARK: Editor (organização no padrão dos Ajustes do macOS: seções agrupadas, rótulo à esquerda, controle à direita)
 
@@ -99,11 +136,18 @@ struct SkinEditorView: View {
             HStack(spacing: 12) {
                 SkinThumb(skin: skin).frame(width: 52, height: 36).clipShape(RoundedRectangle(cornerRadius: 7))
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(skin.name).font(.system(size: 15, weight: .semibold)).lineLimit(1)
+                    HStack(spacing: 6) {
+                        Text(skin.name).font(.system(size: 15, weight: .semibold)).lineLimit(1)
+                        if store.isOfficial(skin.id) { officialBadge }
+                    }
                     Text(skin.manifest.author.isEmpty ? "Sem autor" : skin.manifest.author)
                         .font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
                 }
                 Spacer()
+                if store.isModifiedBuiltIn(skin.id) {
+                    Button("Restaurar padrão") { confirmRestore = true }
+                        .help("Desfaz os seus ajustes neste skin oficial")
+                }
                 Button(skin.id == activeID ? "Em uso" : "Usar este skin") { activeID = skin.id }
                     .buttonStyle(.borderedProminent)
                     .disabled(skin.id == activeID)
@@ -345,6 +389,7 @@ struct SkinEditorView: View {
     private func deleteSelected() {
         guard let skin = selected else { return }
         run {
+            guard !store.isOfficial(skin.id) else { return }
             try store.delete(skin.id)
             if store.skin(skin.id) == nil {
                 if activeID == skin.id { activeID = SkinStore.defaultID }
