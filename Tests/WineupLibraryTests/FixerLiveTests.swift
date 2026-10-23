@@ -54,3 +54,16 @@ struct LyricsLiveTests {
         print("propose lyrics:", p.lyrics.map { "\($0.id) synced=\($0.isSynced)" } ?? "nil", "match:", p.match?.album ?? "-")
     }
 }
+
+@Suite("Álbum ao vivo", .enabled(if: ProcessInfo.processInfo.environment["WINEUP_LIVE"] == "1"))
+struct ReleaseLiveTests {
+    @Test func okComputer() async throws {
+        let mb = MusicBrainzClient()
+        let list = try await mb.searchReleases(artist: "Radiohead", album: "OK Computer")
+        print("rel:", list.count, list.prefix(3).map { "\($0.title) \($0.year ?? "-") \($0.type) \($0.format ?? "-") \($0.trackCount)" })
+        let first = try #require(list.first)
+        let d = try #require(try await mb.release(id: first.id))
+        print("det:", d.title, d.year ?? "-", d.genre ?? "-", d.tracks.count, d.tracks.first?.title ?? "-")
+        #expect(d.tracks.count >= 12)
+    }
+}

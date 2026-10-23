@@ -7,6 +7,8 @@ struct MetadataManagerView: View {
     @StateObject private var model: MetadataManagerModel
     @State private var pickerRow: MetadataRow.ID?
     @State private var showSettings = false
+    @State private var showAlbumSearch = false
+    @State private var showCoverSearch = false
 
     init(state: PlayerState) {
         self.state = state
@@ -27,6 +29,8 @@ struct MetadataManagerView: View {
         .toolbar { toolbar }
         .navigationTitle(model.folder?.lastPathComponent ?? "Metadados")
         .navigationSubtitle(model.folder.map { NavPlaces.displayPath($0) } ?? "")
+        .sheet(isPresented: $showAlbumSearch) { AlbumSearchView(model: model) }
+        .sheet(isPresented: $showCoverSearch) { CoverSearchView(model: model) }
         .sheet(item: Binding(get: { pickerRow.map(PickerID.init) }, set: { pickerRow = $0?.id })) { item in
             MatchPicker(model: model, rowID: item.id)
         }
@@ -54,11 +58,23 @@ struct MetadataManagerView: View {
             }
             .help("Buscar metadados, capas e letras para todas as músicas com problemas")
             .disabled(model.rows.isEmpty || model.isBusy)
-            Button { model.autoFix(onlySelection: true) } label: {
-                Label("Buscar seleção", systemImage: "magnifyingglass").labelStyle(.titleAndIcon)
+            Button { showAlbumSearch = true } label: {
+                Label("Buscar álbum", systemImage: "square.stack").labelStyle(.titleAndIcon)
             }
-            .help("Buscar só para as músicas selecionadas")
-            .disabled(model.selection.isEmpty || model.isBusy)
+            .help("Escolher o álbum no MusicBrainz e preencher todas as faixas de uma vez (seleção ou lista)")
+            .disabled(model.rows.isEmpty || model.isBusy)
+            Menu {
+                Button("Buscar dados de cada música selecionada") { model.autoFix(onlySelection: true) }
+                    .disabled(model.selection.isEmpty)
+                Button("Procurar capas…") { showCoverSearch = true }
+                Divider()
+                Button("Buscar letras das selecionadas") { model.fetchLyrics(onlySelection: true) }
+                    .disabled(model.selection.isEmpty)
+                Button("Buscar letras de todas sem letra sincronizada") { model.fetchLyrics(onlySelection: false) }
+            } label: {
+                Label("Buscar", systemImage: "magnifyingglass").labelStyle(.titleAndIcon)
+            }
+            .disabled(model.rows.isEmpty || model.isBusy)
             Button { model.save(onlySelection: false) } label: {
                 Label("Salvar tudo", systemImage: "square.and.arrow.down").labelStyle(.titleAndIcon)
             }
@@ -101,7 +117,7 @@ struct MetadataManagerView: View {
                 Text(m)
             }
             Spacer()
-            Text("\(model.selection.count) selecionadas · \(model.visibleRows.count) de \(model.rows.count)")
+            Text(model.footer)
                 .monospacedDigit()
         }
         .font(.system(size: 11))

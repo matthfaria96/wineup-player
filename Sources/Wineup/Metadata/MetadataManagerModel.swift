@@ -278,6 +278,95 @@ final class MetadataManagerModel: ObservableObject {
         message = "\(ready) prontas para salvar · \(lyrics) letras encontradas" + (review > 0 ? " · \(review) para revisar (confiança baixa)" : "")
     }
 
+    // MARK: Letras em lote
+
+    /// Só letras (LRCLIB), para quem não tem letra ou só tem a estática.
+    func fetchLyrics(onlySelection: Bool) {
+        let targets = (onlySelection ? selectedRows : rows).filter { onlySelection || $0.file.lyricsSynced != true }
+        guard !targets.isEmpty else { message = "Todas já têm letra sincronizada."; return }
+        let client = LRCLibClient()
+        run(targets.map(\.id)) { model, _, id in
+            guard let row = model.rows.first(where: { $0.id == id }) else { return }
+            let q = MetadataFixer.query(for: row.file)
+            let title = row.value("title").isEmpty ? q.title : row.value("title")
+            let artist = row.value("artist").isEmpty ? q.artist : row.value("artist")
+            let found = try await client.best(title: title, artist: artist, album: row.value("album").isEmpty ? nil : row.value("album"),
+                                              duration: row.file.duration, syncedOnly: row.file.hasLyrics)
+            guard let i = model.index(of: id) else { return }
+            if let found, found.text != nil {
+                model.setLyrics(found, for: id)
+            } else if !model.rows[i].isDirty {
+                model.rows[i].status = .notFound
+            }
+        }
+    }
+
+    // MARK: Rodapé
+
+    /// "3 (12:04 | 48,2 MB) · 12 (1:02:10 | 190 MB)", como o rodapé do Mp3tag.
+    var footer: String {
+        func sum(_ rows: [MetadataRow]) -> String {
+            let seconds = Int(rows.compactMap(\.file.duration).reduce(0, +))
+            let time = seconds >= 3600 ? String(format: "%d:%02d:%02d", seconds / 3600, seconds / 60 % 60, seconds % 60)
+                : String(format: "%d:%02d", seconds / 60, seconds % 60)
+            let size = ByteCountFormatter.string(fromByteCount: rows.reduce(0) { $0 + $1.file.size }, countStyle: .file)
+            return "\(rows.count) (\(time) | \(size))"
+        }
+        return (selection.isEmpty ? "" : "Seleção: \(sum(selectedRows)) · ") + "Total: \(sum(rows))"
+    }
+
+    /// Valores distintos de um campo nas linhas selecionadas (para o menu do campo).
+    func distinctValues(_ field: String) -> [String] {
+        Array(Set(selectedRows.map { $0.value(field) }.filter { !$0.isEmpty })).sorted()
+    }
+
+    // MARK: Busca por álbum (como a Fonte de Etiquetas do Mp3tag)
+
+    let musicBrainz = MusicBrainzClient()
+    let coverArt = CoverArtClient()
+
+    /// Artista e álbum para começar a busca: o que as selecionadas têm em comum, senão o nome da pasta.
+    var albumQuery: (artist: String, album: String) {
+        let rows = selectedRows.isEmpty ? rows : selectedRows
+        func common(_ f: String) -> String? {
+            let values = Set(rows.map { $0.value(f) }.filter { !$0.isEmpty })
+            return values.count == 1 ? values.first : nil
+        }
+        let guess = rows.first.map { MetadataFixer.query(for: $0.file) }
+        let artist = common("albumArtist") ?? common("artist") ?? (guess?.artist ?? "")
+        let album = common("album") ?? rows.first?.proposal?.match?.album ?? ""
+        return (artist, album)
+    }
+
+    /// Álbum desconhecido: descobre pela música (título + artista) na busca do iTunes.
+    func suggestAlbum() async -> String? {
+        guard let row = (selectedRows.isEmpty ? rows : selectedRows).first else { return nil }
+        let q = MetadataFixer.query(for: row.file)
+        return try? await ITunesHintClient().albumHint(title: q.title, artist: q.artist, duration: row.file.duration)?.album
+    }
+
+    /// Linhas que a busca por álbum vai preencher (seleção; senão todas as visíveis).
+    var albumTargets: [MetadataRow] { selectedRows.isEmpty ? visibleRows : selectedRows }
+
+    /// Grava nas linhas (pendente, até salvar) os campos marcados do álbum e de cada faixa pareada, e a capa.
+    func applyRelease(_ release: ReleaseDetail, pairs: [MetadataRow.ID: Int], fields: Set<String>, cover: CoverImage?) {
+        var count = 0
+        for (id, trackIndex) in pairs {
+            guard let i = index(of: id), release.tracks.indices.contains(trackIndex) else { continue }
+            let values = release.albumFields.merging(ReleaseDetail.trackFields(release.tracks[trackIndex])) { $1 }
+            for (field, value) in values where fields.contains(field) { rows[i].set(field, value) }
+            if let cover { rows[i].cover = cover }
+            rows[i].proposal = FixProposal(match: MatchCandidate(
+                source: .musicBrainz, recordingID: release.tracks[trackIndex].recordingID ?? release.id,
+                releaseID: release.id, releaseGroupID: release.releaseGroupID,
+                title: release.tracks[trackIndex].title, artist: release.tracks[trackIndex].artist,
+                album: release.title, confidence: 1))
+            refreshStatus(i)
+            count += 1
+        }
+        message = "\(count) músicas preenchidas com “\(release.title)” — confira e salve"
+    }
+
     // MARK: Gravação
 
     func save(onlySelection: Bool) {

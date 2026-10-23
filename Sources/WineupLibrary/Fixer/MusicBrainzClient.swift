@@ -64,6 +64,12 @@ public struct MusicBrainzClient: Sendable {
         return (json as? [String: Any]).flatMap { Self.candidate(from: $0, preferAlbum: preferAlbum, source: .acoustID) }
     }
 
+    /// GET respeitando o limite de 1 pedido por segundo do MusicBrainz.
+    func getJSON(_ url: URL) async throws -> Any {
+        await pacer.wait()
+        return try await FixerHTTP.json(fetcher, url)
+    }
+
     // MARK: Leitura do JSON
 
     static func candidate(from r: [String: Any], preferAlbum: String?, source: MatchCandidate.Source) -> MatchCandidate? {

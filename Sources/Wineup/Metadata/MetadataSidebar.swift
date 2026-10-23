@@ -50,11 +50,23 @@ struct MetadataSidebar: View {
             Text(MetadataFieldName.label(name) + ":")
                 .font(.system(size: 11))
                 .foregroundStyle(model.isEditedInSelection(name) ? Color.accentColor : .secondary)
-            TextField(common == nil ? "‹vários›" : "", text: Binding(
-                get: { common ?? "" },
-                set: { model.set(name, $0) }))
-                .textFieldStyle(.roundedBorder)
-                .font(.system(size: 12))
+            HStack(spacing: 2) {
+                TextField(common == nil ? "‹manter›" : "", text: Binding(
+                    get: { common ?? "" },
+                    set: { model.set(name, $0) }))
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(size: 12))
+                // Como as caixas do Mp3tag: escolher um valor que já existe nas selecionadas, ou limpar.
+                Menu {
+                    let values = model.distinctValues(name)
+                    ForEach(values, id: \.self) { v in Button(v) { model.set(name, v) } }
+                    if !values.isEmpty { Divider() }
+                    Button("Limpar o campo") { model.set(name, "") }
+                } label: { EmptyView() }
+                    .menuStyle(.borderlessButton)
+                    .frame(width: 16)
+                    .help("Valores destas músicas")
+            }
         }
     }
 
@@ -235,7 +247,7 @@ struct LyricsBox: View {
         } label: {
             Text("Letra").font(.system(size: 11, weight: .semibold))
         }
-        .task(id: row.id) {
+        .task(id: "\(row.id)|\(row.file.hasSidecarLyrics)|\(row.status == .saved)") {
             options = []
             current = row.file.hasSidecarLyrics ? try? String(contentsOf: row.file.lyricsURL, encoding: .utf8) : nil
         }
