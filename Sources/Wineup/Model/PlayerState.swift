@@ -291,6 +291,11 @@ final class PlayerState: ObservableObject {
     }
 
     func load(urls: [URL]) {
+        // Skin arrastado para a janela: tela "Sobre o skin".
+        let skins = urls.filter { $0.pathExtension.lowercased() == "wineupskin" }
+        skins.forEach { url in MainActor.assumeIsolated { SkinInstaller.present(url) } }
+        let urls = urls.filter { $0.pathExtension.lowercased() != "wineupskin" }
+        guard !urls.isEmpty else { return }
         // Playlists M3U/M3U8 abrem como lista.
         let playlists = urls.filter { ["m3u", "m3u8"].contains($0.pathExtension.lowercased()) }
         if let first = playlists.first {

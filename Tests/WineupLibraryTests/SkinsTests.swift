@@ -116,3 +116,19 @@ struct SkinGeneratorTests {
     }
 }
 
+
+@Suite("Skins: inspecionar antes de instalar")
+struct SkinInspectTests {
+    @Test func inspectDoesNotInstall() throws {
+        let user = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let s = SkinStore(builtInFolder: SkinsTests.builtIns, userFolder: user)
+        defer { try? FileManager.default.removeItem(at: user) }
+        let zip = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).wineupskin")
+        defer { try? FileManager.default.removeItem(at: zip) }
+        try s.export(SkinStore.defaultID, to: zip)
+        let preview = try s.inspect(zip)
+        defer { try? FileManager.default.removeItem(at: preview.folder.deletingLastPathComponent()) }
+        #expect(preview.name == "Noite Estrelada" && FileManager.default.fileExists(atPath: preview.file("frame.png").path))
+        #expect(s.skins.count == 1 && s.isInstalled(preview.id))
+    }
+}

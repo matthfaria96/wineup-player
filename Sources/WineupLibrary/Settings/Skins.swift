@@ -321,6 +321,22 @@ public final class SkinStore: ObservableObject, @unchecked Sendable {
 
     // MARK: Importar / exportar (.wineupskin = ZIP da pasta)
 
+    /// Abre o pacote numa pasta temporária, sem instalar (para a tela "Sobre o skin").
+    /// Quem chama apaga `skin.folder.deletingLastPathComponent()` quando terminar.
+    public func inspect(_ archive: URL) throws -> Skin {
+        let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("wineup-skin-\(UUID().uuidString)", isDirectory: true)
+        try Self.ditto(["-x", "-k", archive.path, tmp.path])
+        guard let root = Self.findManifestFolder(in: tmp) else { try? FileManager.default.removeItem(at: tmp); throw CocoaError(.fileReadCorruptFile) }
+        let manifest = try Self.decode(Data(contentsOf: root.appendingPathComponent("skin.json")))
+        guard manifest.referencedFiles.allSatisfy({ !$0.contains("..") && !$0.hasPrefix("/") }) else {
+            try? FileManager.default.removeItem(at: tmp); throw CocoaError(.fileReadCorruptFile)
+        }
+        return Skin(manifest: manifest, folder: root, builtIn: false)
+    }
+
+    /// Já existe um skin com este id (instalar cria uma cópia com outro id).
+    public func isInstalled(_ id: String) -> Bool { skin(id) != nil }
+
     public func importSkin(from archive: URL) throws -> Skin {
         let tmp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: tmp) }

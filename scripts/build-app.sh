@@ -55,6 +55,24 @@ cat > "$APP/Contents/Info.plist" <<PLIST
             <key>LSItemContentTypes</key>
             <array><string>public.audio</string><string>public.folder</string><string>public.m3u-playlist</string><string>public.mpeg-4-playlist</string></array>
         </dict>
+        <dict>
+            <key>CFBundleTypeName</key><string>Skin do Wineup</string>
+            <key>CFBundleTypeRole</key><string>Viewer</string>
+            <key>LSHandlerRank</key><string>Owner</string>
+            <key>CFBundleTypeIconFile</key><string>WineUp</string>
+            <key>LSItemContentTypes</key><array><string>app.wineup.skin</string></array>
+        </dict>
+    </array>
+    <key>UTExportedTypeDeclarations</key>
+    <array>
+        <dict>
+            <key>UTTypeIdentifier</key><string>app.wineup.skin</string>
+            <key>UTTypeDescription</key><string>Skin do Wineup</string>
+            <key>UTTypeConformsTo</key><array><string>public.zip-archive</string><string>public.data</string></array>
+            <key>UTTypeIconFile</key><string>WineUp</string>
+            <key>UTTypeTagSpecification</key>
+            <dict><key>public.filename-extension</key><array><string>wineupskin</string></array></dict>
+        </dict>
     </array>
 </dict>
 </plist>

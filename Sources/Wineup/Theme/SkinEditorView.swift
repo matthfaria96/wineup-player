@@ -28,7 +28,11 @@ struct SkinEditorView: View {
         }
         .frame(minWidth: 900, minHeight: 720)
         .sheet(isPresented: $showNew) { NewSkinFromImageView { skin in selectedID = skin.id; activeID = skin.id } }
-        .onAppear { selectedID = selectedID ?? activeID }
+        .onAppear {
+            // Skin em uso pode ter sido apagado: cai no primeiro disponível.
+            if store.skin(activeID) == nil { activeID = store.skins.first?.id ?? SkinStore.defaultID }
+            selectedID = selectedID ?? activeID
+        }
         .alert("Não foi possível", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
             Button("OK") {}
         } message: { Text(error ?? "") }
@@ -101,10 +105,13 @@ struct SkinEditorView: View {
                     .disabled(skin.id == activeID)
             }
             .padding([.horizontal, .top], 18)
-            SkinPreview(skin: skin)
-                .frame(height: 250)
-                .padding(.horizontal, 18)
-                .padding(.top, 12)
+            // Na aba Animação o palco já é a prévia: some a de cima para caber a lista de camadas.
+            if tab != .layers {
+                SkinPreview(skin: skin)
+                    .frame(height: 250)
+                    .padding(.horizontal, 18)
+                    .padding(.top, 12)
+            }
             legibilityBanner(skin)
             Picker("", selection: $tab) { ForEach(Tab.allCases, id: \.self) { Text($0.rawValue).tag($0) } }
                 .pickerStyle(.segmented).labelsHidden().padding(18)
@@ -224,11 +231,13 @@ struct SkinEditorView: View {
     // Animação: cada camada, ligar/desligar, intensidade e velocidade.
     private func layersTab(_ skin: Skin) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Camadas da janela").font(.headline)
-            if skin.manifest.window.layers.isEmpty { Text("Nenhuma").foregroundStyle(.secondary) }
-            ForEach(Array(skin.manifest.window.layers.enumerated()), id: \.offset) { i, layer in
-                layerRow(skin, layer) { m, change in change(&m.window.layers[i]) }
-            }
+            Text("Animações da janela").font(.headline)
+            SkinLayerStage(skin: skin, save: { m in run { try store.save(m) } }, addImage: {
+                guard let url = Self.pickImage() else { return nil }
+                var name: String?
+                run { name = try store.addAsset(url, to: skin.id) }
+                return name
+            })
             ForEach(skin.manifest.panels.keys.sorted(), id: \.self) { key in
                 let layers = skin.manifest.panels[key]?.layers ?? []
                 if !layers.isEmpty {

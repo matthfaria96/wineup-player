@@ -193,6 +193,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool { true }
 
     func application(_ application: NSApplication, open urls: [URL]) {
+        // Skins abrem a tela "Sobre o skin"; o resto (músicas, pastas, playlists) vai para o player.
+        let skins = urls.filter { $0.pathExtension.lowercased() == "wineupskin" }
+        for skin in skins { DispatchQueue.main.async { SkinInstaller.present(skin) } }
+        let urls = urls.filter { $0.pathExtension.lowercased() != "wineupskin" }
+        guard !urls.isEmpty else { return }
         if NSApp.windows.allSatisfy({ !$0.isVisible }) { reopenMain?() }
         if let onOpen { onOpen(urls) } else { pending += urls }
     }
