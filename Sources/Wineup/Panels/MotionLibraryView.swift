@@ -3,8 +3,8 @@ import AppKit
 import SwiftUI
 
 /// Configuração dos Vídeos Personalizados, no estilo do seletor de papel de parede do macOS:
-/// prévia grande do escolhido, grades de miniaturas vivas e a lista dos vídeos da categoria.
-/// Oficiais não se apagam (só trocam de pasta); as categorias do usuário sim.
+/// grades de miniaturas vivas e a lista dos vídeos da categoria.
+/// As oficiais são fixas; o usuário só cria, edita e apaga as próprias categorias.
 struct MotionLibraryView: View {
     @Binding var modeRaw: String
     @Binding var videoCategory: String
@@ -29,9 +29,9 @@ struct MotionLibraryView: View {
         VStack(spacing: 0) {
             header
             Divider()
+            ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
-                    hero
                     section("Animações", "Desenhadas pelo app, respiram com a música.") {
                         LazyVGrid(columns: grid, spacing: 14) {
                             ForEach(Self.scenes) { m in
@@ -47,12 +47,23 @@ struct MotionLibraryView: View {
                             addCard
                         }
                     }
-                    if let c = selectedCategory { clipList(c) }
+                    if let c = selectedCategory {
+                        clipList(c)
+                            .id("clips")
+                            .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity),
+                                                    removal: .opacity))
+                    }
                 }
                 .padding(20)
+                .animation(.spring(response: 0.4, dampingFraction: 0.85), value: motion)
+            }
+            .onChange(of: motion) { _, new in
+                guard new.hasPrefix("video:") else { return }
+                withAnimation(.easeInOut(duration: 0.45)) { proxy.scrollTo("clips", anchor: .bottom) }
+            }
             }
         }
-        .frame(width: 720, height: 660)
+        .frame(width: 720, height: 600)
         .alert("Nova categoria de vídeos", isPresented: $naming) {
             TextField("Nome (ex.: Viagens)", text: $newName)
             Button("Escolher pasta…") { createCategory() }
@@ -81,35 +92,6 @@ struct MotionLibraryView: View {
         .padding(.horizontal, 20).padding(.vertical, 14)
     }
 
-    /// Prévia grande do que está escolhido (ou um convite, se nada foi escolhido).
-    private var hero: some View {
-        ZStack(alignment: .bottomLeading) {
-            RoundedRectangle(cornerRadius: 14).fill(.black)
-            if let m = selectedScene {
-                VisualScene(mode: m, energy: { 0.3 }, seed: 7)
-            } else if let c = selectedCategory, !c.clips.isEmpty {
-                VideoWall(clips: c.clips, trackKey: 0)
-            } else {
-                VStack(spacing: 8) {
-                    Image(systemName: "film.stack").font(.system(size: 34, weight: .light))
-                    Text(selectedCategory == nil ? "Escolha uma animação ou categoria abaixo" : "Esta categoria ainda não tem vídeos")
-                        .font(.callout)
-                }
-                .foregroundStyle(.white.opacity(0.7))
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-            if let name = MotionChoice.label(motion) {
-                Text(name).font(.headline).foregroundStyle(.white)
-                    .padding(.horizontal, 12).padding(.vertical, 6)
-                    .background(.ultraThinMaterial, in: Capsule())
-                    .padding(12)
-            }
-        }
-        .frame(height: 250)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .allowsHitTesting(false)
-    }
-
     private func section<Content: View>(_ title: String, _ caption: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline) {
@@ -127,7 +109,7 @@ struct MotionLibraryView: View {
             if let first = c.clips.first { VideoThumbnail(url: first) }
             else { Image(systemName: c.symbol).font(.system(size: 26, weight: .light)).foregroundStyle(.white.opacity(0.6)) }
         } action: { choose("video:\(c.id)") }
-        .contextMenu { folderActions(c) }
+        .contextMenu { if !c.builtIn { folderActions(c) } }
     }
 
     private var addCard: some View {
@@ -151,30 +133,33 @@ struct MotionLibraryView: View {
             HStack {
                 Text("Vídeos em \(c.name)").font(.headline)
                 Spacer()
-                Menu("Pasta") { folderActions(c) }.menuStyle(.borderlessButton).fixedSize()
+                if !c.builtIn {
+                    Menu("Pasta") { folderActions(c) }.menuStyle(.borderlessButton).fixedSize()
+                }
             }
             if c.clips.isEmpty {
                 Text("Nenhum vídeo ainda. Acople uma pasta com arquivos MP4 ou MOV.")
                     .font(.callout).foregroundStyle(.secondary)
             } else {
-                VStack(spacing: 0) {
-                    ForEach(Array(c.clips.enumerated()), id: \.element) { i, url in
-                        if i > 0 { Divider().padding(.leading, 106) }
-                        HStack(spacing: 12) {
-                            VideoThumbnail(url: url)
-                                .frame(width: 84, height: 48)
-                                .clipShape(RoundedRectangle(cornerRadius: 6))
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(Self.clipTitle(url, category: c))
-                                Text(url.deletingLastPathComponent().path.contains(".app/") ? "Incluído no app" : url.deletingLastPathComponent().lastPathComponent)
-                                    .font(.caption).foregroundStyle(.secondary)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(c.clips, id: \.self) { url in
+                            VStack(alignment: .leading, spacing: 5) {
+                                VideoThumbnail(url: url)
+                                    .frame(width: 168, height: 96)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .overlay(alignment: .bottomTrailing) {
+                                        Image(systemName: "play.fill").font(.system(size: 9)).foregroundStyle(.white)
+                                            .padding(5).background(.black.opacity(0.45), in: Circle()).padding(6)
+                                    }
+                                Text(Self.clipTitle(url, category: c)).font(.callout).lineLimit(1)
                             }
-                            Spacer()
+                            .frame(width: 168)
                         }
-                        .padding(.horizontal, 10).padding(.vertical, 8)
                     }
+                    .padding(12)
                 }
-                .background(RoundedRectangle(cornerRadius: 10).fill(.quaternary.opacity(0.5)))
+                .background(RoundedRectangle(cornerRadius: 12).fill(.quaternary.opacity(0.5)))
             }
         }
     }
@@ -187,10 +172,8 @@ struct MotionLibraryView: View {
             Button("Mostrar no Finder") { NSWorkspace.shared.open(URL(fileURLWithPath: folder)) }
             Button("Remover a pasta acoplada") { var d = c; d.folder = nil; store.update(d) }
         }
-        if !c.builtIn {
-            Divider()
-            Button("Apagar categoria…", role: .destructive) { confirmDelete = c }
-        }
+        Divider()
+        Button("Apagar categoria…", role: .destructive) { confirmDelete = c }
     }
 
     // MARK: Ações
