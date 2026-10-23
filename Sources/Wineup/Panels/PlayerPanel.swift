@@ -109,15 +109,14 @@ struct PlayerPanel: View {
             // Velocidade: botão com o valor; o menu (como o do YouTube) tem slider, − / + e atalhos.
             SpeedButton(state: state)
             // Lado: L = música inteira na esquerda, • = normal, R = inteira na direita.
-            Picker("Lado", selection: $state.side) {
-                Text("L").tag(-1)
-                Image(systemName: "circle.fill").font(.system(size: 5)).tag(0)
-                Text("R").tag(1)
+            SkinSegmented(selection: $state.side, options: [-1, 0, 1], width: 12) { side in
+                Group {
+                    if side == 0 { Image(systemName: "circle.fill").font(.system(size: 5)) }
+                    else { Text(side < 0 ? "L" : "R").font(.system(size: 10, weight: .bold)) }
+                }
+                .accessibilityLabel(side < 0 ? "Esquerda" : side > 0 ? "Direita" : "Normal")
             }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .controlSize(.mini)
-            .frame(width: 76)
+            .frame(height: 18)
             .help("Som: L (tudo na esquerda), normal ou R (tudo na direita)")
         }
     }

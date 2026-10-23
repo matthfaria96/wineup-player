@@ -61,7 +61,10 @@ struct PlaylistPanel: View {
                 } label: {
                     HStack(spacing: 6) {
                         Text(state.query.isEmpty ? browser.view.title : "Busca")
-                            .font(.system(size: 24, weight: .bold)).lineLimit(1)
+                            .font(theme.art == nil ? .system(size: 24, weight: .bold) : theme.titleFont(24, weight: .bold))
+                            .foregroundStyle(theme.text)
+                            .shadow(color: .black.opacity(theme.art == nil ? 0 : 0.6), radius: 2, y: 1)
+                            .lineLimit(1)
                         Image(systemName: "chevron.down").font(.system(size: 12, weight: .semibold))
                             .foregroundStyle(theme.mutedText)
                     }
@@ -112,8 +115,7 @@ struct PlaylistPanel: View {
             Button { browser.closeGroup() } label: {
                 Label(browser.view.title, systemImage: "chevron.left").labelStyle(.titleAndIcon)
             }
-            .buttonStyle(.borderless)
-            .foregroundStyle(theme.mutedText)
+            .buttonStyle(SkinButtonStyle(compact: true))
             Text(browser.group?.title ?? "").font(.system(size: 15, weight: .semibold)).lineLimit(1)
             Spacer()
             if let group = browser.group, let first = state.visibleTracks.first {
@@ -135,8 +137,7 @@ struct PlaylistPanel: View {
             Button { browser.closeGroup() } label: {
                 Label(browser.view.title, systemImage: "chevron.left").labelStyle(.titleAndIcon)
             }
-            .buttonStyle(.borderless)
-            .foregroundStyle(theme.mutedText)
+            .buttonStyle(SkinButtonStyle(compact: true))
             Spacer()
         }
         .padding(.horizontal, 16)
@@ -243,15 +244,12 @@ struct PlaylistPanel: View {
                     .truncationMode(.middle)
             }
             Spacer(minLength: 0)
-            Picker("Estilo da lista", selection: $state.listStyle) {
-                Image(systemName: "list.bullet").help("Compacta").tag(ListStyle.compact)
-                Image(systemName: "list.bullet.rectangle").help("Com detalhes").tag(ListStyle.detailed)
-                Image(systemName: "square.grid.2x2").help("Grade").tag(ListStyle.grid)
+            SkinSegmented(selection: $state.listStyle, options: [.compact, .detailed, .grid], width: 16) { style in
+                Image(systemName: style == .compact ? "list.bullet" : style == .detailed ? "list.bullet.rectangle" : "square.grid.2x2")
+                    .help(style.title)
+                    .accessibilityLabel(style.title)
             }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .controlSize(.small)
-            .fixedSize()
+            .frame(height: 22)
             Menu {
                 ForEach(Theme.all) { theme in
                     Button(theme.name) { UserDefaults.standard.set(theme.id, forKey: DisplayKeys.theme) }
@@ -261,10 +259,8 @@ struct PlaylistPanel: View {
             } label: {
                 Image(systemName: "paintpalette")
             }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .fixedSize()
-            .help("Tema")
+            .skinMenuChrome(compact: true)
+            .help("Skin")
         }
         .padding(.horizontal, 14)
         .frame(height: 34)

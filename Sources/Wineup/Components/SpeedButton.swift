@@ -10,13 +10,9 @@ struct SpeedButton: View {
         Button { open.toggle() } label: {
             Text(PlayerPanel.rateText(state.playbackRate))
                 .font(.system(size: 10, weight: .semibold)).monospacedDigit()
-                .foregroundStyle(abs(state.playbackRate - 1) < 0.001 ? theme.mutedText : theme.accent)
-                .padding(.horizontal, 6)
-                .frame(height: 18)
-                .background(RoundedRectangle(cornerRadius: 5).fill(Color.white.opacity(open ? 0.14 : 0.06)))
-                .overlay(RoundedRectangle(cornerRadius: 5).stroke(theme.panelBorder, lineWidth: 1))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(SkinButtonStyle(on: open || abs(state.playbackRate - 1) > 0.001, compact: true))
+        .frame(height: 20)
         .help("Velocidade da reprodução")
         .accessibilityLabel("Velocidade da reprodução")
         .accessibilityValue(PlayerPanel.rateText(state.playbackRate))

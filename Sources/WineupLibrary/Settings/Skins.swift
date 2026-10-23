@@ -93,6 +93,8 @@ public struct SkinManifest: Codable, Equatable, Sendable, Identifiable {
         public var buttonOn: NineSlice?
         public var knob: String?
         public var knobSize: Double?
+        /// Campo de texto (busca), em 9 fatias.
+        public var field: NineSlice?
         public init() {}
     }
 
@@ -155,6 +157,7 @@ public struct SkinManifest: Codable, Equatable, Sendable, Identifiable {
     public enum ColorToken: String, CaseIterable, Identifiable, Sendable {
         case windowTop, windowBottom, panelFill, panelBorder, text, mutedText, accent
         case rowSelection, currentRow, lyricsActive, lyricsIdle, control, artworkTint, display
+        case buttonText, buttonTextOn
 
         public var id: String { rawValue }
 
@@ -174,6 +177,8 @@ public struct SkinManifest: Codable, Equatable, Sendable, Identifiable {
             case .control: "Controles"
             case .artworkTint: "Fundo da capa"
             case .display: "Visor (relógio)"
+            case .buttonText: "Texto dos botões"
+            case .buttonTextOn: "Texto dos botões ligados"
             }
         }
     }
@@ -183,7 +188,8 @@ public struct SkinManifest: Codable, Equatable, Sendable, Identifiable {
         "windowTop": "#1E1E20", "windowBottom": "#141416", "panelFill": "#252527EB", "panelBorder": "#FFFFFF1F",
         "text": "#FFFFFF", "mutedText": "#9A9A9E", "accent": "#E5322D", "rowSelection": "#FFFFFF24",
         "currentRow": "#FF3B30", "lyricsActive": "#FFFFFF", "lyricsIdle": "#FFFFFFC7", "control": "#BDBDC2",
-        "artworkTint": "#3A3A3E", "display": "#BFC8EE"]
+        "artworkTint": "#3A3A3E", "display": "#BFC8EE",
+        "buttonText": "#FFFFFF", "buttonTextOn": "#FFFFFF"]
 
     public func panelStyle(_ panel: String) -> PanelStyle? { panels[panel] ?? panels["default"] }
 
@@ -197,7 +203,7 @@ public struct SkinManifest: Codable, Equatable, Sendable, Identifiable {
             if let f = p.frame?.image { out.append(f) }
             out += p.layers.compactMap(\.image)
         }
-        out += [controls.button?.image, controls.buttonOn?.image, controls.knob].compactMap { $0 }
+        out += [controls.button?.image, controls.buttonOn?.image, controls.knob, controls.field?.image].compactMap { $0 }
         return Array(Set(out)).sorted()
     }
 }
@@ -434,7 +440,7 @@ extension SkinManifest.PanelStyle {
 }
 
 extension SkinManifest.Controls {
-    enum CodingKeys: String, CodingKey { case button, buttonOn, knob, knobSize }
+    enum CodingKeys: String, CodingKey { case button, buttonOn, knob, knobSize, field }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         self.init()
@@ -442,6 +448,7 @@ extension SkinManifest.Controls {
         buttonOn = try c.decodeIfPresent(SkinManifest.NineSlice.self, forKey: .buttonOn)
         knob = try c.decodeIfPresent(String.self, forKey: .knob)
         knobSize = try c.decodeIfPresent(Double.self, forKey: .knobSize)
+        field = try c.decodeIfPresent(SkinManifest.NineSlice.self, forKey: .field)
     }
 }
 

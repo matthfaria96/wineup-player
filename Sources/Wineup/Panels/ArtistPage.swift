@@ -54,8 +54,7 @@ struct ArtistHeader: View {
                 } label: {
                     Label(order.title, systemImage: "arrow.up.arrow.down").labelStyle(.titleAndIcon)
                 }
-                .menuStyle(.borderlessButton)
-                .fixedSize()
+                .skinMenuChrome()
                 .help("Ordem de Reproduzir tudo e da lista")
             }
             ScrollView(.horizontal, showsIndicators: false) {

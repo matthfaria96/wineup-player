@@ -31,7 +31,7 @@ struct ChromeButton<Label: View>: View {
         Button(action: action) {
             label
                 .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(theme.text)
+                .foregroundStyle(theme.art == nil ? theme.text : (isOn ? theme.buttonTextOn : theme.buttonText))
                 .lineLimit(1)
                 .padding(.horizontal, 7)
                 .frame(minHeight: 22)

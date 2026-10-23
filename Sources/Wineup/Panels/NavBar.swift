@@ -17,13 +17,11 @@ struct NavBar: View {
             Button { browser.toggleFavorite() } label: {
                 Image(systemName: browser.isCurrentFavorite ? "star.fill" : "star")
             }
-            .buttonStyle(.borderless)
-            .foregroundStyle(browser.isCurrentFavorite ? Color.yellow : theme.mutedText)
+            .buttonStyle(SkinButtonStyle(on: browser.isCurrentFavorite, compact: true))
             .help(browser.isCurrentFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos")
             actionsMenu
             Button { browser.refresh() } label: { Image(systemName: "arrow.clockwise") }
-                .buttonStyle(.borderless)
-                .foregroundStyle(theme.mutedText)
+                .buttonStyle(SkinButtonStyle(compact: true))
                 .help("Atualizar")
         }
         .font(.system(size: 12))
@@ -80,10 +78,7 @@ struct NavBar: View {
             Label(rootName, systemImage: browser.folder.path.hasPrefix(browser.defaultFolder.path) ? "house" : "folder")
                 .labelStyle(.titleAndIcon)
         }
-        .menuStyle(.button)
-        .buttonStyle(.bordered)
-        .controlSize(.small)
-        .fixedSize()
+        .skinMenuChrome()
     }
 
     private static func ancestors(of url: URL) -> [URL] {
@@ -111,11 +106,9 @@ struct NavBar: View {
             Button("Escolher outra pasta…") { browser.chooseOtherFolder() }
             Button("Subir um nível") { browser.goUp() }.disabled(!browser.canGoUp)
         } label: {
-            Image(systemName: "ellipsis.circle")
+            Image(systemName: "ellipsis")
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
+        .skinMenuChrome(compact: true)
         .help("Mais ações")
     }
 

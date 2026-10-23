@@ -103,6 +103,8 @@ struct Theme: Identifiable, Equatable {
     let control: Color
     let artworkTint: Color
     let display: Color
+    let buttonText: Color
+    let buttonTextOn: Color
     let art: SkinArt?
 
     init(manifest: SkinManifest, art: SkinArt?) {
@@ -114,6 +116,8 @@ struct Theme: Identifiable, Equatable {
         panelBorder = c(.panelBorder); text = c(.text); mutedText = c(.mutedText); accent = c(.accent)
         rowSelection = c(.rowSelection); currentRow = c(.currentRow); lyricsActive = c(.lyricsActive)
         lyricsIdle = c(.lyricsIdle); control = c(.control); artworkTint = c(.artworkTint); display = c(.display)
+        buttonText = manifest.colors["buttonText"].flatMap(Color.init(hexString:)) ?? c(.text)
+        buttonTextOn = manifest.colors["buttonTextOn"].flatMap(Color.init(hexString:)) ?? buttonText
         self.art = art
     }
 

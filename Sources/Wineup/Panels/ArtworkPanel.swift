@@ -76,13 +76,8 @@ struct ArtworkPanel: View {
         } label: {
             Image(systemName: mode.symbol)
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.white)
-                .padding(6)
-                .background(Circle().fill(Color.black.opacity(0.45)))
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
+        .skinMenuChrome(compact: true)
         .padding(8)
         .help("Capa, cena animada ou vídeos por categoria")
         .accessibilityLabel("Escolher o que aparece no lugar da capa")

@@ -59,33 +59,38 @@ struct MainView: View {
     }
 
     /// Barra no nível dos botões da janela: Metadados à esquerda, layout no extremo direito.
+    /// Com skin, a barra ganha fundo/moldura do skin e todos os controles usam a arte do skin.
     private func header(theme: Theme, compact: Bool) -> some View {
         HStack(spacing: 8) {
             Color.clear.frame(width: 64)   // espaço dos botões fechar/minimizar/maximizar
             Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 18, height: 18)
             if !compact {
-                Text("Wineup Player").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.text)
+                Text("Wineup Player")
+                    .font(theme.art == nil ? .system(size: 13, weight: .semibold) : theme.titleFont(13, weight: .bold))
+                    .foregroundStyle(theme.text)
+                    .shadow(color: .black.opacity(theme.art == nil ? 0 : 0.7), radius: 2, y: 1)
             }
-            HStack(spacing: 2) {
-                Button { state.browser.goBack() } label: { Image(systemName: "chevron.left").frame(width: 22, height: 20) }
+            HStack(spacing: 3) {
+                Button { state.browser.goBack() } label: { Image(systemName: "chevron.left").frame(width: 14) }
                     .disabled(state.browser.backStack.isEmpty)
-                Button { state.browser.goForward() } label: { Image(systemName: "chevron.right").frame(width: 22, height: 20) }
+                    .accessibilityLabel("Voltar")
+                Button { state.browser.goForward() } label: { Image(systemName: "chevron.right").frame(width: 14) }
                     .disabled(state.browser.forwardStack.isEmpty)
+                    .accessibilityLabel("Avançar")
             }
-            .buttonStyle(.borderless)
-            .foregroundStyle(theme.mutedText)
+            .buttonStyle(SkinButtonStyle(compact: true))
             Button { openWindow(id: "metadata") } label: {
                 if compact { Image(systemName: "tag") }
                 else { Label("Metadados", systemImage: "tag").labelStyle(.titleAndIcon) }
             }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
+            .buttonStyle(SkinButtonStyle())
             .help("Metadados: gerenciador completo de tags, capas e letras")
             Spacer(minLength: 8)
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass").foregroundStyle(theme.mutedText)
                 TextField(compact ? "Buscar" : "Buscar em sua biblioteca…", text: $state.query)
                     .textFieldStyle(.plain)
+                    .foregroundStyle(theme.text)
                     .onExitCommand { state.query = "" }
                 if !state.query.isEmpty {
                     Image(systemName: "xmark.circle.fill").foregroundStyle(theme.mutedText)
@@ -96,16 +101,14 @@ struct MainView: View {
             .padding(.horizontal, 10)
             .frame(maxWidth: compact ? 150 : 340)
             .frame(height: 24)
-            .background(RoundedRectangle(cornerRadius: 7).fill(Color.white.opacity(0.06)))
-            .overlay(RoundedRectangle(cornerRadius: 7).stroke(theme.panelBorder, lineWidth: 1))
+            .skinField()
             Spacer(minLength: 8)
             Button { TrayMode.enter(state: state, openWindow: openWindow) } label: { Image(systemName: "menubar.arrow.up.rectangle") }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
+                .buttonStyle(SkinButtonStyle(compact: true))
                 .help("Tocar pela barra de menus: fecha a janela e deixa o player no topo do Mac (⌥⌘M)")
                 .accessibilityLabel("Tocar pela barra de menus")
             // Seletor de layout que mostra o modo atual (no Compacto, só o ícone).
-            Menu {
+            SkinMenu(help: "Layout: Padrão, Compacto ou Completo") {
                 Picker("Layout", selection: $layoutRaw) {
                     ForEach(LayoutMode.allCases) { Text($0.name).tag($0.rawValue) }
                 }
@@ -115,20 +118,15 @@ struct MainView: View {
                 if compact {
                     Image(systemName: "square.grid.2x2")
                 } else {
-                    Label(LayoutMode.named(layoutRaw).name, systemImage: "square.grid.2x2")
-                        .labelStyle(.titleAndIcon)
+                    Label(LayoutMode.named(layoutRaw).name, systemImage: "square.grid.2x2").labelStyle(.titleAndIcon)
                 }
             }
-            .menuStyle(.button)
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-            .fixedSize()
-            .help("Layout: Padrão, Compacto ou Completo")
         }
         .font(.system(size: 11))
         .padding(.leading, 12)
         .padding(.trailing, 10)
         .frame(height: 38)
+        .background(SkinHeaderBackground().padding(.horizontal, 4).padding(.vertical, 2))
         .background(DragArea())
     }
 }

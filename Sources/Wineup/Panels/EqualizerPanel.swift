@@ -40,10 +40,15 @@ struct EqualizerPanel: View {
             .frame(width: 30)
             .help(state.soundCorrection ? "Correção de Som ligada: todas as músicas no mesmo volume"
                                         : "Correção de Som: deixar todas as músicas no mesmo volume")
-            Picker("", selection: Binding(get: { state.preset }, set: { state.apply(preset: $0) })) {
-                ForEach((state.presets.map(\.name) + ["Custom"]), id: \.self) { Text($0).tag($0) }
+            SkinMenu(help: "Preset do equalizador") {
+                Picker("Preset", selection: Binding(get: { state.preset }, set: { state.apply(preset: $0) })) {
+                    ForEach((state.presets.map(\.name) + ["Custom"]), id: \.self) { Text($0).tag($0) }
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+            } label: {
+                Text(state.preset).lineLimit(1).frame(maxWidth: 90, alignment: .leading)
             }
-            .labelsHidden()
             .frame(maxWidth: .infinity)
             ChromeButton("Reset") { state.apply(preset: "Flat"); state.preamp = 0 }
                 .frame(width: 52)
@@ -78,9 +83,7 @@ struct EqualizerPanel: View {
         } label: {
             Image(systemName: "slider.horizontal.3").foregroundStyle(theme.text)
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
+        .skinMenuChrome(compact: true)
         .alert("Salvar preset", isPresented: $dialogs.showSave) {
             TextField("Nome", text: $dialogs.nameInput)
             Button("Salvar") { state.savePreset(named: dialogs.nameInput) }

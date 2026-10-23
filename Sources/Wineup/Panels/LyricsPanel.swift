@@ -33,9 +33,10 @@ struct LyricsPanel: View {
                                         .multilineTextAlignment(.center)
                                     HStack {
                                         Button("Agora não") { state.answerLyricsConsent(false) }
-                                        Button("Permitir") { state.answerLyricsConsent(true) }.buttonStyle(.borderedProminent)
+                                            .buttonStyle(SkinButtonStyle())
+                                        Button("Permitir") { state.answerLyricsConsent(true) }
+                                            .buttonStyle(SkinButtonStyle(on: true))
                                     }
-                                    .controlSize(.small)
                                 }
                                 .padding(.horizontal, 20)
                                 .padding(.top, 24)
@@ -128,8 +129,8 @@ struct LyricsPanel: View {
             }
             Divider()
             Toggle("Buscar letras online quando a faixa não tiver", isOn: $state.lyricsOnline)
-        } label: { Image(systemName: "ellipsis.circle") }
-            .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+        } label: { Image(systemName: "ellipsis") }
+            .skinMenuChrome(compact: true)
             .help("Opções da letra")
     }
 

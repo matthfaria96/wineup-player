@@ -39,7 +39,9 @@
   "lyricsIdle": "#DCE6FFCC",
   "control": "#E8C25A",
   "artworkTint": "#1B3A8A",
-  "display": "#FFD95A"
+  "display": "#FFD95A",
+  "buttonText": "#FFF6D8",
+  "buttonTextOn": "#2A1A04"
  },
  "window": {
   "background": {
@@ -247,6 +249,19 @@
      "intensity": 0.35
     }
    ]
+  },
+  "header": {
+   "fill": {
+    "image": "panel-sky.jpg",
+    "dim": 0.45,
+    "focusY": 0.2
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 40,
+    "width": 8
+   },
+   "cornerRadius": 3
   }
  },
  "controls": {
@@ -261,7 +276,12 @@
    "width": 7
   },
   "knob": "knob.png",
-  "knobSize": 22
+  "knobSize": 22,
+  "field": {
+   "image": "field.png",
+   "slice": 14,
+   "width": 7
+  }
  },
  "display": {
   "glow": 0.7
