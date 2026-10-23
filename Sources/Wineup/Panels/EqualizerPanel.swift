@@ -32,7 +32,7 @@ struct EqualizerPanel: View {
                         .frame(width: 8, height: 8)
                 }
             }
-            .frame(width: 84)
+            .frame(width: 74)
             ChromeButton(isOn: state.soundCorrection, spoken: "Correção de Som",
                          action: { state.soundCorrection.toggle() }) {
                 Image(systemName: "dial.medium")
@@ -47,11 +47,11 @@ struct EqualizerPanel: View {
                 .pickerStyle(.inline)
                 .labelsHidden()
             } label: {
-                Text(state.preset).lineLimit(1).frame(maxWidth: 90, alignment: .leading)
+                Text(state.preset).lineLimit(1).truncationMode(.tail).frame(maxWidth: 62, alignment: .leading)
             }
             .frame(maxWidth: .infinity)
             ChromeButton("Reset") { state.apply(preset: "Flat"); state.preamp = 0 }
-                .frame(width: 52)
+                .frame(width: 48)
             presetBar
         }
     }

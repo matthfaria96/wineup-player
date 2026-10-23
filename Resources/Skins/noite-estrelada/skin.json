@@ -172,10 +172,10 @@
    },
    "frame": {
     "image": "frame.png",
-    "slice": 40,
-    "width": 10
+    "slice": 48,
+    "width": 12
    },
-   "cornerRadius": 4
+   "cornerRadius": 12
   },
   "playlist": {
    "fill": {
@@ -185,10 +185,10 @@
    },
    "frame": {
     "image": "frame.png",
-    "slice": 40,
-    "width": 10
+    "slice": 48,
+    "width": 12
    },
-   "cornerRadius": 4
+   "cornerRadius": 12
   },
   "equalizer": {
    "fill": {
@@ -198,10 +198,10 @@
    },
    "frame": {
     "image": "frame.png",
-    "slice": 40,
-    "width": 10
+    "slice": 48,
+    "width": 12
    },
-   "cornerRadius": 4
+   "cornerRadius": 12
   },
   "artwork": {
    "fill": {
@@ -210,10 +210,10 @@
    },
    "frame": {
     "image": "frame.png",
-    "slice": 40,
-    "width": 10
+    "slice": 48,
+    "width": 12
    },
-   "cornerRadius": 4,
+   "cornerRadius": 12,
    "layers": [
     {
      "kind": "glow",
@@ -237,10 +237,10 @@
    },
    "frame": {
     "image": "frame.png",
-    "slice": 40,
-    "width": 10
+    "slice": 48,
+    "width": 12
    },
-   "cornerRadius": 4,
+   "cornerRadius": 12,
    "layers": [
     {
      "kind": "stars",
@@ -249,19 +249,6 @@
      "intensity": 0.35
     }
    ]
-  },
-  "header": {
-   "fill": {
-    "image": "panel-sky.jpg",
-    "dim": 0.45,
-    "focusY": 0.2
-   },
-   "frame": {
-    "image": "frame.png",
-    "slice": 40,
-    "width": 8
-   },
-   "cornerRadius": 3
   }
  },
  "controls": {

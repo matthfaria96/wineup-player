@@ -29,6 +29,12 @@ struct MainView: View {
                 if let art = theme.art, art.manifest.window.background != nil || !art.manifest.window.layers.isEmpty {
                     SkinFillView(art: art, fill: art.manifest.window.background, layers: art.manifest.window.layers,
                                  energy: SkinEnergy.value)
+                    // Leve escurecimento no topo (sem contorno): título e botões legíveis sobre a arte.
+                    VStack(spacing: 0) {
+                        LinearGradient(colors: [.black.opacity(0.55), .black.opacity(0)], startPoint: .top, endPoint: .bottom)
+                            .frame(height: 64)
+                        Spacer(minLength: 0)
+                    }
                 }
             }
             .ignoresSafeArea()
@@ -61,8 +67,18 @@ struct MainView: View {
     /// Barra no nível dos botões da janela: Metadados à esquerda, layout no extremo direito.
     /// Com skin, a barra ganha fundo/moldura do skin e todos os controles usam a arte do skin.
     private func header(theme: Theme, compact: Bool) -> some View {
+        HStack(spacing: 0) {
+            // Área dos botões fechar/minimizar/maximizar: fica limpa, sobre o fundo da janela (padrão da Apple).
+            Color.clear.frame(width: 76)
+            headerBar(theme: theme, compact: compact)
+        }
+        .frame(height: 38)
+        .background(DragArea())
+    }
+
+    /// A faixa decorada do topo: começa depois dos botões da janela.
+    private func headerBar(theme: Theme, compact: Bool) -> some View {
         HStack(spacing: 8) {
-            Color.clear.frame(width: 64)   // espaço dos botões fechar/minimizar/maximizar
             Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 18, height: 18)
             if !compact {
                 Text("Wineup Player")
@@ -123,11 +139,8 @@ struct MainView: View {
             }
         }
         .font(.system(size: 11))
-        .padding(.leading, 12)
         .padding(.trailing, 10)
-        .frame(height: 38)
-        .background(SkinHeaderBackground().padding(.horizontal, 4).padding(.vertical, 2))
-        .background(DragArea())
+        .frame(height: 34)
     }
 }
 

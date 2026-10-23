@@ -110,11 +110,19 @@ struct ArrangedLayout: View {
         .animation(.spring(response: 0.3, dampingFraction: 0.85), value: columns)
     }
 
+    @Environment(\.theme) private var theme
+
+    /// Altura extra dos painéis fixos para caber a moldura do skin (sem cortar os cantos).
+    private func frameAllowance(_ kind: PanelKind) -> CGFloat {
+        guard let art = theme.art, let style = art.manifest.panelStyle(kind.rawValue), let frame = style.frame else { return 0 }
+        return CGFloat(frame.width) * 1.5
+    }
+
     private func slot(_ kind: PanelKind) -> some View {
         panel(kind)
             .environment(\.panelKind, kind.rawValue)
             .frame(minWidth: 0, maxWidth: .infinity)
-            .frame(height: kind.fixedHeight)
+            .frame(height: kind.fixedHeight.map { $0 + frameAllowance(kind) })
             .clipped()
             .overlay(alignment: .top) {
                 // Alça de arrasto: a barra de título do painel. A Playlist não tem barra de
