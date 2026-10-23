@@ -23,6 +23,13 @@ struct LyricsPanel: View {
                                     .foregroundStyle(theme.mutedText)
                                     .padding(.top, 30)
                             }
+                            if isStatusMessage {
+                                Text(state.lyricLines.first ?? "")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(theme.mutedText)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.top, 30)
+                            } else {
                             ForEach(Array(state.lyricLines.enumerated()), id: \.offset) { index, line in
                                 let active = index == state.activeLyricIndex
                                 // Linha longa encolhe até 65% antes de quebrar; quando quebra, quebra entre palavras
@@ -42,6 +49,7 @@ struct LyricsPanel: View {
                                     .animation(.easeOut(duration: 0.2), value: active)
                                     .id(index)
                             }
+                            }
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 20)
@@ -59,6 +67,14 @@ struct LyricsPanel: View {
                 .padding(.horizontal, 10)
                 .padding(.bottom, 8)
             }
+        }
+    }
+
+    /// "Procurando…" / "Sem letra…" não são letra: aparecem pequenos e discretos.
+    private var isStatusMessage: Bool {
+        switch state.lyricsOrigin {
+        case .none, .searching: true
+        default: false
         }
     }
 

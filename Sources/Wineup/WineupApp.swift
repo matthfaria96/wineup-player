@@ -1,19 +1,27 @@
+import AppKit
 import SwiftUI
 import WineupCore
 
 @main
 struct WineupApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var state = PlayerState()
     @AppStorage("layoutMode.v2") private var layoutRaw = LayoutMode.standard.rawValue
     @AppStorage("themeID") private var themeID = Theme.graphite.id
     @Environment(\.openWindow) private var openWindow
 
     var body: some Scene {
-        WindowGroup("Wineup Player") {
+        // Uma janela principal: sem restauração da sessão anterior, sem "Nova janela" e arquivos abertos
+        // pelo Finder vão para a janela existente (não criam outra). Clique no Dock com ela fechada abre uma.
+        WindowGroup("Wineup Player", id: "main") {
             MainView(state: state, layoutRaw: $layoutRaw, themeID: $themeID)
-                .onOpenURL { state.load(urls: [$0]) }
+                .onAppear {
+                    appDelegate.onOpen = { [weak state] urls in state?.load(urls: urls) }
+                    appDelegate.reopenMain = { [openWindow] in openWindow(id: "main") }
+                }
                 .task { await state.startLibrary() }
         }
+        .handlesExternalEvents(matching: [])
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1000, height: 720)
         .commands {
@@ -93,11 +101,70 @@ struct WineupApp: App {
                 .preferredColorScheme(.dark)
         }
         .defaultSize(width: 1240, height: 760)
+        .handlesExternalEvents(matching: [])
 
         Window("Sobre o Wineup Player", id: "about") {
             AboutView()
         }
         .windowResizability(.contentSize)
         .windowStyle(.hiddenTitleBar)
+        .handlesExternalEvents(matching: [])
+    }
+}
+
+/// Comportamento de app comum: nada de reabrir as janelas da última sessão (Metadados, Sobre,
+/// cópias da principal). O que volta é a lista que estava tocando, guardada pela própria sessão do app.
+/// Arquivos abertos pelo Finder ou arrastados no Dock entram na janela que já existe.
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    var onOpen: (([URL]) -> Void)? {
+        didSet {
+            guard let onOpen, !pending.isEmpty else { return }
+            onOpen(pending)
+            pending = []
+        }
+    }
+    private var pending: [URL] = []
+    /// Abre a janela principal (clique no Dock ou arquivo chegando com ela fechada).
+    var reopenMain: (() -> Void)?
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag { reopenMain?() }
+        return false
+    }
+
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        UserDefaults.standard.set(false, forKey: "NSQuitAlwaysKeepsWindows")
+        Self.removeStaleWindowFrames()
+        // Nenhuma janela entra no estado que o macOS/SwiftUI reabre na próxima vez.
+        NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil, queue: .main) { note in
+            (note.object as? NSWindow)?.isRestorable = false
+        }
+    }
+
+    /// Se o sistema ainda reabrir Metadados ou Sobre da sessão anterior, fecha: só a principal abre sozinha.
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            for window in NSApp.windows {
+                window.isRestorable = false
+                let id = window.identifier?.rawValue ?? ""
+                if id.hasPrefix("metadata") || id.hasPrefix("about") { window.close() }
+            }
+        }
+    }
+
+    func application(_ app: NSApplication, shouldRestoreSecureApplicationState coder: NSCoder) -> Bool { false }
+    func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool { true }
+
+    func application(_ application: NSApplication, open urls: [URL]) {
+        if NSApp.windows.allSatisfy({ !$0.isVisible }) { reopenMain?() }
+        if let onOpen { onOpen(urls) } else { pending += urls }
+    }
+
+    /// Molduras salvas das antigas janelas múltiplas (WindowGroup) que não servem mais.
+    private static func removeStaleWindowFrames() {
+        let defaults = UserDefaults.standard
+        for key in defaults.dictionaryRepresentation().keys where key.hasPrefix("NSWindow Frame SwiftUI.WindowGroup") {
+            defaults.removeObject(forKey: key)
+        }
     }
 }
