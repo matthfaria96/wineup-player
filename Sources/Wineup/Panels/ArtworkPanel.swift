@@ -7,7 +7,9 @@ import SwiftUI
 struct ArtworkPanel: View {
     @ObservedObject var state: PlayerState
     @AppStorage(VisualMode.key) private var modeRaw = VisualMode.cover.rawValue
-    @AppStorage(VisualMode.videoFolderKey) private var videoFolder = ""
+    @AppStorage(VideoCategoryStore.selectedKey) private var videoCategory = ""
+    @ObservedObject private var videoStore = VideoCategoryStore.shared
+    @State private var showVideoSettings = false
 
     @Environment(\.theme) private var theme
 
@@ -48,15 +50,29 @@ struct ArtworkPanel: View {
         .overlay(alignment: .topTrailing) { modeMenu }
     }
 
-    /// Menu no canto da capa: capa ou uma cena; para vídeos, a pasta.
+    /// Menu no canto da capa: capa, cenas animadas e o submenu de vídeos por categoria.
     private var modeMenu: some View {
         Menu {
-            Picker("Mostrar", selection: $modeRaw) {
-                ForEach(VisualMode.allCases) { m in Label(m.title, systemImage: m.symbol).tag(m.rawValue) }
+            ForEach(VisualMode.allCases.filter { $0 != .videos }) { m in
+                Button { modeRaw = m.rawValue } label: {
+                    Label(m.title, systemImage: mode == m ? "checkmark" : m.symbol)
+                }
             }
-            .pickerStyle(.inline)
-            Divider()
-            Button(videoFolder.isEmpty ? "Escolher a pasta de vídeos…" : "Trocar a pasta de vídeos…") { chooseVideoFolder() }
+            Menu {
+                ForEach(videoStore.enabled) { c in
+                    Button {
+                        videoCategory = c.id
+                        modeRaw = VisualMode.videos.rawValue
+                    } label: {
+                        Label(c.name, systemImage: mode == .videos && videoCategory == c.id ? "checkmark" : c.symbol)
+                    }
+                }
+                if videoStore.enabled.isEmpty { Text("Nenhuma categoria ligada") }
+                Divider()
+                Button { showVideoSettings = true } label: { Label("Configurar categorias…", systemImage: "gearshape") }
+            } label: {
+                Label("Vídeos", systemImage: "film")
+            }
         } label: {
             Image(systemName: mode.symbol)
                 .font(.system(size: 11, weight: .semibold))
@@ -68,33 +84,30 @@ struct ArtworkPanel: View {
         .menuIndicator(.hidden)
         .fixedSize()
         .padding(8)
-        .help("Capa ou visual animado (aurora, fiorde, cidade, universo ou seus vídeos)")
+        .help("Capa, cena animada ou vídeos por categoria")
         .accessibilityLabel("Escolher o que aparece no lugar da capa")
+        .sheet(isPresented: $showVideoSettings) { VideoCategoriesView() }
     }
 
     @ViewBuilder private var videos: some View {
-        let folder = videoFolder.isEmpty ? nil : URL(fileURLWithPath: videoFolder)
-        if VideoWall.videos(in: folder).isEmpty {
+        let category = videoStore.category(videoCategory) ?? videoStore.enabled.first
+        let clips = category?.clips ?? []
+        if clips.isEmpty {
             VStack(spacing: 8) {
                 Image(systemName: "film").font(.system(size: 40)).foregroundStyle(theme.mutedText)
-                Text("Escolha uma pasta com vídeos (MP4 ou MOV): seus clipes de anime, cenas de filmes, viagens…")
+                Text(category == nil ? "Nenhuma categoria de vídeo ligada." : "A categoria “\(category!.name)” está sem clipes. Acople uma pasta com vídeos em Configurar categorias.")
                     .font(.system(size: 12)).foregroundStyle(theme.mutedText).multilineTextAlignment(.center)
-                Button("Escolher pasta…") { chooseVideoFolder() }.controlSize(.small)
+                Button("Configurar categorias…") { showVideoSettings = true }.controlSize(.small)
             }
             .padding(20)
         } else {
-            VideoWall(folder: folder, trackKey: state.currentTrack?.id.seed ?? 0)
+            VideoWall(clips: clips, trackKey: state.currentTrack?.id.seed ?? 0)
+                .overlay(alignment: .bottomLeading) {
+                    Text(category?.name ?? "").font(.system(size: 10, weight: .semibold)).foregroundStyle(.white.opacity(0.85))
+                        .padding(.horizontal, 7).padding(.vertical, 3)
+                        .background(Capsule().fill(Color.black.opacity(0.4))).padding(8)
+                }
         }
-    }
-
-    private func chooseVideoFolder() {
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.message = "Escolha a pasta com os vídeos que vão passar no lugar da capa (sem som)"
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        videoFolder = url.path
-        modeRaw = VisualMode.videos.rawValue
     }
 
     @ViewBuilder private var artwork: some View {

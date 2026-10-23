@@ -113,6 +113,7 @@ struct WineupApp: App {
                     Button("Tema \(file.name)") { themeID = file.id }
                         .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: [.command, .option])
                 }
+                Button("Configurar categorias de vídeo…") { openWindow(id: "videos") }
                 Button("Editar temas…") { openWindow(id: "themes") }
                     .keyboardShortcut("t", modifiers: [.command, .option])
             }
@@ -123,6 +124,12 @@ struct WineupApp: App {
                 .preferredColorScheme(.dark)
         }
         .defaultSize(width: 1240, height: 760)
+        .handlesExternalEvents(matching: [])
+
+        Window("Categorias de vídeo", id: "videos") {
+            VideoCategoriesView().preferredColorScheme(.dark)
+        }
+        .windowResizability(.contentSize)
         .handlesExternalEvents(matching: [])
 
         Window("Temas", id: "themes") {
@@ -176,7 +183,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             for window in NSApp.windows {
                 window.isRestorable = false
                 let id = window.identifier?.rawValue ?? ""
-                if id.hasPrefix("metadata") || id.hasPrefix("about") || id.hasPrefix("themes") { window.close() }
+                if id.hasPrefix("metadata") || id.hasPrefix("about") || id.hasPrefix("themes") || id.hasPrefix("videos") { window.close() }
             }
         }
     }

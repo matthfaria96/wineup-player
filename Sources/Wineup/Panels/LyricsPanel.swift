@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct LyricsPanel: View {
@@ -104,34 +105,51 @@ struct LyricsPanel: View {
         }
     }
 
-    /// Tipo e origem da letra: sincronizada/estática, do arquivo ou online (com opção de salvar).
+    /// Rodapé enxuto: só um selo pequeno (tipo da letra) e o menu "⋯" com estado, exportação e opções.
     @ViewBuilder private var origin: some View {
         switch state.lyricsOrigin {
-        case .local(let synced):
-            kind(synced)
-        case .online(let lyrics, _):
-            kind(lyrics.isSynced)
-            Text("Online").font(.system(size: 10)).foregroundStyle(theme.mutedText)
-            Button("Salvar .lrc") { state.saveOnlineLyrics() }
-                .buttonStyle(.borderless).font(.system(size: 10))
-                .help("Gravar esta letra como .lrc ao lado da música")
-        case .searching, .askConsent:
-            EmptyView()
-        case .none:
-            EmptyView()
+        case .local(let synced): kind(synced)
+        case .online(let lyrics, _): kind(lyrics.isSynced)
+        default: EmptyView()
         }
         Menu {
+            Section(statusLine) {
+                switch state.lyricsOrigin {
+                case .online:
+                    Button { state.saveOnlineLyrics() } label: { Label("Salvar como .lrc ao lado da música", systemImage: "square.and.arrow.down") }
+                case .local:
+                    if let url = state.currentTrack?.url {
+                        Button { NSWorkspace.shared.activateFileViewerSelecting([url.deletingPathExtension().appendingPathExtension("lrc")]) } label: {
+                            Label("Mostrar o .lrc no Finder", systemImage: "folder")
+                        }
+                    }
+                default: EmptyView()
+                }
+            }
+            Divider()
             Toggle("Buscar letras online quando a faixa não tiver", isOn: $state.lyricsOnline)
         } label: { Image(systemName: "ellipsis.circle") }
-            .menuStyle(.borderlessButton).fixedSize()
-            .help("Quando a música não tem letra, procurar online (envia título, artista, álbum e duração)")
+            .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+            .help("Opções da letra")
     }
 
+    private var statusLine: String {
+        switch state.lyricsOrigin {
+        case .local(let synced): synced ? "Letra sincronizada, do arquivo" : "Letra estática, do arquivo"
+        case .online(let l, _): (l.isSynced ? "Letra sincronizada" : "Letra estática") + ", encontrada online (não salva)"
+        case .searching: "Procurando a letra…"
+        case .askConsent: "Aguardando permissão para buscar online"
+        case .none: "Sem letra"
+        }
+    }
+
+    /// Selo só com ícone: relógio verde (sincronizada) ou texto laranja (estática); o nome vai na dica.
     private func kind(_ synced: Bool) -> some View {
-        Label(synced ? "Sincronizada" : "Estática", systemImage: synced ? "clock.fill" : "text.alignleft")
-            .font(.system(size: 10, weight: .semibold))
+        Image(systemName: synced ? "clock.fill" : "text.alignleft")
+            .font(.system(size: 11, weight: .semibold))
             .foregroundStyle(synced ? Color.green : Color.orange)
-            .help(synced ? "Cada linha tem tempo: a letra acompanha a música" : "Sem marcas de tempo: não acompanha a música")
+            .help(synced ? "Sincronizada: cada linha tem tempo e acompanha a música" : "Estática: sem marcas de tempo, não acompanha a música")
+            .accessibilityLabel(synced ? "Letra sincronizada" : "Letra estática")
     }
 
     private func sizeButton(size: CGFloat, action: @escaping () -> Void) -> some View {

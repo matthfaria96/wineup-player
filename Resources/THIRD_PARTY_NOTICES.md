@@ -20,3 +20,19 @@ Texto completo das licenças: https://github.com/sbooth/SFBAudioEngine/tree/main
 |---|---|---|
 | GRDB.swift (Gwendal Roué) | MIT | Banco SQLite da biblioteca (migrations, FTS5) |
 | TagLib (CXXTagLib) | LGPL-2.1 / MPL-1.1 | Escrita de tags ID3; linkado estaticamente sob MPL-1.1. Fonte: https://taglib.org |
+
+## Clipes de vídeo embutidos (painel visual, categorias de vídeo)
+
+Trechos de 10–20 s, sem som, reduzidos a 960 px. Cada um mantém a licença original.
+
+| Arquivo | Obra | Autor | Licença | Fonte |
+|---|---|---|---|---|
+| animacao/animacao-namakura.mp4 | Namakura Gatana (1917) | Jun'ichi Kōuchi | Domínio público | https://commons.wikimedia.org/wiki/File:Namakura_Gatana_with_music.webm |
+| cinema/cinema-hooligan.mp4 | Happy Hooligan: A Trip to the Moon (1917) | International Film Service | Domínio público | https://commons.wikimedia.org/wiki/File:Happy_Hooligan_-_A_Trip_To_The_Moon-1917.webm |
+| natureza/natureza-aurora.mp4 | May 2024 aurora timelapse near Calgary | ver página da fonte | CC BY 3.0 | https://commons.wikimedia.org/wiki/File:May_2024_aurora_timelapse_near_Calgary.webm |
+| natureza/natureza-floresta.mp4 | Lost Forest Research Natural Area | BLM Oregon & Washington | Domínio público (obra do governo dos EUA) | https://commons.wikimedia.org/wiki/File:Lost_Forest_Research_Natural_Area_(44359678475).webm |
+| natureza/natureza-praia.mp4 | Fujitsuka-hama Beach in Summer, Japan – Aerial Video | ver página da fonte | CC BY 3.0 | https://commons.wikimedia.org/wiki/File:Fujitsuka-hama_Beach_in_Summer,_Japan_-_Aerial_Video.webm |
+| universo/universo-buracos-negros.mp4 | New Simulation Sheds Light on Spiraling Supermassive Black Holes | NASA Goddard | Domínio público (NASA) | https://images.nasa.gov/details/GSFC_20181002_SMBH_m13043_Simulation |
+| universo/universo-colisao.mp4 | Galaxy Collision Animation – James Webb Space Telescope Science | NASA/ESA/STScI (via Commons) | CC BY 3.0 | https://commons.wikimedia.org/wiki/File:Galaxy_Collision_Animation-_James_Webb_Space_Telescope_Science.webm |
+
+Os clipes CC BY exigem crédito ao autor: os nomes completos estão nas páginas de origem.
