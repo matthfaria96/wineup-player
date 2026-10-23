@@ -16,8 +16,8 @@
  "colors": {
   "windowTop": "#2E2E46",
   "windowBottom": "#1C1C2C",
-  "panelFill": "#4A4A68E6",
-  "panelBorder": "#8A8AAA99",
+  "panelFill": "#2A2A32E6",
+  "panelBorder": "#7A7A8699",
   "text": "#B8F5C4",
   "mutedText": "#6FC886",
   "accent": "#00FF40",
@@ -25,10 +25,10 @@
   "currentRow": "#FFFFFF",
   "lyricsActive": "#00FF40",
   "lyricsIdle": "#7FD894BB",
-  "control": "#8C8CAC",
-  "artworkTint": "#2C2C42",
+  "control": "#7A7A86",
+  "artworkTint": "#1E1E24",
   "display": "#00FF40",
-  "buttonText": "#E6E6F0",
+  "buttonText": "#D8F8DE",
   "buttonTextOn": "#B0FFC0",
   "meterLow": "#00FF40",
   "meterMid": "#E8E43A",
@@ -108,6 +108,20 @@
      "speed": 1.6,
      "intensity": 1.0,
      "react": true
+    },
+    {
+     "kind": "glow",
+     "name": "fósforo",
+     "points": [
+      {
+       "x": 0.5,
+       "y": 0.0,
+       "r": 0.45
+      }
+     ],
+     "color": "#00FF40",
+     "speed": 0.6,
+     "intensity": 0.07
     }
    ]
   },
@@ -121,7 +135,23 @@
     "slice": 48,
     "width": 10
    },
-   "cornerRadius": 2
+   "cornerRadius": 2,
+   "layers": [
+    {
+     "kind": "glow",
+     "name": "fósforo",
+     "points": [
+      {
+       "x": 0.5,
+       "y": 0.0,
+       "r": 0.45
+      }
+     ],
+     "color": "#00FF40",
+     "speed": 0.6,
+     "intensity": 0.07
+    }
+   ]
   },
   "artwork": {
    "fill": {
@@ -134,7 +164,22 @@
     "width": 10
    },
    "cornerRadius": 2,
-   "layers": []
+   "layers": [
+    {
+     "kind": "glow",
+     "name": "fósforo",
+     "points": [
+      {
+       "x": 0.5,
+       "y": 0.0,
+       "r": 0.45
+      }
+     ],
+     "color": "#00FF40",
+     "speed": 0.6,
+     "intensity": 0.07
+    }
+   ]
   },
   "lyrics": {
    "fill": {
