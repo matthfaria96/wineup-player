@@ -171,6 +171,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillFinishLaunching(_ notification: Notification) {
         UserDefaults.standard.set(false, forKey: "NSQuitAlwaysKeepsWindows")
+        // Sobras de pacotes .wineupskin abertos para "Instalar skin" (janela fechada sem botão, app encerrado).
+        let tmp = FileManager.default.temporaryDirectory
+        for item in (try? FileManager.default.contentsOfDirectory(at: tmp, includingPropertiesForKeys: nil)) ?? []
+        where item.lastPathComponent.hasPrefix("wineup-skin-") {
+            try? FileManager.default.removeItem(at: item)
+        }
         Self.removeStaleWindowFrames()
         // Nenhuma janela entra no estado que o macOS/SwiftUI reabre na próxima vez.
         NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil, queue: .main) { note in
