@@ -4,7 +4,7 @@
  "id": "radio-retro",
  "name": "Radio Retro",
  "author": "Wineup",
- "description": "Aparelho de som dos anos 90: metal azul-ardósia escovado, botões prateados com LED verde, visor de cristal líquido e filetes dourados.",
+ "description": "Som de carro dos anos 80: painel de nogueira, alumínio preto escovado, teclas com aro cromado que acendem em âmbar, visor VFD, botões serrilhados e LED vermelho que pulsa com a música.",
  "credits": [
   {
    "work": "VT323 (fonte de terminal/visor)",
@@ -14,25 +14,25 @@
   }
  ],
  "colors": {
-  "windowTop": "#2A2C45",
-  "windowBottom": "#16172A",
-  "panelFill": "#2B2D48E6",
-  "panelBorder": "#A9ADCF99",
-  "text": "#E8EAF6",
-  "mutedText": "#9EA3C8",
-  "accent": "#3DFF5A",
-  "rowSelection": "#1E2CC8AA",
-  "currentRow": "#3DFF5A",
-  "lyricsActive": "#3DFF5A",
-  "lyricsIdle": "#B9F5C4BB",
-  "control": "#E0A43A",
-  "artworkTint": "#24263E",
-  "display": "#3DFF5A",
-  "buttonText": "#1A1B2E",
-  "buttonTextOn": "#FFFFFF",
-  "meterLow": "#3DFF5A",
-  "meterMid": "#E8E43A",
-  "meterPeak": "#FF6A2A"
+  "windowTop": "#4A2E1A",
+  "windowBottom": "#2A170C",
+  "panelFill": "#1A1A1EE6",
+  "panelBorder": "#9A9AA699",
+  "text": "#F2E8D8",
+  "mutedText": "#B9A88E",
+  "accent": "#FFA028",
+  "rowSelection": "#FFA02833",
+  "currentRow": "#FFB84A",
+  "lyricsActive": "#FFB84A",
+  "lyricsIdle": "#E0C9A3BB",
+  "control": "#C8C8D2",
+  "artworkTint": "#1A1A1E",
+  "display": "#FFA028",
+  "buttonText": "#F2E8D8",
+  "buttonTextOn": "#2A1600",
+  "meterLow": "#FFA028",
+  "meterMid": "#FFD24A",
+  "meterPeak": "#FF3A2A"
  },
  "window": {
   "background": {
@@ -42,94 +42,127 @@
   "layers": [
    {
     "kind": "glow",
-    "name": "luz do visor",
+    "name": "luz âmbar do visor",
     "points": [
      {
       "x": 0.62,
-      "y": 0.12,
-      "r": 0.22
+      "y": 0.14,
+      "r": 0.25
      }
     ],
-    "color": "#3DFF5A",
-    "speed": 0.8,
-    "intensity": 0.12
+    "color": "#FFA028",
+    "speed": 0.7,
+    "intensity": 0.16
    }
   ]
  },
  "panels": {
   "default": {
    "fill": {
-    "image": "panel-metal.jpg",
+    "image": "panel-face.jpg",
     "dim": 0.0
    },
    "frame": {
     "image": "frame.png",
     "slice": 48,
-    "width": 10
+    "width": 11
    },
-   "cornerRadius": 6
+   "cornerRadius": 5
   },
   "playlist": {
    "fill": {
-    "image": "panel-screen.jpg",
+    "image": "panel-vfd.jpg",
     "dim": 0.0
    },
    "frame": {
     "image": "frame.png",
     "slice": 48,
-    "width": 10
+    "width": 11
    },
-   "cornerRadius": 6
+   "cornerRadius": 5
   },
   "player": {
    "fill": {
-    "image": "panel-metal.jpg",
+    "image": "panel-face.jpg",
     "dim": 0.0
    },
    "frame": {
     "image": "frame.png",
     "slice": 48,
-    "width": 10
+    "width": 11
    },
-   "cornerRadius": 6
+   "cornerRadius": 5,
+   "layers": [
+    {
+     "kind": "image",
+     "name": "LED power",
+     "image": "led.png",
+     "points": [
+      {
+       "x": 0.955,
+       "y": 0.09,
+       "r": 0.02
+      }
+     ],
+     "motion": "pulse",
+     "speed": 1.4,
+     "intensity": 1.0,
+     "react": true
+    }
+   ]
   },
   "equalizer": {
    "fill": {
-    "image": "panel-eq.jpg",
+    "image": "panel-face-dark.jpg",
     "dim": 0.0
    },
    "frame": {
     "image": "frame.png",
     "slice": 48,
-    "width": 10
+    "width": 11
    },
-   "cornerRadius": 6
+   "cornerRadius": 5
   },
   "artwork": {
    "fill": {
-    "image": "panel-metal.jpg",
+    "image": "panel-face.jpg",
     "dim": 0.0
    },
    "frame": {
     "image": "frame.png",
     "slice": 48,
-    "width": 10
+    "width": 11
    },
-   "cornerRadius": 6,
+   "cornerRadius": 5,
    "layers": []
   },
   "lyrics": {
    "fill": {
-    "image": "panel-screen.jpg",
-    "dim": 0.0
+    "image": "panel-grille.jpg",
+    "dim": 0.1
    },
    "frame": {
     "image": "frame.png",
     "slice": 48,
-    "width": 10
+    "width": 11
    },
-   "cornerRadius": 6,
-   "layers": []
+   "cornerRadius": 5,
+   "layers": [
+    {
+     "kind": "glow",
+     "name": "brilho âmbar",
+     "points": [
+      {
+       "x": 0.5,
+       "y": 0.06,
+       "r": 0.35
+      }
+     ],
+     "color": "#FFA028",
+     "speed": 1.0,
+     "intensity": 0.18
+    }
+   ]
   }
  },
  "controls": {
@@ -149,10 +182,10 @@
    "width": 7
   },
   "knob": "knob.png",
-  "knobSize": 20
+  "knobSize": 22
  },
  "display": {
-  "glow": 0.7
+  "glow": 0.9
  },
  "artwork": "artwork.jpg",
  "fonts": [
