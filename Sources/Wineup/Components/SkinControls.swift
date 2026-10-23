@@ -104,6 +104,7 @@ struct SkinFieldBackground: ViewModifier {
             if let art = theme.art, let s = art.nineSlice(art.manifest.controls.field) {
                 Image(nsImage: s.image)
                     .resizable(capInsets: EdgeInsets(top: s.inset, leading: s.inset, bottom: s.inset, trailing: s.inset), resizingMode: .stretch)
+                    .allowsHitTesting(false)
             } else {
                 RoundedRectangle(cornerRadius: 7).fill(Color.white.opacity(0.06))
                     .overlay(RoundedRectangle(cornerRadius: 7).stroke(theme.panelBorder, lineWidth: 1))

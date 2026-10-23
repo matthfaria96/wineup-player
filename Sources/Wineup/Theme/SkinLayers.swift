@@ -22,6 +22,9 @@ struct SkinFillView: View {
                                                     vertical: fill.focusY < 0.34 ? .top : fill.focusY > 0.66 ? .bottom : .center))
                         .clipped()
                         .blur(radius: fill.blur)
+                        // A imagem é maior que a área (preenchimento): sem isto, a parte cortada
+                        // continuaria recebendo cliques por cima de outros controles (ex.: a busca).
+                        .allowsHitTesting(false)
                     Color.black.opacity(fill.dim)
                 }
                 let active = layers.filter(\.enabled)
@@ -31,6 +34,8 @@ struct SkinFillView: View {
                 }
             }
         }
+        .clipped()
+        .allowsHitTesting(false)
     }
 }
 
@@ -58,6 +63,7 @@ struct SkinLayersView: View {
             }
         }
         .drawingGroup()
+        .allowsHitTesting(false)
     }
 }
 

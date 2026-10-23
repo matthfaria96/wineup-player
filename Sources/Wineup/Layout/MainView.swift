@@ -8,6 +8,8 @@ struct MainView: View {
     @Binding var themeID: String
     @StateObject private var model = MainViewModel()
     @Environment(\.openWindow) private var openWindow
+    /// Foco da busca: clicar na caixa (ou ⌘F) põe o cursor no campo.
+    @FocusState private var searchFocused: Bool
     /// Editar um tema no editor redesenha a janela na hora.
     @ObservedObject private var skins = SkinStore.shared
 
@@ -37,6 +39,8 @@ struct MainView: View {
                     }
                 }
             }
+            // Arte e animação do fundo nunca recebem cliques (o desenho assíncrono cria uma camada própria).
+            .allowsHitTesting(false)
             .ignoresSafeArea()
         }
         .frame(minWidth: layout.minSize.width, minHeight: layout.minSize.height)
@@ -107,7 +111,8 @@ struct MainView: View {
                 TextField(compact ? "Buscar" : "Buscar em sua biblioteca…", text: $state.query)
                     .textFieldStyle(.plain)
                     .foregroundStyle(theme.text)
-                    .onExitCommand { state.query = "" }
+                    .focused($searchFocused)
+                    .onExitCommand { state.query = ""; searchFocused = false }
                 if !state.query.isEmpty {
                     Image(systemName: "xmark.circle.fill").foregroundStyle(theme.mutedText)
                         .onTapGesture { state.query = "" }
@@ -118,6 +123,12 @@ struct MainView: View {
             .frame(maxWidth: compact ? 150 : 340)
             .frame(height: 24)
             .skinField()
+            .contentShape(Rectangle())
+            .onTapGesture { searchFocused = true }
+            .background {
+                // ⌘F: vai para a busca.
+                Button("") { searchFocused = true }.keyboardShortcut("f", modifiers: .command).opacity(0).allowsHitTesting(false)
+            }
             Spacer(minLength: 8)
             Button { TrayMode.enter(state: state, openWindow: openWindow) } label: { Image(systemName: "menubar.arrow.up.rectangle") }
                 .buttonStyle(SkinButtonStyle(compact: true))
