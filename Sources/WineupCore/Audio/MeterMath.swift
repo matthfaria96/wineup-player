@@ -86,6 +86,12 @@ public enum MeterMath {
         return min(1, max(0, (db - floorDB) / -floorDB))
     }
 
+    /// Pico de amostra (amplitude 0...1) na escala do medidor. É o pico, não a média (RMS), que chega ao fim
+    /// da escala: música masterizada tem média por volta de −9 a −14 dBFS, mas os picos encostam em 0 dBFS.
+    public static func peakToMeter(_ amplitude: Float) -> Float {
+        dbToMeter(20 * log10(max(abs(amplitude), 1e-9)))
+    }
+
     public static func isStale(timestamp: TimeInterval, now: TimeInterval, maxAge: TimeInterval = 0.1) -> Bool {
         now - timestamp > maxAge
     }

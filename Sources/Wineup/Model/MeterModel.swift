@@ -7,6 +7,8 @@ import WineupCore
 @MainActor
 final class MeterModel: ObservableObject {
     @Published private(set) var levels: [Double] = [0, 0]
+    /// Picos por canal (0...1) para o medidor de barras: acendem o vermelho quando a música encosta no máximo.
+    @Published private(set) var peaks: [Double] = [0, 0]
     @Published private(set) var bands: [Double] = Array(repeating: 0, count: MeterModel.bandCount)
     /// O espectro (FFT) só é calculado se alguma tela o exibe.
     var computesSpectrum = false
@@ -39,11 +41,15 @@ final class MeterModel: ObservableObject {
         lastTick = now
 
         var targetLevels: [Float] = [0, 0]
+        var targetPeaks: [Float] = [0, 0]
         var targetBands = [Float](repeating: 0, count: Self.bandCount)
         if let snap = tap.snapshot(), !MeterMath.isStale(timestamp: snap.timestamp, now: now) {
             targetLevels = (0..<2).map { channel in
                 let rms = snap.rms.indices.contains(channel) ? snap.rms[channel] : (snap.rms.first ?? 0)
                 return MeterMath.dbToMeter(20 * log10(max(rms, 1e-9)))
+            }
+            targetPeaks = (0..<2).map { channel in
+                MeterMath.peakToMeter(snap.peak.indices.contains(channel) ? snap.peak[channel] : (snap.peak.first ?? 0))
             }
             if computesSpectrum {
                 targetBands = analyzer.bands(samples: snap.samples, sampleRate: snap.sampleRate)
@@ -57,6 +63,10 @@ final class MeterModel: ObservableObject {
             Double(MeterMath.ballistic(current: Float($0), target: $1, dt: dt))
         }
         if Self.changed(levels, nextLevels) { levels = nextLevels }
+        let nextPeaks = zip(peaks, targetPeaks).map {
+            Double(MeterMath.ballistic(current: Float($0), target: $1, dt: dt))
+        }
+        if Self.changed(peaks, nextPeaks) { peaks = nextPeaks }
         if Self.changed(bands, nextBands) { bands = nextBands }
     }
 

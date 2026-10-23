@@ -47,3 +47,13 @@ private func sine(_ hz: Double, rate: Double = 44_100, count: Int = 1024) -> [Fl
     #expect(MeterMath.dbToMeter(0) == 1)
     #expect(MeterMath.dbToMeter(-30) < MeterMath.dbToMeter(-10))
 }
+
+/// O vermelho do medidor (3 de 24 barras) começa em −7,5 dB: um pico de −1 dBFS precisa chegar lá,
+/// e uma média típica de música (RMS −12 dBFS) não.
+@Test func peaksReachTheRedZone() {
+    let redStart: Float = 21.0 / 24.0
+    #expect(MeterMath.peakToMeter(pow(10, -1.0 / 20)) > redStart)
+    #expect(MeterMath.peakToMeter(-0.95) > redStart)
+    #expect(MeterMath.dbToMeter(-12) < redStart)
+    #expect(MeterMath.peakToMeter(0) == 0)
+}
