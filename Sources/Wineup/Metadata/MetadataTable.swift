@@ -7,24 +7,26 @@ struct MetadataTable: View {
     let onPickMatch: (MetadataRow.ID) -> Void
 
     var body: some View {
-        Table(model.visibleRows, selection: $model.selection) {
-            TableColumn("") { row in StatusIcon(row: row) }
+        // Uma única avaliação de filtro/ordenação por desenho.
+        let visible = model.visibleRows
+        Table(visible, selection: $model.selection, sortOrder: $model.sortOrder) {
+            TableColumn("", value: \.sortConfidence) { row in StatusIcon(row: row) }
                 .width(22)
-            TableColumn("Arquivo") { row in
+            TableColumn("Arquivo", value: \.sortFile) { row in
                 Text(row.fileName).lineLimit(1).help(row.url.path)
             }
             .width(min: 120, ideal: 190)
-            TableColumn("Título") { row in cell(row, "title") }
+            TableColumn("Título", value: \.sortTitle) { row in cell(row, "title") }
                 .width(min: 80, ideal: 140)
-            TableColumn("Artista") { row in cell(row, "artist") }
+            TableColumn("Artista", value: \.sortArtist) { row in cell(row, "artist") }
                 .width(min: 70, ideal: 110)
-            TableColumn("Álbum") { row in cell(row, "album") }
+            TableColumn("Álbum", value: \.sortAlbum) { row in cell(row, "album") }
                 .width(min: 70, ideal: 110)
-            TableColumn("Faixa") { row in cell(row, "trackNumber").monospacedDigit() }
+            TableColumn("Faixa", value: \.sortTrack) { row in cell(row, "trackNumber").monospacedDigit() }
                 .width(40)
-            TableColumn("Ano") { row in cell(row, "year").monospacedDigit() }
+            TableColumn("Ano", value: \.sortYear) { row in cell(row, "year").monospacedDigit() }
                 .width(44)
-            TableColumn("Gênero") { row in cell(row, "genre") }
+            TableColumn("Gênero", value: \.sortGenre) { row in cell(row, "genre") }
                 .width(min: 50, ideal: 80)
             TableColumn("Capa · Letra") { row in
                 HStack(spacing: 6) {
@@ -33,7 +35,7 @@ struct MetadataTable: View {
                 }
             }
             .width(72)
-            TableColumn("Confiança") { row in ConfidenceBadge(row: row) }
+            TableColumn("Confiança", value: \.sortConfidence) { row in ConfidenceBadge(row: row) }
                 .width(min: 70, ideal: 90)
         }
         .contextMenu(forSelectionType: MetadataRow.ID.self) { ids in

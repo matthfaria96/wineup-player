@@ -127,7 +127,7 @@ extension MainView {
             switch mode {
             case .compact: target = 470
             case .standard: target = max(min(window.frame.width, 1100), 960)
-            case .full: target = max(window.frame.width, 1280)
+            case .full: target = max(window.frame.width, 1380)
             }
             var frame = window.frame
             let top = frame.maxY

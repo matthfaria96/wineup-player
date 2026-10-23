@@ -27,7 +27,7 @@ enum LayoutMode: String, CaseIterable, Identifiable {
         // Player 236 + FX 190 + Capa (24 + 12 + 356 + 12 + ~70) + espaçamentos e barra.
         case .standard: (820, 960)
         case .compact: (430, 760)
-        case .full: (1060, 960)
+        case .full: (1160, 960)
         }
     }
 

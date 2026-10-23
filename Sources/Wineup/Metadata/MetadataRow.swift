@@ -35,6 +35,16 @@ struct MetadataRow: Identifiable, Equatable {
     var confidence: Double? { proposal?.match?.confidence }
 
     func value(_ field: String) -> String { edits[field] ?? file.value(field) }
+
+    // Chaves de ordenação da tabela (faixa e ano como número).
+    var sortFile: String { fileName.lowercased() }
+    var sortTitle: String { value("title").lowercased() }
+    var sortArtist: String { value("artist").lowercased() }
+    var sortAlbum: String { value("album").lowercased() }
+    var sortGenre: String { value("genre").lowercased() }
+    var sortTrack: Int { (Int(value("discNumber")) ?? 1) * 1000 + (Int(value("trackNumber")) ?? 999) }
+    var sortYear: Int { Int(value("year").prefix(4)) ?? 0 }
+    var sortConfidence: Double { confidence ?? -1 }
     func isEdited(_ field: String) -> Bool { edits[field] != nil }
 
     var hasTagChanges: Bool { !edits.isEmpty || cover != nil }

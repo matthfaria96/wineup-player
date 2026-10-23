@@ -6,7 +6,7 @@ import UniformTypeIdentifiers
 enum PanelKind: String, CaseIterable, Codable {
     case player, equalizer, playlist, artwork, lyrics
 
-    /// Painéis de altura fixa só trocam entre si; os flexíveis também. Assim o layout nunca quebra.
+    /// Altura fixa (player e mixer); os demais ocupam o espaço que sobra na coluna.
     var fixedHeight: CGFloat? {
         switch self {
         case .player: 236
@@ -16,10 +16,6 @@ enum PanelKind: String, CaseIterable, Codable {
     }
 
     var hasTitleBar: Bool { self != .playlist }
-
-    func canSwap(with other: PanelKind) -> Bool {
-        (fixedHeight == nil) == (other.fixedHeight == nil)
-    }
 }
 
 /// Coluna do layout: painéis de cima para baixo e largura (nil = flexível).
@@ -39,7 +35,7 @@ extension LayoutMode {
         case .full:
             [PanelColumn(panels: [.playlist], width: nil),
              PanelColumn(panels: [.player, .equalizer, .artwork], width: 380),
-             PanelColumn(panels: [.lyrics], width: 320)]
+             PanelColumn(panels: [.lyrics], width: 420)]
         }
     }
 
@@ -59,12 +55,28 @@ extension LayoutMode {
         UserDefaults.standard.set(try? JSONEncoder().encode(columns), forKey: storageKey)
     }
 
-    /// Troca dois painéis compatíveis de lugar; devolve um novo arranjo (sem mutar o original).
-    func swapping(_ a: PanelKind, _ b: PanelKind, in columns: [PanelColumn]) -> [PanelColumn] {
-        guard a != b, a.canSwap(with: b) else { return columns }
-        return columns.map { column in
-            PanelColumn(panels: column.panels.map { $0 == a ? b : ($0 == b ? a : $0) }, width: column.width)
+    /// Arrastar `source` sobre `target` (devolve um novo arranjo, sem mutar o original):
+    /// - mesma coluna (de cima para baixo): troca só os dois painéis;
+    /// - outra coluna (para o lado): troca as colunas inteiras, cada uma com a sua largura.
+    ///   Player, mixer e capa andam juntos; a letra anda inteira.
+    func moving(_ source: PanelKind, onto target: PanelKind, in columns: [PanelColumn]) -> [PanelColumn] {
+        guard source != target,
+              let from = columns.firstIndex(where: { $0.panels.contains(source) }),
+              let to = columns.firstIndex(where: { $0.panels.contains(target) }) else { return columns }
+        if from == to {
+            return columns.map { column in
+                PanelColumn(panels: column.panels.map { $0 == source ? target : ($0 == target ? source : $0) },
+                            width: column.width)
+            }
         }
+        var out = columns
+        out.swapAt(from, to)
+        return out
+    }
+
+    /// Se soltar `source` em `target` troca a coluna inteira (e não só o painel).
+    static func movesWholeColumn(_ source: PanelKind, onto target: PanelKind, in columns: [PanelColumn]) -> Bool {
+        columns.firstIndex { $0.panels.contains(source) } != columns.firstIndex { $0.panels.contains(target) }
     }
 }
 
@@ -85,8 +97,17 @@ struct ArrangedLayout: View {
                 }
                 .frame(minWidth: column.width == nil ? 300 : 0, maxWidth: column.width ?? .infinity)
                 .frame(width: column.width)
+                // Arrasto vindo de outra coluna: a coluna inteira é que vai trocar de lugar.
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 3, dash: [8, 5]))
+                        .padding(-3)
+                        .opacity(columnTargeted(column) ? 1 : 0)
+                )
+                .animation(.easeOut(duration: 0.12), value: drop.targeted)
             }
         }
+        .animation(.spring(response: 0.3, dampingFraction: 0.85), value: columns)
     }
 
     private func slot(_ kind: PanelKind) -> some View {
@@ -101,19 +122,34 @@ struct ArrangedLayout: View {
                     Color.clear
                         .frame(height: 24)
                         .contentShape(Rectangle())
-                        .onDrag { NSItemProvider(object: kind.rawValue as NSString) }
+                        .onDrag {
+                            drop.dragging = kind
+                            return NSItemProvider(object: kind.rawValue as NSString)
+                        }
+                        .help("Arraste para o lado para mover a coluna inteira; para cima ou para baixo para trocar este painel")
                 }
             }
             .overlay(
                 RoundedRectangle(cornerRadius: 9)
                     .stroke(Color.accentColor, lineWidth: 2)
-                    .opacity(drop.targeted == kind ? 1 : 0)
+                    .opacity(drop.targeted == kind && !wholeColumn(onto: kind) ? 1 : 0)
             )
             .onDrop(of: [.text], delegate: PanelDrop(target: kind, targeted: $drop.targeted) { source in
-                let swapped = mode.swapping(source, kind, in: columns)
-                columns = swapped
-                mode.save(swapped)
+                drop.dragging = nil
+                let moved = mode.moving(source, onto: kind, in: columns)
+                columns = moved
+                mode.save(moved)
             })
+    }
+
+    private func wholeColumn(onto target: PanelKind) -> Bool {
+        guard let source = drop.dragging else { return false }
+        return LayoutMode.movesWholeColumn(source, onto: target, in: columns)
+    }
+
+    private func columnTargeted(_ column: PanelColumn) -> Bool {
+        guard let target = drop.targeted, column.panels.contains(target) else { return false }
+        return wholeColumn(onto: target)
     }
 
     @ViewBuilder private func panel(_ kind: PanelKind) -> some View {
@@ -140,7 +176,7 @@ private struct PanelDrop: DropDelegate {
         guard let provider = info.itemProviders(for: [.text]).first else { return false }
         _ = provider.loadObject(ofClass: NSString.self) { object, _ in
             guard let raw = object as? String, let source = PanelKind(rawValue: raw),
-                  source.canSwap(with: target) else { return }
+                  source != target else { return }
             DispatchQueue.main.async { onSwap(source) }
         }
         return true
@@ -150,6 +186,8 @@ private struct PanelDrop: DropDelegate {
 /// Painel sob o arrasto (para o destaque); evita `@State`, que é macro sem plugin nas CLT.
 final class DropHighlight: ObservableObject {
     @Published var targeted: PanelKind?
+    /// Painel sendo arrastado (para saber se o destino troca o painel ou a coluna).
+    var dragging: PanelKind?
 }
 
 /// Estado local da janela principal (colunas e NSWindow).

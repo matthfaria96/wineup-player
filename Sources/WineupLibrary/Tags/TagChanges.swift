@@ -2,12 +2,26 @@ import Foundation
 
 /// Imagem de capa a embutir (substitui todas as imagens do arquivo por uma capa frontal).
 public struct CoverImage: Sendable, Equatable, Codable {
-    public var data: Data
-    public var mimeType: String
+    public let data: Data
+    public let mimeType: String
+    /// Impressão dos bytes, calculada uma vez: comparar capas não percorre a imagem inteira.
+    private let fingerprint: Int
 
     public init(data: Data, mimeType: String = "image/jpeg") {
         self.data = data
         self.mimeType = mimeType
+        self.fingerprint = data.hashValue
+    }
+
+    enum CodingKeys: String, CodingKey { case data, mimeType }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(data: try c.decode(Data.self, forKey: .data), mimeType: try c.decode(String.self, forKey: .mimeType))
+    }
+
+    public static func == (a: CoverImage, b: CoverImage) -> Bool {
+        a.fingerprint == b.fingerprint && a.data.count == b.data.count && a.mimeType == b.mimeType
     }
 }
 

@@ -16,7 +16,7 @@ struct LyricsPanel: View {
             VStack(spacing: 6) {
                 ScrollViewReader { proxy in
                     ScrollView {
-                        VStack(spacing: 14) {
+                        VStack(spacing: 18) {
                             if state.lyricLines.isEmpty {
                                 Text(state.currentTrack == nil ? "Toque uma música para ver a letra" : "Sem letra para esta faixa")
                                     .font(.system(size: 13))
@@ -24,10 +24,22 @@ struct LyricsPanel: View {
                                     .padding(.top, 30)
                             }
                             ForEach(Array(state.lyricLines.enumerated()), id: \.offset) { index, line in
-                                Text(line)
-                                    .font(.system(size: 19 * state.lyricsScale, weight: index == state.activeLyricIndex ? .semibold : .regular))
-                                    .foregroundStyle(index == state.activeLyricIndex ? theme.lyricsActive : theme.lyricsIdle.opacity(0.8))
+                                let active = index == state.activeLyricIndex
+                                // Linha longa encolhe até 65% antes de quebrar; quando quebra, quebra entre palavras
+                                // e fica centralizada como um bloco (sem palavras soltas em cada linha).
+                                Text(line.isEmpty ? "♪" : line)
+                                    .font(.system(size: (active ? 28 : 22) * state.lyricsScale,
+                                                  weight: active ? .bold : .medium, design: .rounded))
+                                    .foregroundStyle(active ? theme.lyricsActive : theme.lyricsIdle.opacity(0.75))
                                     .multilineTextAlignment(.center)
+                                    .lineLimit(3)
+                                    .minimumScaleFactor(0.65)
+                                    .lineSpacing(2)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.horizontal, 14)
+                                    .scaleEffect(active ? 1 : 0.97)
+                                    .animation(.easeOut(duration: 0.2), value: active)
                                     .id(index)
                             }
                         }

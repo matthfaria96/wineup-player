@@ -121,7 +121,9 @@ struct AlbumApplyView: View {
     let onDone: () -> Void
 
     @State private var fields: Set<String> = ["album", "albumArtist", "year", "genre", "title", "artist", "trackNumber", "discNumber"]
-    @State private var pairs: [MetadataRow.ID: Int] = [:]
+    /// Posição i = arquivo que recebe a faixa i (nil = faixa sem arquivo). Depois das faixas,
+    /// os arquivos que ficam sem par. Arrastar uma linha reordena só os arquivos (como no Mp3tag).
+    @State private var slots: [MetadataRow.ID?] = []
     @State private var cover: CoverImage?
     @State private var useCover = true
     @State private var loadingCover = true
@@ -136,9 +138,21 @@ struct AlbumApplyView: View {
                 coverBox
             }
             .frame(height: 230)
-            Text("Faixas do álbum × seus arquivos — troque o par pelo menu de cada arquivo")
-                .font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
-            pairTable
+            HStack {
+                Text("Faixas do álbum × seus arquivos — arraste um arquivo para cima ou para baixo para mudar o par")
+                    .font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
+                Spacer()
+                Menu("Organizar arquivos") {
+                    Button("Parear automático (título, duração, nº)") { autoPair() }
+                    Button("Pela ordem do nome do arquivo") { arrange { $0.fileName.localizedStandardCompare($1.fileName) == .orderedAscending } }
+                    Button("Pelo nº da faixa atual") {
+                        arrange { (Int($0.value("trackNumber")) ?? 999) < (Int($1.value("trackNumber")) ?? 999) }
+                    }
+                }
+                .fixedSize()
+                .controlSize(.small)
+            }
+            pairList
             HStack {
                 Button("Voltar", action: onBack)
                 Text("\(pairs.count) de \(rows.count) arquivos com faixa").font(.caption).foregroundStyle(.secondary)
@@ -155,9 +169,7 @@ struct AlbumApplyView: View {
             }
         }
         .padding(16)
-        .onAppear {
-            pairs = TrackMatcher.match(files: rows.map(\.file), release: release)
-        }
+        .onAppear { autoPair() }
         .task {
             cover = try? await model.coverArt.frontCover(releaseID: release.id, releaseGroupID: release.releaseGroupID)
             loadingCover = false
@@ -209,42 +221,81 @@ struct AlbumApplyView: View {
         }
     }
 
-    private var pairTable: some View {
-        Table(rows) {
-            TableColumn("Arquivo") { row in Text(row.fileName).lineLimit(1) }.width(min: 160, ideal: 260)
-            TableColumn("Duração") { row in Text(row.file.duration.map(LyricsBox.time) ?? "").monospacedDigit() }.width(56)
-            TableColumn("Faixa do álbum") { row in trackPicker(row) }.width(min: 200, ideal: 340)
-            TableColumn("Duração") { row in
-                Text(pairs[row.id].flatMap { release.tracks[$0].duration }.map(LyricsBox.time) ?? "").monospacedDigit()
-            }
-            .width(56)
-            TableColumn("Confere") { row in
-                if let i = pairs[row.id] {
-                    let s = TrackMatcher.score(row.file, release.tracks[i], discCount: release.discCount)
-                    Image(systemName: s >= 0.7 ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                        .foregroundStyle(s >= 0.7 ? .green : .orange)
-                        .help(s >= 0.7 ? "Título/duração conferem" : "Confira: título ou duração diferentes")
-                }
-            }
-            .width(56)
-        }
+    private var pairs: [MetadataRow.ID: Int] {
+        var out: [MetadataRow.ID: Int] = [:]
+        for (i, id) in slots.enumerated() where i < release.tracks.count { if let id { out[id] = i } }
+        return out
     }
 
-    private func trackPicker(_ row: MetadataRow) -> some View {
-        Picker("", selection: Binding(
-            get: { pairs[row.id] ?? -1 },
-            set: { new in
-                if new >= 0, let other = pairs.first(where: { $0.value == new && $0.key != row.id })?.key {
-                    pairs[other] = pairs[row.id]   // troca: a outra fica com a faixa antiga desta
+    private func autoPair() {
+        let matched = TrackMatcher.match(files: rows.map(\.file), release: release)
+        var s = [MetadataRow.ID?](repeating: nil, count: release.tracks.count)
+        for (id, i) in matched { s[i] = id }
+        slots = s + rows.map(\.id).filter { matched[$0] == nil }.map { Optional($0) }
+    }
+
+    /// Arquivos em sequência a partir da faixa 1, na ordem pedida.
+    private func arrange(_ by: (MetadataRow, MetadataRow) -> Bool) {
+        let ordered = rows.sorted(by: by).map { Optional($0.id) }
+        let padding = max(0, release.tracks.count - ordered.count)
+        slots = ordered + [MetadataRow.ID?](repeating: nil, count: padding)
+    }
+
+    private var pairList: some View {
+        let byID = Dictionary(uniqueKeysWithValues: rows.map { ($0.id, $0) })
+        return List {
+            ForEach(Array(slots.enumerated()), id: \.offset) { i, id in
+                pairRow(index: i, row: id.flatMap { byID[$0] })
+            }
+            .onMove { from, to in slots.move(fromOffsets: from, toOffset: to) }
+        }
+        .listStyle(.bordered(alternatesRowBackgrounds: true))
+    }
+
+    private func pairRow(index i: Int, row: MetadataRow?) -> some View {
+        let track = i < release.tracks.count ? release.tracks[i] : nil
+        let score = track.flatMap { t in row.map { TrackMatcher.score($0.file, t, discCount: release.discCount) } }
+        return HStack(spacing: 10) {
+            Group {
+                if let track {
+                    Text(release.discCount > 1 ? "\(track.disc)-\(track.number)" : "\(track.number)")
+                        .monospacedDigit().frame(width: 34, alignment: .trailing).foregroundStyle(.secondary)
+                    Text(track.title).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
+                    Text(track.duration.map(LyricsBox.time) ?? "").monospacedDigit().foregroundStyle(.secondary)
+                } else {
+                    Text("sem faixa — não será preenchido").foregroundStyle(.tertiary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                pairs[row.id] = new >= 0 ? new : nil
-            })) {
-            Text("— não preencher —").tag(-1)
-            ForEach(Array(release.tracks.enumerated()), id: \.offset) { i, t in
-                Text(release.discCount > 1 ? "\(t.disc)-\(t.number). \(t.title)" : "\(t.number). \(t.title)").tag(i)
+            }
+            .frame(width: 330)
+            Group {
+                if let score {
+                    Image(systemName: score >= 0.7 ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                        .foregroundStyle(score >= 0.7 ? .green : .orange)
+                        .help(score >= 0.7 ? "Título/duração conferem" : "Confira: título ou duração diferentes")
+                } else {
+                    Image(systemName: "arrow.left.and.right").foregroundStyle(.quaternary)
+                }
+            }
+            .frame(width: 20)
+            if let row {
+                Image(systemName: "line.3.horizontal").foregroundStyle(.tertiary)
+                Text(row.fileName).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
+                Text(row.file.duration.map(LyricsBox.time) ?? "").monospacedDigit().foregroundStyle(.secondary)
+            } else {
+                Text("— nenhum arquivo —").foregroundStyle(.tertiary).frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .labelsHidden()
+        .font(.system(size: 12))
+        .contextMenu {
+            if row != nil, track != nil {
+                Button("Não preencher este arquivo") {
+                    let id = slots[i]
+                    slots[i] = nil
+                    slots.append(id)
+                }
+            }
+        }
     }
 }
 

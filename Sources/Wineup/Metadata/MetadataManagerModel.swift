@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import Foundation
 import WineupLibrary
 
@@ -7,23 +8,19 @@ import WineupLibrary
 final class MetadataManagerModel: ObservableObject {
     static let acoustIDKeyDefaults = "metadata.acoustIDKey"
     static let policyDefaults = "metadata.fillPolicy"
-    static let shazamDefaults = "metadata.useShazam"
 
     @Published private(set) var folder: URL?
     @Published var rows: [MetadataRow] = []
     @Published var selection: Set<MetadataRow.ID> = []
     @Published var filter: MetadataFilter = .all
     @Published var query = ""
+    @Published var sortOrder: [KeyPathComparator<MetadataRow>] = [KeyPathComparator(\.sortFile)]
     @Published private(set) var isLoading = false
     @Published private(set) var progress: (done: Int, total: Int)?
     @Published var message: String?
     @Published var policy: FillPolicy {
         didSet { UserDefaults.standard.set(policy.rawValue, forKey: Self.policyDefaults) }
     }
-    @Published var useShazam: Bool {
-        didSet { UserDefaults.standard.set(useShazam, forKey: Self.shazamDefaults) }
-    }
-    @Published private(set) var shazamStatus: ShazamRecognizer.Availability = .unknown
     @Published var acoustIDKey: String {
         didSet { UserDefaults.standard.set(acoustIDKey, forKey: Self.acoustIDKeyDefaults) }
     }
@@ -37,11 +34,6 @@ final class MetadataManagerModel: ObservableObject {
         writer = database.map { TagWriter(database: $0, backups: BackupStore()) }
         policy = FillPolicy(rawValue: UserDefaults.standard.string(forKey: Self.policyDefaults) ?? "") ?? .missingOnly
         acoustIDKey = UserDefaults.standard.string(forKey: Self.acoustIDKeyDefaults) ?? ""
-        useShazam = UserDefaults.standard.object(forKey: Self.shazamDefaults) as? Bool ?? true
-    }
-
-    func refreshShazamStatus() {
-        Task { shazamStatus = await ShazamRecognizer.shared.availability }
     }
 
     var fpcalcFound: Bool { AcoustIDClient.fpcalcPath() != nil }
@@ -49,18 +41,18 @@ final class MetadataManagerModel: ObservableObject {
 
     private var fixer: MetadataFixer {
         let key = acoustIDKey.trimmingCharacters(in: .whitespaces)
-        return MetadataFixer(acoustID: key.isEmpty ? nil : AcoustIDClient(apiKey: key),
-                             shazam: useShazam ? ShazamRecognizer.shared : nil)
+        return MetadataFixer(acoustID: key.isEmpty ? nil : AcoustIDClient(apiKey: key))
     }
 
     // MARK: Lista
 
     var visibleRows: [MetadataRow] {
         let q = TextMatch.normalize(query)
-        return rows.filter { row in
+        let filtered = rows.filter { row in
             filter.includes(row) && (q.isEmpty || [row.fileName, row.value("title"), row.value("artist"),
                                                    row.value("album")].contains { TextMatch.normalize($0).contains(q) })
         }
+        return filtered.sorted(using: sortOrder)
     }
 
     var selectedRows: [MetadataRow] { rows.filter { selection.contains($0.id) } }
@@ -269,7 +261,6 @@ final class MetadataManagerModel: ObservableObject {
     }
 
     private func finishWork() {
-        refreshShazamStatus()
         work = nil
         progress = nil
         let ready = rows.filter(\.isDirty).count

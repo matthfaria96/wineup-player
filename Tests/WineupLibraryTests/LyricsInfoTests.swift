@@ -1,5 +1,4 @@
 import Foundation
-import ShazamKit
 import Testing
 @testable import WineupLibrary
 
@@ -31,25 +30,6 @@ struct LyricsInfoTests {
             _ = try LyricsFileWriter.write("[00:01.00] tempo", for: url, replace: true)
             #expect(FolderAnalyzer.read(url).lyricsSynced == true)
         }
-    }
-}
-
-@Suite("Shazam")
-struct ShazamTests {
-    @Test func excerptDecodesAnyFormatTo44kMono() async throws {
-        try await withTempDir { dir in
-            let url = try FormatCase.flac.make(dir)
-            let buffer = try #require(try AudioExcerpt.read(url, seconds: 1))
-            #expect(buffer.format.sampleRate == 44_100 && buffer.format.channelCount == 1)
-            #expect(buffer.frameLength > 0)
-        }
-    }
-
-    @Test func entitlementErrorIsRecognised() {
-        #expect(ShazamRecognizer.isEntitlementError(NSError(domain: SHErrorDomain, code: 202)))
-        #expect(ShazamRecognizer.isEntitlementError(NSError(domain: "com.apple.ShazamCore", code: 102, userInfo: [
-            NSDebugDescriptionErrorKey: "Please check that you have enabled the ShazamKit App Service for this app identifier"])))
-        #expect(!ShazamRecognizer.isEntitlementError(NSError(domain: SHErrorDomain, code: 201)))
     }
 }
 

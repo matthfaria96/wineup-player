@@ -58,7 +58,7 @@ public struct FixerFile: Sendable, Identifiable, Equatable {
 
 /// Resultado de uma base de metadados para uma faixa.
 public struct MatchCandidate: Sendable, Identifiable, Equatable {
-    public enum Source: String, Sendable { case musicBrainz = "MusicBrainz", acoustID = "AcoustID", shazam = "Shazam" }
+    public enum Source: String, Sendable { case musicBrainz = "MusicBrainz", acoustID = "AcoustID" }
 
     public var id: String { "\(recordingID)/\(releaseID ?? "-")" }
     public var source: Source
