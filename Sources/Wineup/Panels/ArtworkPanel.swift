@@ -2,8 +2,8 @@ import WineupCore
 import AppKit
 import SwiftUI
 
-/// Capa sempre quadrada (1:1), do tamanho da largura do painel; os dados da faixa ficam
-/// embaixo e ocupam o resto do espaço. Sem capa, mostra o símbolo de nota no mesmo quadrado.
+/// Capa sempre quadrada (1:1), centrada no painel, com o formato do arquivo no canto.
+/// Sem capa, mostra o símbolo de nota no mesmo quadrado.
 struct ArtworkPanel: View {
     @ObservedObject var state: PlayerState
     @AppStorage(VisualMode.key) private var modeRaw = VisualMode.cover.rawValue
@@ -33,15 +33,10 @@ struct ArtworkPanel: View {
 
     var body: some View {
         Panel(title: mode == .cover ? "Capa" : mode == .skinArt ? "Arte" : mode == .videos ? "Vídeo" : "Visual") {
-            VStack(alignment: .leading, spacing: 12) {
-                cover
-                    .aspectRatio(1, contentMode: .fit)
-                    .frame(maxWidth: .infinity)
-                    .layoutPriority(1)
-                info
-                Spacer(minLength: 0)
-            }
-            .padding(12)
+            cover
+                .aspectRatio(1, contentMode: .fit)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(12)
         }
     }
 
@@ -64,6 +59,7 @@ struct ArtworkPanel: View {
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: 6))
+        .overlay(alignment: .topLeading) { formatBadge }
         .overlay(alignment: .topTrailing) { modeMenu }
     }
 
@@ -148,21 +144,17 @@ struct ArtworkPanel: View {
         }
     }
 
-    private var info: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            if let track = state.currentTrack {
-                Text(track.title).font(.system(size: 15, weight: .bold)).foregroundStyle(theme.text)
-                Text(track.artist).font(.system(size: 13, weight: .medium)).foregroundStyle(theme.text)
-                Text([track.album ?? "Álbum desconhecido", track.year].compactMap { $0 }.joined(separator: " · "))
-                    .font(.system(size: 12)).foregroundStyle(theme.mutedText)
-                if let url = track.url {
-                    Text(url.pathExtension.uppercased()).font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(theme.mutedText)
-                }
-            } else {
-                Text("Nada tocando").font(.system(size: 13)).foregroundStyle(theme.mutedText)
-            }
+    /// Formato do arquivo tocando (MP3, FLAC…) no canto superior esquerdo da capa.
+    @ViewBuilder private var formatBadge: some View {
+        if let ext = state.currentTrack?.url?.pathExtension, !ext.isEmpty {
+            Text(ext.uppercased())
+                .font(.system(size: 10, weight: .bold)).tracking(0.5)
+                .foregroundStyle(.white)
+                .padding(.horizontal, 7).padding(.vertical, 3)
+                .background(Capsule().fill(Color.black.opacity(0.5)))
+                .padding(8)
+                .allowsHitTesting(false)
+                .accessibilityLabel("Formato \(ext.uppercased())")
         }
-        .lineLimit(1)
     }
 }

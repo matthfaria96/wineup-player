@@ -39,7 +39,7 @@ struct MotionLibraryView: View {
                     section("Animações", "Desenhadas pelo app, respiram com a música.") {
                         LazyVGrid(columns: grid, spacing: 14) {
                             ForEach(Self.scenes) { m in
-                                Card(title: m.title, caption: "Oficial", selected: selectedScene == m) {
+                                Card(title: m.title, caption: "Animação", selected: selectedScene == m) {
                                     VisualScene(mode: m, energy: { 0.25 }, seed: 7)
                                 } action: { choose("scene:\(m.rawValue)") }
                             }
@@ -60,7 +60,7 @@ struct MotionLibraryView: View {
             }
             }
         }
-        .frame(width: 720, height: 600)
+        .frame(width: 720, height: 680)
         .alert("Nova categoria de vídeos", isPresented: $naming) {
             TextField("Nome (ex.: Viagens)", text: $newName)
             Button("Escolher pasta…") { createCategory() }
@@ -101,7 +101,7 @@ struct MotionLibraryView: View {
 
     private func categoryCard(_ c: VideoCategory) -> some View {
         let n = c.clips.count
-        return Card(title: c.name, caption: (c.builtIn ? "Oficial · " : "") + (n == 0 ? "Sem vídeos" : "\(n) vídeo\(n == 1 ? "" : "s")"),
+        return Card(title: c.name, caption: n == 0 ? "Sem vídeos" : "\(n) vídeo\(n == 1 ? "" : "s")",
                     selected: selectedCategory?.id == c.id) {
             if let first = c.clips.first { VideoThumbnail(url: first) }
             else { Image(systemName: c.symbol).font(.system(size: 26, weight: .light)).foregroundStyle(.white.opacity(0.6)) }
@@ -111,15 +111,18 @@ struct MotionLibraryView: View {
 
     private var addCard: some View {
         Button { newName = ""; naming = true } label: {
-            VStack(alignment: .leading, spacing: 6) {
-                RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
-                    .foregroundStyle(.tertiary)
-                    .aspectRatio(16 / 10, contentMode: .fit)
-                    .overlay(Image(systemName: "plus").font(.system(size: 22, weight: .light)).foregroundStyle(.secondary))
-                Text("Nova categoria").font(.callout)
-                Text("Com uma pasta sua").font(.caption).foregroundStyle(.secondary)
-            }
+            RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+                .foregroundStyle(.tertiary)
+                .aspectRatio(1, contentMode: .fit)
+                .overlay {
+                    VStack(spacing: 6) {
+                        Image(systemName: "plus").font(.system(size: 22, weight: .light))
+                        Text("Nova categoria").font(.callout)
+                    }
+                    .foregroundStyle(.secondary)
+                }
+                .padding(4)
         }
         .buttonStyle(.plain)
     }
@@ -152,7 +155,7 @@ struct MotionLibraryView: View {
     private func clipBubble(_ c: VideoCategory, arrowX: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Vídeos em \(c.name)").font(.headline)
+                Text("Vídeos em \(c.name)").font(.subheadline.weight(.semibold))
                 Spacer()
                 if !c.builtIn {
                     Menu("Pasta") { folderActions(c) }.menuStyle(.borderlessButton).fixedSize()
@@ -163,25 +166,25 @@ struct MotionLibraryView: View {
                     .font(.callout).foregroundStyle(.secondary)
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
+                    HStack(spacing: 10) {
                         ForEach(c.clips, id: \.self) { url in
                             VStack(alignment: .leading, spacing: 5) {
                                 ZStack {
                                     VideoThumbnail(url: url)
                                     VideoWall(clips: [url], trackKey: 0)
                                 }
-                                .frame(width: 176, height: 99)
+                                .frame(width: 96, height: 96)
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
                                 .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.white.opacity(0.08)))
-                                Text(Self.clipTitle(url, category: c)).font(.callout).lineLimit(1)
+                                Text(Self.clipTitle(url, category: c)).font(.caption).lineLimit(1)
                             }
-                            .frame(width: 176)
+                            .frame(width: 96)
                         }
                     }
                 }
             }
         }
-        .padding(.horizontal, 14).padding(.bottom, 14).padding(.top, 14 + Callout.arrow)
+        .padding(.horizontal, 12).padding(.bottom, 12).padding(.top, 10 + Callout.arrow)
         .background {
             Callout(arrowX: arrowX).fill(.regularMaterial)
                 .overlay(Callout(arrowX: arrowX).stroke(.separator, lineWidth: 0.5))
@@ -249,7 +252,7 @@ private struct Callout: Shape {
     }
 }
 
-/// Cartão de miniatura com título e legenda; o escolhido ganha borda de destaque.
+/// Cartão quadrado (como a capa): título por cima da imagem e uma etiqueta discreta.
 private struct Card<Preview: View>: View {
     let title: String
     let caption: String
@@ -259,11 +262,25 @@ private struct Card<Preview: View>: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 6) {
-                Color.black
-                    .aspectRatio(16 / 10, contentMode: .fit)
-                    .overlay { preview() }
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
+            Color.black
+                .aspectRatio(1, contentMode: .fit)
+                .overlay { preview() }
+                .overlay(alignment: .bottom) {
+                    LinearGradient(colors: [.clear, .black.opacity(0.75)], startPoint: .top, endPoint: .bottom)
+                        .frame(height: 70)
+                }
+                .overlay(alignment: .bottomLeading) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(caption)
+                            .font(.system(size: 9, weight: .semibold))
+                            .padding(.horizontal, 6).padding(.vertical, 2)
+                            .background(.white.opacity(0.2), in: Capsule())
+                        Text(title).font(.system(size: 13, weight: .semibold)).lineLimit(2)
+                    }
+                    .foregroundStyle(.white)
+                    .padding(10)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 10))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
                         .strokeBorder(selected ? Color.accentColor : .clear, lineWidth: 3)
@@ -276,11 +293,8 @@ private struct Card<Preview: View>: View {
                             .font(.system(size: 18)).padding(6)
                     }
                 }
-                Text(title).font(.callout).lineLimit(1)
-                Text(caption).font(.caption).foregroundStyle(.secondary).lineLimit(1)
-            }
-            .padding(4)
-            .contentShape(Rectangle())
+                .padding(4)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(selected ? .isSelected : [])
