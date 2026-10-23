@@ -263,7 +263,10 @@ public final class SkinStore: ObservableObject, @unchecked Sendable {
     }
 
     public func reload() {
-        let builtIns = Self.load(in: builtInFolder, builtIn: true)
+        // Oficiais em ordem alfabética, com a Noite Estrelada sempre por último.
+        let builtIns = Self.load(in: builtInFolder, builtIn: true).sorted { a, b in
+            (a.id == Self.defaultID ? 1 : 0) < (b.id == Self.defaultID ? 1 : 0)
+        }
         let edits = Self.load(in: officialEditsFolder, builtIn: true)
         let officialIDs = Set(builtIns.map(\.id))
         skins = builtIns.map { b in edits.first { $0.id == b.id } ?? b }
