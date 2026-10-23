@@ -1,0 +1,289 @@
+{
+ "format": "wineup-skin",
+ "version": 1,
+ "id": "scifi",
+ "name": "Sci-Fi",
+ "author": "Wineup",
+ "description": "Tecnologia alienígena em preto, verde e metal: carcaça militar oliva com parafusos e grades, telas de fósforo verde com varredura, um olho alienígena num reator hexagonal e a nave fugindo do monstro cósmico. Dramático, mecânico e de outro planeta.",
+ "credits": [
+  {
+   "work": "Arte \"Fuga Espacial do Monstro Cósmico\" (capa e fundo)",
+   "author": "Imagem fornecida pelo autor do Wineup",
+   "license": "Uso no Wineup autorizado pelo autor",
+   "source": "Fuga Espacial do Monstro Cósmico.png"
+  },
+  {
+   "work": "Orbitron (fonte sci-fi)",
+   "author": "Matt McInerney",
+   "license": "SIL Open Font License 1.1",
+   "source": "https://github.com/google/fonts/tree/main/ofl/orbitron"
+  }
+ ],
+ "colors": {
+  "windowTop": "#0B1A0E",
+  "windowBottom": "#030704",
+  "panelFill": "#0A140CE6",
+  "panelBorder": "#39FF6AB3",
+  "text": "#C8FFD2",
+  "mutedText": "#7FD99A",
+  "accent": "#39FF6A",
+  "rowSelection": "#1F7A2E77",
+  "currentRow": "#8CFFA8",
+  "lyricsActive": "#8CFFA8",
+  "lyricsIdle": "#A8E8B8CC",
+  "control": "#2FD45A",
+  "artworkTint": "#081008",
+  "display": "#39FF6A",
+  "buttonText": "#C8FFD2",
+  "buttonTextOn": "#E8FFEC",
+  "meterLow": "#2FD45A",
+  "meterMid": "#D8F23A",
+  "meterPeak": "#FF3A2A"
+ },
+ "window": {
+  "background": {
+   "image": "background.jpg",
+   "dim": 0.0
+  },
+  "layers": [
+   {
+    "kind": "stars",
+    "name": "partículas",
+    "color": "#8CFFA8",
+    "count": 40,
+    "speed": 1.3,
+    "intensity": 0.5
+   },
+   {
+    "kind": "glow",
+    "name": "planeta",
+    "points": [
+     {
+      "x": 0.72,
+      "y": 0.35,
+      "r": 0.25
+     }
+    ],
+    "color": "#39FF6A",
+    "speed": 0.5,
+    "intensity": 0.3
+   },
+   {
+    "kind": "image",
+    "name": "olho",
+    "image": "emblem.png",
+    "points": [
+     {
+      "x": 0.06,
+      "y": 0.86,
+      "r": 0.04
+     }
+    ],
+    "motion": "float",
+    "speed": 0.8,
+    "intensity": 0.9,
+    "react": false
+   }
+  ]
+ },
+ "panels": {
+  "default": {
+   "fill": {
+    "image": "panel-metal.jpg",
+    "dim": 0.0
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 4
+  },
+  "playlist": {
+   "fill": {
+    "image": "panel-screen.jpg",
+    "dim": 0.0
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 4
+  },
+  "player": {
+   "fill": {
+    "image": "panel-metal.jpg",
+    "dim": 0.0
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 4,
+   "layers": [
+    {
+     "kind": "image",
+     "name": "LED",
+     "image": "led.png",
+     "points": [
+      {
+       "x": 0.955,
+       "y": 0.09,
+       "r": 0.02
+      }
+     ],
+     "motion": "pulse",
+     "speed": 1.6,
+     "intensity": 1.0,
+     "react": true
+    },
+    {
+     "kind": "glow",
+     "name": "fósforo",
+     "points": [
+      {
+       "x": 0.5,
+       "y": 0.0,
+       "r": 0.45
+      }
+     ],
+     "color": "#39FF6A",
+     "speed": 0.7,
+     "intensity": 0.1
+    }
+   ]
+  },
+  "equalizer": {
+   "fill": {
+    "image": "panel-eq.jpg",
+    "dim": 0.0
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 4,
+   "layers": [
+    {
+     "kind": "glow",
+     "name": "fósforo",
+     "points": [
+      {
+       "x": 0.5,
+       "y": 0.0,
+       "r": 0.5
+      }
+     ],
+     "color": "#39FF6A",
+     "speed": 0.7,
+     "intensity": 0.14
+    }
+   ]
+  },
+  "artwork": {
+   "fill": {
+    "image": "panel-metal-dark.jpg",
+    "dim": 0.0
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 4,
+   "layers": [
+    {
+     "kind": "glow",
+     "name": "fósforo",
+     "points": [
+      {
+       "x": 0.5,
+       "y": 0.0,
+       "r": 0.45
+      }
+     ],
+     "color": "#39FF6A",
+     "speed": 0.7,
+     "intensity": 0.08
+    }
+   ]
+  },
+  "lyrics": {
+   "fill": {
+    "image": "panel-screen.jpg",
+    "dim": 0.0
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 4,
+   "layers": [
+    {
+     "kind": "glow",
+     "name": "fósforo",
+     "points": [
+      {
+       "x": 0.5,
+       "y": 0.06,
+       "r": 0.35
+      }
+     ],
+     "color": "#39FF6A",
+     "speed": 0.7,
+     "intensity": 0.16
+    },
+    {
+     "kind": "image",
+     "name": "olho",
+     "image": "emblem.png",
+     "points": [
+      {
+       "x": 0.9,
+       "y": 0.88,
+       "r": 0.04
+      }
+     ],
+     "motion": "pulse",
+     "speed": 1.2,
+     "intensity": 0.8,
+     "react": true
+    }
+   ]
+  }
+ },
+ "controls": {
+  "button": {
+   "image": "button.png",
+   "slice": 14,
+   "width": 7
+  },
+  "buttonOn": {
+   "image": "button-on.png",
+   "slice": 14,
+   "width": 7
+  },
+  "field": {
+   "image": "field.png",
+   "slice": 14,
+   "width": 7
+  },
+  "knob": "knob.png",
+  "knobSize": 22
+ },
+ "display": {
+  "glow": 1.0
+ },
+ "fonts": [
+  "Orbitron.ttf"
+ ],
+ "titleFont": {
+  "name": "Orbitron",
+  "size": 13
+ },
+ "artwork": "artwork.jpg"
+}

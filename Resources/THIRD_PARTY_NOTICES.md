@@ -63,6 +63,14 @@ Personagem chibi, raio, caveiras, corações, fundos, moldura e botões são art
 
 A ilustração do encapuzado (artwork.jpg, e o fundo background.jpg derivado dela) foi fornecida pelo autor do Wineup. Metal corroído, telas, moldura, parafusos, botões, cruzes e brilhos são arte original do Wineup, gerada por código.
 
+## Skin embutido "Sci-Fi"
+
+| Item | Autor | Licença | Fonte |
+|---|---|---|---|
+| Orbitron (fonte sci-fi) | Matt McInerney | SIL Open Font License 1.1 (texto em Skins/scifi/OFL-Orbitron.txt) | https://github.com/google/fonts/tree/main/ofl/orbitron |
+
+A ilustração "Fuga Espacial do Monstro Cósmico" (artwork.jpg, e o fundo background.jpg derivado dela) foi fornecida pelo autor do Wineup. Metal, telas, moldura, parafusos, botões e o olho alienígena são arte original do Wineup, gerada por código.
+
 <!-- versoes:inicio -->
 ## Versões exatas (geradas do Package.resolved a cada build)
 
