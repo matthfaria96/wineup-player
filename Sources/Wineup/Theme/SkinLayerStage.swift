@@ -18,22 +18,93 @@ struct SkinLayerStage: View {
     private var layer: SkinManifest.Layer? { layers.indices.contains(selected) ? layers[selected] : nil }
     private var usesPoints: Bool { layer.map { $0.kind != .flow } ?? false }
 
+    /// Seções do formulário: palco, lista de camadas e os ajustes da camada escolhida.
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            stage
+        Section {
+            stage.listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
+        } footer: {
+            Text(hint)
+        }
+        Section {
+            if layers.isEmpty { Text("Nenhuma camada").foregroundStyle(.secondary) }
+            ForEach(Array(layers.enumerated()), id: \.offset) { i, l in listRow(i, l) }
+        } header: {
             HStack {
+                Text("Camadas")
+                Spacer()
                 Menu {
                     Button { add(.stars) } label: { Label("Estrelas cintilando", systemImage: "sparkles") }
-                    Button { add(.glow) } label: { Label("Halo que respira (lua, sol, luz)", systemImage: "sun.max") }
+                    Button { add(.glow) } label: { Label("Halo que respira", systemImage: "sun.max") }
                     Button { add(.swirl) } label: { Label("Redemoinho girando", systemImage: "hurricane") }
                     Button { add(.flow) } label: { Label("Vento de pinceladas", systemImage: "wind") }
-                    Button { add(.image) } label: { Label("Imagem animada (personagem, logo)…", systemImage: "photo") }
-                } label: { Label("Adicionar camada", systemImage: "plus") }
-                    .fixedSize()
-                Spacer()
-                Text(hint).font(.caption).foregroundStyle(.secondary)
+                    Divider()
+                    Button { add(.image) } label: { Label("Imagem animada…", systemImage: "photo") }
+                } label: { Label("Adicionar", systemImage: "plus") }
+                    .menuStyle(.borderlessButton).fixedSize()
             }
-            ForEach(Array(layers.enumerated()), id: \.offset) { i, l in row(i, l) }
+        }
+        if let l = layer { detail(l) }
+    }
+
+    /// Linha da lista: ícone do tipo, nome e resumo; marca a escolhida; liga/desliga à direita.
+    private func listRow(_ i: Int, _ l: SkinManifest.Layer) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: Self.symbol(l.kind))
+                .frame(width: 24, height: 24)
+                .foregroundStyle(i == selected ? Color.white : Color.accentColor)
+                .background(RoundedRectangle(cornerRadius: 6).fill(i == selected ? Color.accentColor : Color.accentColor.opacity(0.15)))
+            VStack(alignment: .leading, spacing: 1) {
+                Text(l.name?.capitalized ?? SkinEditorView.kindName(l.kind))
+                Text(l.kind == .flow ? SkinEditorView.kindName(l.kind) : "\(SkinEditorView.kindName(l.kind)) · \(l.points.count) ponto(s)")
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+            }
+            Spacer()
+            Toggle("", isOn: bind(i, \.enabled)).labelsHidden().toggleStyle(.switch).controlSize(.small)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { selected = i; selectedPoint = nil }
+    }
+
+    /// Ajustes da camada escolhida, um por linha (rótulo à esquerda, controle à direita).
+    @ViewBuilder private func detail(_ l: SkinManifest.Layer) -> some View {
+        let i = selected
+        Section(l.name?.capitalized ?? SkinEditorView.kindName(l.kind)) {
+            TextField("Nome", text: Binding(get: { l.name ?? "" }, set: { v in update(i) { $0.name = v.isEmpty ? nil : v } }))
+            if l.kind == .image {
+                Picker("Movimento", selection: Binding(get: { l.motion ?? "float" }, set: { m in update(i) { $0.motion = m } })) {
+                    Text("Flutua").tag("float"); Text("Gira").tag("spin"); Text("Pulsa").tag("pulse"); Text("Parada").tag("none")
+                }
+            } else {
+                ColorPicker("Cor", selection: Binding(get: { Color(hexString: l.color ?? l.colors.first ?? "#FFFFFF") ?? .white },
+                                                     set: { c in update(i) { $0.color = c.hexString; $0.colors = [] } }), supportsOpacity: false)
+            }
+            LabeledContent("Força") { Slider(value: bind(i, \.intensity), in: 0...1).frame(width: 220) }
+            LabeledContent("Velocidade") { Slider(value: bind(i, \.speed), in: 0...3).frame(width: 220) }
+            Toggle("Reage à música", isOn: bind(i, \.react))
+            if l.kind != .flow {
+                if let p = selectedPoint, l.points.indices.contains(p) {
+                    LabeledContent("Tamanho do ponto") {
+                        Slider(value: Binding(get: { l.points[p].r }, set: { v in update(i) { $0.points[p].r = v } }), in: 0.003...0.3)
+                            .frame(width: 220)
+                    }
+                } else {
+                    LabeledContent("Tamanho do ponto") { Text("Escolha um ponto no palco").foregroundStyle(.secondary) }
+                }
+            }
+            HStack {
+                Spacer()
+                Button("Apagar camada", role: .destructive) { removeLayer(i) }
+            }
+        }
+    }
+
+    static func symbol(_ k: SkinManifest.Layer.Kind) -> String {
+        switch k {
+        case .stars: "sparkles"
+        case .glow: "sun.max"
+        case .swirl: "hurricane"
+        case .flow: "wind"
+        case .image: "photo"
         }
     }
 
@@ -77,7 +148,7 @@ struct SkinLayerStage: View {
                 addPoint(x: at.x / geo.size.width, y: at.y / geo.size.height)
             }
         }
-        .frame(width: 400, height: 276)   // proporção da janela do app
+        .frame(width: 440, height: 304)   // proporção da janela do app
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.15)))
         .frame(maxWidth: .infinity)
@@ -101,54 +172,6 @@ struct SkinLayerStage: View {
             .background(Circle().fill(Color.black.opacity(0.001)))
             .frame(width: d, height: d)
             .position(x: p.x * size.width, y: p.y * size.height)
-    }
-
-    // MARK: Lista de camadas
-
-    private func row(_ i: Int, _ l: SkinManifest.Layer) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-                Button { selected = i; selectedPoint = nil } label: {
-                    Image(systemName: i == selected ? "largecircle.fill.circle" : "circle")
-                }
-                .buttonStyle(.borderless)
-                .help("Editar esta camada no palco")
-                Toggle("", isOn: bind(i, \.enabled)).labelsHidden()
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(l.name?.capitalized ?? SkinEditorView.kindName(l.kind)).font(.system(size: 12, weight: .medium))
-                    Text(l.kind == .flow ? SkinEditorView.kindName(l.kind) : "\(SkinEditorView.kindName(l.kind)) · \(l.points.count) ponto(s)")
-                        .font(.system(size: 10)).foregroundStyle(.secondary)
-                }
-                Spacer()
-                if l.kind != .image {
-                    ColorPicker("Cor", selection: Binding(get: { Color(hexString: l.color ?? l.colors.first ?? "#FFFFFF") ?? .white },
-                                                          set: { c in update(i) { $0.color = c.hexString; $0.colors = [] } }), supportsOpacity: false)
-                        .fixedSize()
-                } else {
-                    Picker("Movimento", selection: Binding(get: { l.motion ?? "float" }, set: { m in update(i) { $0.motion = m } })) {
-                        Text("Flutua").tag("float"); Text("Gira").tag("spin"); Text("Pulsa").tag("pulse"); Text("Parada").tag("none")
-                    }
-                    .fixedSize()
-                }
-                Toggle("Reage à música", isOn: bind(i, \.react)).toggleStyle(.checkbox).fixedSize()
-                Button { removeLayer(i) } label: { Image(systemName: "trash") }
-                    .buttonStyle(.borderless).help("Apagar camada")
-            }
-            HStack(spacing: 8) {
-                Text("Força").font(.caption).foregroundStyle(.secondary).fixedSize()
-                Slider(value: bind(i, \.intensity), in: 0...1)
-                Text("Velocidade").font(.caption).foregroundStyle(.secondary).fixedSize()
-                Slider(value: bind(i, \.speed), in: 0...3)
-                if usesPointsFor(l), i == selected, let p = selectedPoint, l.points.indices.contains(p) {
-                    Text("Tamanho do ponto").font(.caption).foregroundStyle(.secondary).fixedSize()
-                    Slider(value: Binding(get: { l.points[p].r }, set: { v in update(i) { $0.points[p].r = v } }), in: 0.003...0.3)
-                }
-            }
-            .padding(.leading, 30)
-        }
-        .opacity(l.enabled ? 1 : 0.5)
-        .padding(8)
-        .background(RoundedRectangle(cornerRadius: 8).fill(i == selected ? Color.accentColor.opacity(0.1) : Color.white.opacity(0.03)))
     }
 
     private func usesPointsFor(_ l: SkinManifest.Layer) -> Bool { l.kind != .flow }

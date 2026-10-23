@@ -13,12 +13,12 @@ struct SkinPreview: View {
             HStack(spacing: 6) {
                 Text("Wineup Player").font(theme.titleFont(12, weight: .bold)).foregroundStyle(theme.text)
                 Button {} label: { Image(systemName: "chevron.left").frame(width: 12) }.buttonStyle(SkinButtonStyle(compact: true))
-                Button {} label: { Label("Metadados", systemImage: "tag") }.buttonStyle(SkinButtonStyle())
+                Button {} label: { Label("Metadados", systemImage: "tag").lineLimit(1).fixedSize() }.buttonStyle(SkinButtonStyle())
                 Spacer()
                 HStack { Image(systemName: "magnifyingglass"); Text("Buscar…").foregroundStyle(theme.mutedText); Spacer() }
-                    .font(.system(size: 11)).padding(.horizontal, 8).frame(width: 160, height: 22).skinField()
+                    .font(.system(size: 11)).padding(.horizontal, 8).frame(minWidth: 90, maxWidth: 160).frame(height: 22).skinField()
                 Spacer()
-                Button {} label: { Label("Completo", systemImage: "square.grid.2x2") }.buttonStyle(SkinButtonStyle(on: true))
+                Button {} label: { Label("Completo", systemImage: "square.grid.2x2").lineLimit(1).fixedSize() }.buttonStyle(SkinButtonStyle(on: true))
             }
             .padding(.horizontal, 8)
             .frame(height: 30)

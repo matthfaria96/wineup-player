@@ -92,76 +92,82 @@ struct SkinEditorView: View {
 
     // MARK: Editor
 
+    // MARK: Editor (organização no padrão dos Ajustes do macOS: seções agrupadas, rótulo à esquerda, controle à direita)
+
     private func editor(_ skin: Skin) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 6) {
-                    TextField("Nome", text: text(skin, \.name)).textFieldStyle(.roundedBorder).font(.system(size: 15, weight: .semibold))
-                    TextField("Autor", text: text(skin, \.author)).textFieldStyle(.roundedBorder)
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                SkinThumb(skin: skin).frame(width: 52, height: 36).clipShape(RoundedRectangle(cornerRadius: 7))
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(skin.name).font(.system(size: 15, weight: .semibold)).lineLimit(1)
+                    Text(skin.manifest.author.isEmpty ? "Sem autor" : skin.manifest.author)
+                        .font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
                 }
-                Spacer(minLength: 20)
+                Spacer()
                 Button(skin.id == activeID ? "Em uso" : "Usar este skin") { activeID = skin.id }
                     .buttonStyle(.borderedProminent)
                     .disabled(skin.id == activeID)
             }
-            .padding([.horizontal, .top], 18)
-            // Na aba Animação o palco já é a prévia: some a de cima para caber a lista de camadas.
-            if tab != .layers {
-                SkinPreview(skin: skin)
-                    .frame(height: 250)
-                    .padding(.horizontal, 18)
-                    .padding(.top, 12)
-            }
-            legibilityBanner(skin)
+            .padding(.horizontal, 20).padding(.vertical, 12)
             Picker("", selection: $tab) { ForEach(Tab.allCases, id: \.self) { Text($0.rawValue).tag($0) } }
-                .pickerStyle(.segmented).labelsHidden().padding(18)
-            ScrollView {
-                Group {
-                    switch tab {
-                    case .art: artTab(skin)
-                    case .layers: layersTab(skin)
-                    case .colors: colorsTab(skin)
-                    case .about: aboutTab(skin)
+                .pickerStyle(.segmented).labelsHidden().fixedSize()
+                .padding(.bottom, 4)
+            Form {
+                if tab != .layers {
+                    Section {
+                        SkinPreview(skin: skin).frame(height: 230)
+                            .listRowInsets(EdgeInsets(top: 6, leading: 6, bottom: 6, trailing: 6))
                     }
                 }
-                .padding(.horizontal, 18).padding(.bottom, 18)
+                legibilitySection(skin)
+                switch tab {
+                case .art: artTab(skin)
+                case .layers: layersTab(skin)
+                case .colors: colorsTab(skin)
+                case .about: aboutTab(skin)
+                }
             }
+            .formStyle(.grouped)
         }
     }
 
     /// Aviso quando o texto fica difícil de ler sobre algum painel, com correção automática.
-    @ViewBuilder private func legibilityBanner(_ skin: Skin) -> some View {
+    @ViewBuilder private func legibilitySection(_ skin: Skin) -> some View {
         let issues = SkinLegibility.issues(skin.manifest, folder: skin.folder)
         if !issues.isEmpty {
-            HStack(spacing: 10) {
-                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-                Text("Texto difícil de ler em: " + issues.map { Self.panelName($0.panel) }.joined(separator: ", ") + ".")
-                    .font(.system(size: 11))
-                Spacer()
-                Button("Ajustar automaticamente") {
-                    mutate(skin) { $0 = SkinLegibility.autoFix($0, folder: skin.folder) }
+            Section {
+                HStack(spacing: 10) {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Texto difícil de ler").font(.system(size: 12, weight: .semibold))
+                        Text(issues.map { Self.panelName($0.panel) }.joined(separator: ", ")).font(.system(size: 11)).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button("Ajustar automaticamente") { mutate(skin) { $0 = SkinLegibility.autoFix($0, folder: skin.folder) } }
                 }
-                .controlSize(.small)
             }
-            .padding(10)
-            .background(RoundedRectangle(cornerRadius: 8).fill(Color.orange.opacity(0.12)))
-            .padding(.horizontal, 18)
-            .padding(.top, 8)
         }
     }
 
-    // Arte: cada imagem que o skin usa, com trocar e escurecer.
-    private func artTab(_ skin: Skin) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            artRow(skin, "Fundo da janela", file: skin.manifest.window.background?.image, dim: skin.manifest.window.background?.dim) { m, name, dim in
+    // MARK: Arte
+
+    @ViewBuilder private func artTab(_ skin: Skin) -> some View {
+        Section("Informações") {
+            TextField("Nome", text: text(skin, \.name))
+            TextField("Autor", text: text(skin, \.author))
+        }
+        Section {
+            artRow(skin, "Fundo", file: skin.manifest.window.background?.image, dim: skin.manifest.window.background?.dim) { m, name, dim in
                 var bg = m.window.background ?? SkinManifest.Fill(image: name ?? "")
                 if let name { bg.image = name }
                 if let dim { bg.dim = dim }
                 m.window.background = bg
             }
+        } header: { Text("Janela") }
+        Section {
             ForEach(["default", "player", "equalizer", "playlist", "artwork", "lyrics"], id: \.self) { key in
                 let style = skin.manifest.panels[key]
-                artRow(skin, "Painel: \(Self.panelName(key))", file: style?.fill?.image, dim: style?.fill?.dim) { m, name, dim in
+                artRow(skin, Self.panelName(key).capitalized, file: style?.fill?.image, dim: style?.fill?.dim) { m, name, dim in
                     var st = m.panels[key] ?? m.panels["default"] ?? SkinManifest.PanelStyle()
                     var fill = st.fill ?? SkinManifest.Fill(image: name ?? "")
                     if let name { fill.image = name }
@@ -170,11 +176,15 @@ struct SkinEditorView: View {
                     m.panels[key] = st
                 }
             }
-            artRow(skin, "Moldura dos painéis (9 fatias)", file: skin.manifest.panels["default"]?.frame?.image, dim: nil) { m, name, _ in
+        } header: { Text("Painéis") } footer: {
+            Text("“Escurecer” cobre a imagem com preto para o texto continuar legível.")
+        }
+        Section("Controles") {
+            artRow(skin, "Moldura", file: skin.manifest.panels["default"]?.frame?.image, dim: nil) { m, name, _ in
                 guard let name else { return }
                 for key in m.panels.keys {
                     var st = m.panels[key]!
-                    st.frame = SkinManifest.NineSlice(image: name, slice: st.frame?.slice ?? 40, width: st.frame?.width ?? 14)
+                    st.frame = SkinManifest.NineSlice(image: name, slice: st.frame?.slice ?? 48, width: st.frame?.width ?? 12)
                     m.panels[key] = st
                 }
             }
@@ -184,117 +194,124 @@ struct SkinEditorView: View {
             artRow(skin, "Botão ligado", file: skin.manifest.controls.buttonOn?.image, dim: nil) { m, name, _ in
                 if let name { m.controls.buttonOn = SkinManifest.NineSlice(image: name, slice: m.controls.buttonOn?.slice ?? 14, width: m.controls.buttonOn?.width ?? 7) }
             }
+            artRow(skin, "Campo de busca", file: skin.manifest.controls.field?.image, dim: nil) { m, name, _ in
+                if let name { m.controls.field = SkinManifest.NineSlice(image: name, slice: m.controls.field?.slice ?? 14, width: m.controls.field?.width ?? 7) }
+            }
             artRow(skin, "Puxador dos sliders", file: skin.manifest.controls.knob, dim: nil) { m, name, _ in
                 if let name { m.controls.knob = name }
             }
-            HStack {
-                Text("Brilho do visor").frame(width: 190, alignment: .leading)
+            LabeledContent("Brilho do visor") {
                 Slider(value: Binding(get: { skin.manifest.display.glow }, set: { v in mutate(skin) { $0.display.glow = v } }), in: 0...1)
+                    .frame(width: 200)
             }
         }
     }
 
+    /// Linha de imagem: miniatura e nome à esquerda; escurecer e trocar à direita.
     private func artRow(_ skin: Skin, _ label: String, file: String?, dim: Double?,
                         apply: @escaping (inout SkinManifest, String?, Double?) -> Void) -> some View {
-        HStack(spacing: 10) {
-            Group {
-                if let f = file, let img = NSImage(contentsOf: skin.file(f)) {
-                    Image(nsImage: img).resizable().scaledToFill()
-                } else {
-                    Image(systemName: "photo").foregroundStyle(.secondary)
+        LabeledContent {
+            HStack(spacing: 10) {
+                if let dim {
+                    Image(systemName: "sun.min").foregroundStyle(.secondary).help("Escurecer")
+                    Slider(value: Binding(get: { dim }, set: { v in mutate(skin) { apply(&$0, nil, v) } }), in: 0...0.9)
+                        .frame(width: 120)
                 }
-            }
-            .frame(width: 56, height: 40).clipShape(RoundedRectangle(cornerRadius: 5))
-            .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.white.opacity(0.15)))
-            VStack(alignment: .leading, spacing: 2) {
-                Text(label).font(.system(size: 12, weight: .medium))
-                Text(file ?? "padrão do app").font(.system(size: 10)).foregroundStyle(.secondary)
-            }
-            .frame(width: 190, alignment: .leading)
-            if let dim {
-                Text("Escurecer").font(.caption).foregroundStyle(.secondary)
-                Slider(value: Binding(get: { dim }, set: { v in mutate(skin) { apply(&$0, nil, v) } }), in: 0...0.9)
-                    .frame(maxWidth: 160)
-            }
-            Spacer()
-            Button("Trocar…") {
-                guard let url = Self.pickImage() else { return }
-                run {
-                    let name = try store.addAsset(url, to: skin.id)
-                    mutate(skin) { apply(&$0, name, nil) }
-                }
-            }
-            .controlSize(.small)
-        }
-    }
-
-    // Animação: cada camada, ligar/desligar, intensidade e velocidade.
-    private func layersTab(_ skin: Skin) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Animações da janela").font(.headline)
-            SkinLayerStage(skin: skin, save: { m in run { try store.save(m) } }, addImage: {
-                guard let url = Self.pickImage() else { return nil }
-                var name: String?
-                run { name = try store.addAsset(url, to: skin.id) }
-                return name
-            })
-            ForEach(skin.manifest.panels.keys.sorted(), id: \.self) { key in
-                let layers = skin.manifest.panels[key]?.layers ?? []
-                if !layers.isEmpty {
-                    Text("Painel: \(Self.panelName(key))").font(.headline).padding(.top, 6)
-                    ForEach(Array(layers.enumerated()), id: \.offset) { i, layer in
-                        layerRow(skin, layer) { m, change in change(&m.panels[key]!.layers[i]) }
+                Button("Trocar…") {
+                    guard let url = Self.pickImage() else { return }
+                    run {
+                        let name = try store.addAsset(url, to: skin.id)
+                        mutate(skin) { apply(&$0, name, nil) }
                     }
                 }
             }
-            Text("Cada camada reage à música (brilha e acelera com o volume) quando “Reage” está ligado. Pontos, cores e novas camadas ficam no skin.json, na pasta do skin.")
-                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    private func layerRow(_ skin: Skin, _ layer: SkinManifest.Layer,
-                          update: @escaping (inout SkinManifest, (inout SkinManifest.Layer) -> Void) -> Void) -> some View {
-        HStack(spacing: 10) {
-            Toggle("", isOn: Binding(get: { layer.enabled }, set: { v in mutate(skin) { update(&$0) { $0.enabled = v } } })).labelsHidden()
-            VStack(alignment: .leading, spacing: 1) {
-                Text(layer.name?.capitalized ?? Self.kindName(layer.kind)).font(.system(size: 12, weight: .medium))
-                Text(Self.kindName(layer.kind)).font(.system(size: 10)).foregroundStyle(.secondary)
-            }
-            .frame(width: 130, alignment: .leading)
-            Text("Força").font(.caption).foregroundStyle(.secondary)
-            Slider(value: Binding(get: { layer.intensity }, set: { v in mutate(skin) { update(&$0) { $0.intensity = v } } }), in: 0...1)
-            Text("Velocidade").font(.caption).foregroundStyle(.secondary)
-            Slider(value: Binding(get: { layer.speed }, set: { v in mutate(skin) { update(&$0) { $0.speed = v } } }), in: 0...3)
-            Toggle("Reage", isOn: Binding(get: { layer.react }, set: { v in mutate(skin) { update(&$0) { $0.react = v } } }))
-                .toggleStyle(.checkbox)
-        }
-        .opacity(layer.enabled ? 1 : 0.5)
-    }
-
-    private func colorsTab(_ skin: Skin) -> some View {
-        LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)], alignment: .leading, spacing: 10) {
-            ForEach(SkinManifest.ColorToken.allCases) { token in
-                ColorPicker(selection: Binding(get: {
-                    Color(hexString: skin.manifest.colors[token.rawValue] ?? SkinManifest.fallbackColors[token.rawValue]!) ?? .gray
-                }, set: { color in mutate(skin) { $0.colors[token.rawValue] = color.hexString } }), supportsOpacity: true) {
-                    Text(token.label).font(.system(size: 12))
+        } label: {
+            HStack(spacing: 10) {
+                Group {
+                    if let f = file, let img = NSImage(contentsOf: skin.file(f)) { Image(nsImage: img).resizable().scaledToFill() }
+                    else { Image(systemName: "photo").foregroundStyle(.secondary) }
+                }
+                .frame(width: 40, height: 28).clipShape(RoundedRectangle(cornerRadius: 5))
+                .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.white.opacity(0.12)))
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(label)
+                    Text(file ?? "Padrão do app").font(.system(size: 10)).foregroundStyle(.secondary)
                 }
             }
         }
     }
 
-    private func aboutTab(_ skin: Skin) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if !skin.manifest.description.isEmpty { Text(skin.manifest.description).fixedSize(horizontal: false, vertical: true) }
+    // MARK: Animação
+
+    @ViewBuilder private func layersTab(_ skin: Skin) -> some View {
+        SkinLayerStage(skin: skin, save: { m in run { try store.save(m) } }, addImage: {
+            guard let url = Self.pickImage() else { return nil }
+            var name: String?
+            run { name = try store.addAsset(url, to: skin.id) }
+            return name
+        })
+        ForEach(skin.manifest.panels.keys.sorted(), id: \.self) { key in
+            let layers = skin.manifest.panels[key]?.layers ?? []
+            if !layers.isEmpty {
+                Section("Painel: \(Self.panelName(key))") {
+                    ForEach(Array(layers.enumerated()), id: \.offset) { i, layer in
+                        Toggle(isOn: Binding(get: { layer.enabled }, set: { v in mutate(skin) { $0.panels[key]!.layers[i].enabled = v } })) {
+                            Text(layer.name?.capitalized ?? Self.kindName(layer.kind))
+                            Text(Self.kindName(layer.kind))
+                        }
+                        LabeledContent("Força") {
+                            Slider(value: Binding(get: { layer.intensity }, set: { v in mutate(skin) { $0.panels[key]!.layers[i].intensity = v } }), in: 0...1)
+                                .frame(width: 200)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: Cores
+
+    @ViewBuilder private func colorsTab(_ skin: Skin) -> some View {
+        let groups: [(String, [SkinManifest.ColorToken])] = [
+            ("Janela e painéis", [.windowTop, .windowBottom, .panelFill, .panelBorder]),
+            ("Texto", [.text, .mutedText]),
+            ("Destaques e lista", [.accent, .rowSelection, .currentRow]),
+            ("Botões e controles", [.buttonText, .buttonTextOn, .control, .display]),
+            ("Letras e capa", [.lyricsActive, .lyricsIdle, .artworkTint]),
+        ]
+        ForEach(groups, id: \.0) { title, tokens in
+            Section(title) {
+                ForEach(tokens) { token in
+                    ColorPicker(token.label, selection: Binding(get: {
+                        Color(hexString: skin.manifest.colors[token.rawValue] ?? SkinManifest.fallbackColors[token.rawValue]!) ?? .gray
+                    }, set: { color in mutate(skin) { $0.colors[token.rawValue] = color.hexString } }), supportsOpacity: true)
+                }
+            }
+        }
+    }
+
+    // MARK: Créditos
+
+    @ViewBuilder private func aboutTab(_ skin: Skin) -> some View {
+        Section("Descrição") {
+            TextField("Descrição", text: text(skin, \.description), axis: .vertical).lineLimit(2...5)
+        }
+        Section("Créditos") {
+            if skin.manifest.credits.isEmpty { Text("Nenhum crédito").foregroundStyle(.secondary) }
             ForEach(Array(skin.manifest.credits.enumerated()), id: \.offset) { _, c in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(c.work).font(.system(size: 12, weight: .semibold))
-                    Text("\(c.author) · \(c.license)").font(.system(size: 11)).foregroundStyle(.secondary)
-                    if let url = URL(string: c.source) { Link(c.source, destination: url).font(.system(size: 10)) }
+                LabeledContent {
+                    if let url = URL(string: c.source) { Link("Fonte", destination: url) }
+                } label: {
+                    Text(c.work)
+                    Text("\(c.author) · \(c.license)")
                 }
             }
-            Text("Formato: uma pasta com skin.json, imagens e fontes; exportado como .wineupskin (ZIP). Tudo é editável à mão.")
-                .font(.caption).foregroundStyle(.secondary)
+        }
+        Section {
+            LabeledContent("Formato", value: "Pasta com skin.json, imagens e fontes")
+            LabeledContent("Arquivo", value: ".wineupskin (ZIP)")
+        } footer: {
+            Text("Tudo pode ser editado à mão: use ⋯ › Mostrar a pasta deste skin.")
         }
     }
 
