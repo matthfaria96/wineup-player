@@ -14,8 +14,8 @@ enum VisualMode: String, CaseIterable, Identifiable {
         case .cover: "Capa da música"
         case .skinArt: "Arte do skin"
         case .aurora: "Aurora na Noruega"
-        case .fjord: "Verão na Suécia"
-        case .city: "Cidade à beira-mar"
+        case .fjord: "Noite de verão na Suécia"
+        case .city: "Cidade à noite"
         case .universe: "Galáxia"
         case .videos: "Vídeos"
         }
@@ -41,11 +41,13 @@ struct VisualScene: View {
     let mode: VisualMode
     let energy: () -> Double
     let seed: Int
+    @StateObject private var smooth = SmoothEnergy()
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 20.0)) { timeline in
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
-            let e = min(max(energy(), 0), 1)
+            // A música só "respira" na cena: valor suavizado e com pouco peso (nada de pular).
+            let e = smooth.next(energy()) * 0.35
             Canvas(opaque: true, rendersAsynchronously: true) { ctx, size in
                 switch mode {
                 case .aurora: Scenes.aurora(&ctx, size, t, e, seed)
@@ -58,6 +60,15 @@ struct VisualScene: View {
         }
         .drawingGroup()
         .accessibilityLabel(mode.title)
+    }
+}
+
+/// Média móvel lenta do volume (~1,5 s): a cena acompanha a música sem tremer.
+final class SmoothEnergy: ObservableObject {
+    private var value = 0.0
+    func next(_ target: Double) -> Double {
+        value += (min(max(target, 0), 1) - value) * 0.03
+        return value
     }
 }
 
@@ -134,159 +145,169 @@ enum Scenes {
                                                      startPoint: CGPoint(x: 0, y: water.minY), endPoint: CGPoint(x: 0, y: water.maxY)))
     }
 
-    // MARK: Verão na Suécia (campo verde, lago e casinha vermelha)
+    // MARK: Noite clara de verão na Suécia (sol da meia-noite, lago espelhado, névoa, pinheiros)
 
     static func fjord(_ ctx: inout GraphicsContext, _ size: CGSize, _ t: Double, _ e: Double, _ seed: Int) {
-        sky(&ctx, size, [Color(hex: 0x3C8DDE), Color(hex: 0x8CC8F2), Color(hex: 0xDFF1FB)])
-        // Sol e nuvens fofas passando devagar.
-        let sun = CGPoint(x: size.width * 0.22, y: size.height * 0.16)
-        ctx.fill(Path(ellipseIn: CGRect(x: sun.x - 60, y: sun.y - 60, width: 120, height: 120)),
-                 with: .radialGradient(Gradient(colors: [Color(hex: 0xFFF6C8).opacity(0.9), .clear]), center: sun, startRadius: 0, endRadius: 60))
-        ctx.fill(Path(ellipseIn: CGRect(x: sun.x - 16, y: sun.y - 16, width: 32, height: 32)), with: .color(Color(hex: 0xFFFBE6)))
-        clouds(&ctx, size, t, count: 6, band: 0.08...0.34, salt: 70, speed: 6)
-        // Montanhas azuladas ao fundo, depois morros verdes em camadas (parallax), cada vez mais vivos.
-        mountains(&ctx, size, base: 0.50, height: 0.16, offset: t * 1, salt: 4 + seed % 3, color: Color(hex: 0x7FB2D9))
-        let hills: [(Double, Double, Double, UInt32)] = [(0.58, 0.14, 3, 0x4F9E4A), (0.70, 0.14, 7, 0x5FB54E), (0.86, 0.16, 14, 0x74C95A)]
-        for (i, h) in hills.enumerated() {
-            mountains(&ctx, size, base: h.0, height: h.1, offset: t * h.2, salt: 20 + i, color: Color(hex: h.3))
-        }
-        // Lago no meio, com reflexo do céu e ondulações que brilham com a música.
-        let lake = CGRect(x: 0, y: size.height * 0.62, width: size.width, height: size.height * 0.12)
-        ctx.fill(Path(lake), with: .linearGradient(Gradient(colors: [Color(hex: 0x6FB7E8), Color(hex: 0x3F8ACB)]),
+        // Céu do sol da meia-noite: azul-petróleo em cima, rosa-pálido e âmbar baixos no horizonte.
+        sky(&ctx, size, [Color(hex: 0x0B1B2B), Color(hex: 0x1F3A4E), Color(hex: 0x6E6A7C), Color(hex: 0xC99A8A)])
+        stars(&ctx, size, t, count: 30, maxY: 0.35, salt: 51)
+        let horizon = size.height * 0.6
+        // Sol baixo, quase escondido, com halo que respira devagar.
+        let sun = CGPoint(x: size.width * 0.66, y: horizon - size.height * 0.015)
+        let halo = size.width * (0.28 + 0.02 * sin(t * 0.15) + e * 0.05)
+        var glow = ctx
+        glow.blendMode = .plusLighter
+        glow.fill(Path(ellipseIn: CGRect(x: sun.x - halo, y: sun.y - halo * 0.6, width: halo * 2, height: halo * 1.2)),
+                  with: .radialGradient(Gradient(colors: [Color(hex: 0xFFC9A0).opacity(0.35), Color(hex: 0xC97C7C).opacity(0.12), .clear]),
+                                        center: sun, startRadius: 0, endRadius: halo))
+        // Montanhas distantes em camadas azuladas (atmosfera).
+        mountains(&ctx, size, base: 0.6, height: 0.16, offset: t * 0.6, salt: 4 + seed % 3, color: Color(hex: 0x2D3E54).opacity(0.9))
+        mountains(&ctx, size, base: 0.61, height: 0.10, offset: t * 1.2, salt: 12, color: Color(hex: 0x1B2638))
+        // Lago espelhado: o céu invertido e escurecido, com linhas de luz lentas.
+        let lake = CGRect(x: 0, y: horizon, width: size.width, height: size.height - horizon)
+        ctx.fill(Path(lake), with: .linearGradient(Gradient(colors: [Color(hex: 0x8E7480).opacity(0.85), Color(hex: 0x2A3A4C), Color(hex: 0x081320)]),
                                                     startPoint: CGPoint(x: 0, y: lake.minY), endPoint: CGPoint(x: 0, y: lake.maxY)))
-        for i in 0..<25 {
-            let y = lake.minY + rnd(i, 71) * lake.height
-            let w = size.width * (0.04 + rnd(i, 72) * 0.12) * (1 + e)
-            let x = rnd(i, 73) * size.width + sin(t * 0.7 + Double(i)) * 10
-            ctx.fill(Path(CGRect(x: x, y: y, width: w, height: 1.2)), with: .color(.white.opacity(0.25 + 0.3 * rnd(i, 74))))
+        for i in 0..<28 {
+            let y = lake.minY + pow(rnd(i, 52), 1.6) * lake.height
+            let w = size.width * (0.04 + rnd(i, 53) * 0.16)
+            let x = sun.x - w / 2 + sin(t * 0.25 + Double(i)) * size.width * 0.03
+            let a = (1 - (y - lake.minY) / lake.height) * (0.22 + e * 0.3)
+            glow.fill(Path(CGRect(x: x, y: y, width: w, height: 1)), with: .color(Color(hex: 0xFFD2B0).opacity(a)))
         }
-        // Casinha vermelha sueca (falu röd) com janelas brancas.
-        let hx = size.width * 0.68, hy = size.height * 0.79, hw = size.width * 0.12, hh = size.height * 0.08
-        ctx.fill(Path(CGRect(x: hx, y: hy - hh, width: hw, height: hh)), with: .color(Color(hex: 0xA3271D)))
-        var roof = Path(); roof.move(to: CGPoint(x: hx - hw * 0.08, y: hy - hh)); roof.addLine(to: CGPoint(x: hx + hw / 2, y: hy - hh * 1.7)); roof.addLine(to: CGPoint(x: hx + hw * 1.08, y: hy - hh)); roof.closeSubpath()
-        ctx.fill(roof, with: .color(Color(hex: 0x3A2A28)))
-        for k in 0..<2 {
-            ctx.fill(Path(CGRect(x: hx + hw * (0.18 + Double(k) * 0.45), y: hy - hh * 0.75, width: hw * 0.2, height: hh * 0.35)), with: .color(Color(hex: 0xFFF7D6)))
+        // Névoa rasteira passando sobre a água.
+        for k in 0..<3 {
+            let y = horizon + size.height * (0.01 + Double(k) * 0.035)
+            let drift = (t * (4 + Double(k) * 2)).truncatingRemainder(dividingBy: size.width * 2) - size.width
+            ctx.fill(Path(ellipseIn: CGRect(x: drift, y: y, width: size.width * 1.6, height: size.height * 0.05)),
+                     with: .radialGradient(Gradient(colors: [Color(hex: 0xC8C4D6).opacity(0.10), .clear]),
+                                           center: CGPoint(x: drift + size.width * 0.8, y: y + size.height * 0.025),
+                                           startRadius: 0, endRadius: size.width * 0.8))
         }
-        // Bétulas (tronco branco, copa verde-clara) balançando de leve, e flores no campo.
-        for i in 0..<9 {
-            let x = rnd(i, 75) * size.width, baseY = size.height * (0.80 + rnd(i, 76) * 0.14)
-            let h = size.height * (0.10 + rnd(i, 77) * 0.08), sway = sin(t * 0.9 + Double(i)) * (2 + e * 4)
-            ctx.fill(Path(CGRect(x: x - 1.5, y: baseY - h, width: 3, height: h)), with: .color(Color(hex: 0xF2F2EE)))
-            ctx.fill(Path(ellipseIn: CGRect(x: x - h * 0.35 + sway, y: baseY - h * 1.25, width: h * 0.7, height: h * 0.6)), with: .color(Color(hex: 0x9BE37A).opacity(0.95)))
-        }
-        for i in 0..<60 {
-            let x = rnd(i, 78) * size.width, y = size.height * (0.76 + rnd(i, 79) * 0.22)
-            let c: UInt32 = [0xFFFFFF, 0xFFE566, 0xFF7AB5, 0xC77DFF][i % 4]
-            ctx.fill(Path(ellipseIn: CGRect(x: x, y: y + sin(t * 1.5 + Double(i)) * 1, width: 3, height: 3)), with: .color(Color(hex: c)))
-        }
-    }
-
-    static func clouds(_ ctx: inout GraphicsContext, _ size: CGSize, _ t: Double, count: Int, band: ClosedRange<Double>, salt: Int, speed: Double) {
-        for i in 0..<count {
-            let w = size.width * (0.18 + rnd(i, salt) * 0.2), h = w * 0.35
-            let x = (rnd(i, salt + 1) * (size.width + w) + t * speed * (0.5 + rnd(i, salt + 2))).truncatingRemainder(dividingBy: size.width + w) - w
-            let y = size.height * (band.lowerBound + rnd(i, salt + 3) * (band.upperBound - band.lowerBound))
-            var p = Path()
-            p.addEllipse(in: CGRect(x: x, y: y, width: w, height: h))
-            p.addEllipse(in: CGRect(x: x + w * 0.25, y: y - h * 0.45, width: w * 0.55, height: h * 1.2))
-            p.addEllipse(in: CGRect(x: x + w * 0.5, y: y - h * 0.1, width: w * 0.5, height: h))
-            ctx.fill(p, with: .color(.white.opacity(0.92)))
+        // Margem com pinheiros em silhueta (e o reflexo deles, mais claro).
+        let shore = horizon + size.height * 0.004
+        for i in 0..<22 {
+            let x = rnd(i, 54) * size.width
+            let h = size.height * (0.06 + rnd(i, 55) * 0.13) * (x < size.width * 0.35 ? 1.2 : 0.8)
+            for (dir, alpha) in [(-1.0, 1.0), (1.0, 0.22)] {
+                var tree = Path()
+                tree.move(to: CGPoint(x: x, y: shore + dir * h))
+                tree.addLine(to: CGPoint(x: x - h * 0.18, y: shore))
+                tree.addLine(to: CGPoint(x: x + h * 0.18, y: shore))
+                ctx.fill(tree, with: .color(Color(hex: 0x060B12).opacity(alpha)))
+            }
         }
     }
 
-    // MARK: Cidade de dia (orla, prédios coloridos, montanhas)
+    static func clouds(_ ctx: inout GraphicsContext, _ size: CGSize, _ t: Double, count: Int, band: ClosedRange<Double>, salt: Int, speed: Double) {}
+
+    // MARK: Cidade à noite à beira d'água (skyline em silhueta, janelas, reflexo e bokeh)
 
     static func city(_ ctx: inout GraphicsContext, _ size: CGSize, _ t: Double, _ e: Double, _ seed: Int) {
-        sky(&ctx, size, [Color(hex: 0x2F7FD6), Color(hex: 0x7CC0F0), Color(hex: 0xF7E1C3)])
-        let sun = CGPoint(x: size.width * 0.78, y: size.height * 0.2)
-        ctx.fill(Path(ellipseIn: CGRect(x: sun.x - 70, y: sun.y - 70, width: 140, height: 140)),
-                 with: .radialGradient(Gradient(colors: [Color(hex: 0xFFF0B8).opacity(0.8), .clear]), center: sun, startRadius: 0, endRadius: 70))
-        ctx.fill(Path(ellipseIn: CGRect(x: sun.x - 18, y: sun.y - 18, width: 36, height: 36)), with: .color(Color(hex: 0xFFFDF0)))
-        clouds(&ctx, size, t, count: 5, band: 0.06...0.3, salt: 80, speed: 8)
-        mountains(&ctx, size, base: 0.56, height: 0.22, offset: t * 1.2, salt: 5 + seed % 3, color: Color(hex: 0x6FA3C9))
-        mountains(&ctx, size, base: 0.58, height: 0.14, offset: t * 2.5, salt: 11, color: Color(hex: 0x5C8FB3))
-        // Pássaros passando.
-        for i in 0..<6 {
-            let x = (rnd(i, 81) * size.width + t * (18 + rnd(i, 82) * 12)).truncatingRemainder(dividingBy: size.width + 40) - 20
-            let y = size.height * (0.12 + rnd(i, 83) * 0.25) + sin(t * 3 + Double(i)) * 3
-            var b = Path(); b.move(to: CGPoint(x: x - 5, y: y)); b.addQuadCurve(to: CGPoint(x: x, y: y - 2), control: CGPoint(x: x - 2.5, y: y - 4)); b.addQuadCurve(to: CGPoint(x: x + 5, y: y), control: CGPoint(x: x + 2.5, y: y - 4))
-            ctx.stroke(b, with: .color(Color(hex: 0x24364A).opacity(0.7)), lineWidth: 1.2)
-        }
-        // Prédios coloridos (tons pastel e vidro) em duas camadas, passando devagar.
-        let palette: [UInt32] = [0xF2C4A0, 0xE8A598, 0xBFD7EA, 0xF6E3B4, 0xA9D3C5, 0xD9C7EB, 0x9FB8D8, 0xF0B8C8]
-        let layers: [(speed: Double, base: Double, maxH: Double, w: Double, dim: Double)] = [(6, 0.66, 0.30, 0.09, 0.78), (16, 0.72, 0.36, 0.12, 1)]
+        sky(&ctx, size, [Color(hex: 0x050816), Color(hex: 0x111A33), Color(hex: 0x2B2346), Color(hex: 0x6A3F5C)])
+        stars(&ctx, size, t, count: 25, maxY: 0.3, salt: 61)
+        let horizon = size.height * 0.62
+        // Brilho da cidade no céu, baixo e quente.
+        var glow = ctx
+        glow.blendMode = .plusLighter
+        glow.fill(Path(CGRect(x: 0, y: horizon - size.height * 0.3, width: size.width, height: size.height * 0.3)),
+                  with: .linearGradient(Gradient(colors: [.clear, Color(hex: 0xE58A6A).opacity(0.18 + e * 0.15)]),
+                                        startPoint: CGPoint(x: 0, y: horizon - size.height * 0.3), endPoint: CGPoint(x: 0, y: horizon)))
+        // Duas camadas de prédios em silhueta, passando bem devagar.
+        let layers: [(speed: Double, maxH: Double, w: Double, color: UInt32, lit: Double)] = [
+            (1.5, 0.30, 0.07, 0x161C30, 0.18), (4, 0.42, 0.10, 0x0A0E1C, 0.3)]
+        var windows: [(CGRect, Double)] = []
         for (l, layer) in layers.enumerated() {
             let bw = size.width * layer.w
-            let travel = t * layer.speed * (1 + e * 0.5)
+            let travel = t * layer.speed
             let shift = travel.truncatingRemainder(dividingBy: bw), first = Int(floor(travel / bw))
             for k in 0...Int(size.width / bw) + 1 {
                 let index = first + k, x = Double(k) * bw - shift
-                let h = size.height * layer.maxH * (0.35 + rnd(index, 90 + l) * 0.65), top = size.height * layer.base - h
-                let color = Color(hex: palette[abs(index) % palette.count]).opacity(layer.dim)
-                ctx.fill(Path(CGRect(x: x, y: top, width: bw - 4, height: h)), with: .color(color))
-                ctx.fill(Path(CGRect(x: x, y: top, width: (bw - 4) * 0.3, height: h)), with: .color(.white.opacity(0.18)))
-                let cols = 3, rows = Int(h / 14)
-                for r in 0..<max(rows, 0) { for c in 0..<cols {
-                    let id = index * 97 + r * 7 + c
-                    let glint = 0.25 + 0.35 * max(0, sin(t * 0.6 + Double(id))) + e * 0.2
-                    ctx.fill(Path(CGRect(x: x + 5 + Double(c) * (bw - 10) / Double(cols), y: top + 7 + Double(r) * 14, width: 4, height: 6)),
-                             with: .color(Color(hex: 0x3B5B7A).opacity(0.55 + glint * 0.3)))
+                let h = size.height * layer.maxH * (0.3 + rnd(index, 62 + l) * 0.7), top = horizon - h
+                ctx.fill(Path(CGRect(x: x, y: top, width: bw - 2, height: h)), with: .color(Color(hex: layer.color)))
+                let rows = Int(h / 9)
+                for r in 0..<max(rows, 0) { for c in 0..<3 {
+                    let id = index * 131 + r * 7 + c
+                    guard rnd(id, 70 + l) < layer.lit else { continue }
+                    let flicker = 0.55 + 0.45 * sin(t * 0.08 + Double(id))
+                    windows.append((CGRect(x: x + 4 + Double(c) * (bw - 8) / 3, y: top + 5 + Double(r) * 9, width: 2.5, height: 3.5), flicker))
                 } }
             }
         }
-        // Orla: mar azul com brilho e um calçadão com árvores.
-        let sea = CGRect(x: 0, y: size.height * 0.72, width: size.width, height: size.height * 0.16)
-        ctx.fill(Path(sea), with: .linearGradient(Gradient(colors: [Color(hex: 0x5FB6E8), Color(hex: 0x2F86C7)]), startPoint: CGPoint(x: 0, y: sea.minY), endPoint: CGPoint(x: 0, y: sea.maxY)))
-        for i in 0..<30 {
-            let y = sea.minY + rnd(i, 95) * sea.height, w = size.width * (0.03 + rnd(i, 96) * 0.1) * (1 + e)
-            let x = (rnd(i, 97) * size.width + t * 12).truncatingRemainder(dividingBy: size.width + w) - w / 2
-            ctx.fill(Path(CGRect(x: x, y: y, width: w, height: 1.2)), with: .color(.white.opacity(0.35 + 0.3 * rnd(i, 98))))
+        for (rect, a) in windows { glow.fill(Path(rect), with: .color(Color(hex: 0xFFCF8A).opacity(a * 0.9))) }
+        // Água: reflexo escuro, luzes esticadas tremendo devagar.
+        let water = CGRect(x: 0, y: horizon, width: size.width, height: size.height - horizon)
+        ctx.fill(Path(water), with: .linearGradient(Gradient(colors: [Color(hex: 0x1A1730), Color(hex: 0x05060E)]),
+                                                     startPoint: CGPoint(x: 0, y: water.minY), endPoint: CGPoint(x: 0, y: water.maxY)))
+        for (i, (rect, a)) in windows.enumerated() where i % 3 == 0 {
+            let depth = horizon - rect.minY
+            let y = horizon + depth * 0.9
+            guard y < size.height else { continue }
+            let wobble = sin(t * 0.6 + Double(i)) * 2
+            glow.fill(Path(CGRect(x: rect.minX + wobble, y: y, width: rect.width, height: 6)),
+                      with: .color(Color(hex: 0xFFB36B).opacity(a * 0.25 * (1 - depth / size.height))))
         }
-        ctx.fill(Path(CGRect(x: 0, y: sea.maxY, width: size.width, height: size.height - sea.maxY)), with: .color(Color(hex: 0xE9D8B8)))
-        for i in 0..<12 {
-            let x = (rnd(i, 99) * size.width * 1.2 + t * 20).truncatingRemainder(dividingBy: size.width * 1.2) - size.width * 0.1
-            let y = sea.maxY + 2, h = size.height * 0.07
-            ctx.fill(Path(CGRect(x: x - 1, y: y - h * 0.3, width: 2, height: h * 0.5)), with: .color(Color(hex: 0x7A5A3A)))
-            ctx.fill(Path(ellipseIn: CGRect(x: x - h * 0.35, y: y - h * 0.9 + sin(t + Double(i)) * 1.5, width: h * 0.7, height: h * 0.7)), with: .color(Color(hex: 0x4FAE5C)))
+        // Bokeh: luzes desfocadas flutuando no primeiro plano.
+        for i in 0..<14 {
+            let x = (rnd(i, 80) * size.width + t * (3 + rnd(i, 81) * 4)).truncatingRemainder(dividingBy: size.width + 80) - 40
+            let y = size.height * (0.55 + rnd(i, 82) * 0.4) + sin(t * 0.2 + Double(i)) * 6
+            let r = 14 + rnd(i, 83) * 26
+            let c = [Color(hex: 0xFFB36B), Color(hex: 0xE58AB0), Color(hex: 0x8AB4FF)][i % 3]
+            glow.fill(Path(ellipseIn: CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)),
+                      with: .radialGradient(Gradient(colors: [c.opacity(0.16 + e * 0.2), .clear]), center: CGPoint(x: x, y: y), startRadius: 0, endRadius: r))
         }
     }
 
-    // MARK: Galáxia (espiral colorida girando)
+    // MARK: Galáxia (espiral serena, poeira e estrelas em profundidade)
 
     static func universe(_ ctx: inout GraphicsContext, _ size: CGSize, _ t: Double, _ e: Double, _ seed: Int) {
-        sky(&ctx, size, [Color(hex: 0x05021A), Color(hex: 0x0B0430), Color(hex: 0x1A0636)])
-        stars(&ctx, size, t, count: 90, maxY: 1, salt: 100)
-        let center = CGPoint(x: size.width / 2, y: size.height / 2)
-        let radius = min(size.width, size.height) * 0.46
-        let spin = t * 0.08 * (1 + e * 0.6)
-        var glow = ctx
-        glow.blendMode = .plusLighter
-        // Núcleo quente e nebulosas de cor viva nos braços.
-        glow.fill(Path(ellipseIn: CGRect(x: center.x - radius * 0.5, y: center.y - radius * 0.5, width: radius, height: radius)),
-                  with: .radialGradient(Gradient(colors: [Color(hex: 0xFFF1C2).opacity(0.95), Color(hex: 0xFF9A5C).opacity(0.5), .clear]), center: center, startRadius: 0, endRadius: radius * 0.5))
-        let armColors: [UInt32] = [0x4FD1FF, 0xFF4FA3, 0xB967FF, 0x5CFFB1]
-        for arm in 0..<4 {
-            let phase = Double(arm) * .pi / 2
-            for i in 0..<110 {
-                let u = Double(i) / 110, r = radius * (0.08 + u * 0.92)
-                let a = phase + spin + u * 4.2 + rnd(i, 110 + arm) * 0.25
-                let p = CGPoint(x: center.x + cos(a) * r, y: center.y + sin(a) * r * 0.62)
-                let blob = (6 + u * 14) * (1 + e * 0.5)
-                let alpha = (1 - u) * 0.22 + 0.06 + e * 0.1
-                glow.fill(Path(ellipseIn: CGRect(x: p.x - blob, y: p.y - blob, width: blob * 2, height: blob * 2)),
-                          with: .radialGradient(Gradient(colors: [Color(hex: armColors[arm]).opacity(alpha), .clear]), center: p, startRadius: 0, endRadius: blob))
+        sky(&ctx, size, [Color(hex: 0x02030A), Color(hex: 0x070A1C), Color(hex: 0x0C0718)])
+        // Estrelas de fundo em três profundidades, com deriva lenta (sensação de viagem).
+        for layer in 0..<3 {
+            let n = [120, 60, 25][layer], speed = [0.6, 1.4, 3.0][layer]
+            for i in 0..<n {
+                let x = (rnd(i, 90 + layer) * size.width + t * speed).truncatingRemainder(dividingBy: size.width)
+                let y = rnd(i, 93 + layer) * size.height
+                let r = [0.6, 1.0, 1.6][layer] * (0.7 + rnd(i, 96) * 0.6)
+                let tw = 0.5 + 0.5 * sin(t * (0.4 + rnd(i, 97)) + Double(i))
+                ctx.fill(Path(ellipseIn: CGRect(x: x, y: y, width: r, height: r)), with: .color(.white.opacity(0.3 + tw * 0.5)))
             }
         }
-        // Estrelas dos braços, coloridas, piscando com a batida.
-        for i in 0..<320 {
-            let arm = i % 4, u = rnd(i, 120), r = radius * (0.05 + u * 0.95)
-            let a = Double(arm) * .pi / 2 + spin + u * 4.2 + (rnd(i, 121) - 0.5) * 0.7
-            let p = CGPoint(x: center.x + cos(a) * r, y: center.y + sin(a) * r * 0.62)
-            let tw = 0.5 + 0.5 * abs(sin(t * (1 + rnd(i, 122) * 3) + Double(i)))
-            let c: UInt32 = [0xFFFFFF, 0xBFE8FF, 0xFFD6A0, 0xFFB3E6][i % 4]
-            let sz = 0.8 + rnd(i, 123) * 1.8 + e * 1.2
-            ctx.fill(Path(ellipseIn: CGRect(x: p.x - sz / 2, y: p.y - sz / 2, width: sz, height: sz)), with: .color(Color(hex: c).opacity(0.5 + tw * 0.5)))
+        let center = CGPoint(x: size.width * 0.52, y: size.height * 0.5)
+        let radius = min(size.width, size.height) * 0.52
+        let spin = t * 0.02 + Double(seed % 7)
+        var glow = ctx
+        glow.blendMode = .plusLighter
+        // Halo difuso e núcleo quente.
+        glow.fill(Path(ellipseIn: CGRect(x: center.x - radius * 1.3, y: center.y - radius * 0.8, width: radius * 2.6, height: radius * 1.6)),
+                  with: .radialGradient(Gradient(colors: [Color(hex: 0x6B5BD6).opacity(0.18), Color(hex: 0x2B1E5A).opacity(0.08), .clear]),
+                                        center: center, startRadius: 0, endRadius: radius * 1.3))
+        glow.fill(Path(ellipseIn: CGRect(x: center.x - radius * 0.35, y: center.y - radius * 0.22, width: radius * 0.7, height: radius * 0.44)),
+                  with: .radialGradient(Gradient(colors: [Color(hex: 0xFFF1D8).opacity(0.75 + e), Color(hex: 0xF0A870).opacity(0.25), .clear]),
+                                        center: center, startRadius: 0, endRadius: radius * 0.35))
+        // Braços: milhares de pontinhos ao longo de duas espirais logarítmicas, inclinadas (perspectiva).
+        let palette = [Color(hex: 0x9FC4FF), Color(hex: 0xC8A8FF), Color(hex: 0xFFC8E6), Color(hex: 0xFFFFFF)]
+        for arm in 0..<2 {
+            for i in 0..<700 {
+                let u = rnd(i, 100 + arm)
+                let r = radius * (0.08 + pow(u, 0.6) * 0.92)
+                let theta = log(r / radius * 8 + 1) * 1.7 + Double(arm) * .pi + spin + (rnd(i, 102 + arm) - 0.5) * (0.5 + u * 0.6)
+                let p = CGPoint(x: center.x + cos(theta) * r, y: center.y + sin(theta) * r * 0.42)
+                let sz = 0.6 + rnd(i, 104) * 1.6
+                let a = (1 - u) * 0.6 + 0.12
+                glow.fill(Path(ellipseIn: CGRect(x: p.x, y: p.y, width: sz, height: sz)), with: .color(palette[i % 4].opacity(a)))
+            }
+        }
+        // Nuvens de poeira (nebulosa) suaves sobre os braços.
+        for i in 0..<10 {
+            let u = rnd(i, 110)
+            let r = radius * (0.25 + u * 0.7)
+            let theta = log(r / radius * 8 + 1) * 1.7 + Double(i % 2) * .pi + spin
+            let p = CGPoint(x: center.x + cos(theta) * r, y: center.y + sin(theta) * r * 0.42)
+            let b = radius * (0.18 + rnd(i, 111) * 0.15)
+            glow.fill(Path(ellipseIn: CGRect(x: p.x - b, y: p.y - b * 0.5, width: b * 2, height: b)),
+                      with: .radialGradient(Gradient(colors: [[Color(hex: 0x7A5CFF), Color(hex: 0xFF6FB0), Color(hex: 0x4FA8FF)][i % 3].opacity(0.10), .clear]),
+                                            center: p, startRadius: 0, endRadius: b))
         }
     }
+
 }

@@ -10,6 +10,21 @@ struct ArtworkPanel: View {
     @AppStorage(VideoCategoryStore.selectedKey) private var videoCategory = ""
     @ObservedObject private var videoStore = VideoCategoryStore.shared
     @State private var showVideoSettings = false
+    @State private var showInfo = false
+
+    private var infoText: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Capa da Música", systemImage: "photo").font(.headline)
+            Text("A capa da música tocando. Se ela não tiver capa, aparece a arte da skin.")
+            Label("Arte da Skin", systemImage: "paintpalette").font(.headline)
+            Text("Sempre a ilustração da skin em uso.")
+            Label("Vídeos Personalizados", systemImage: "film").font(.headline)
+            Text("Animações e vídeos por categoria, no lugar da capa.")
+        }
+        .font(.system(size: 12))
+        .padding(14)
+        .frame(width: 280)
+    }
 
     @Environment(\.theme) private var theme
 
@@ -54,51 +69,52 @@ struct ArtworkPanel: View {
     /// Menu no canto da capa: capa, cenas animadas e o submenu de vídeos por categoria.
     private var modeMenu: some View {
         Menu {
-            // Organizado em grupos: o que é imagem, o que é animação, o que é vídeo.
-            Section("Imagem") {
-                pick(.cover, "Capa da música", subtitle: "Arte do skin quando a música não tem capa")
-                pick(.skinArt, "Arte do skin", subtitle: theme.art?.manifest.artwork == nil ? "Este skin não tem arte" : nil)
-            }
-            Section("Animação") {
-                ForEach([VisualMode.aurora, .fjord, .city, .universe]) { m in pick(m, m.title, subtitle: nil) }
-            }
-            Section("Vídeo") {
-                // Submenu: o item e a categoria escolhida ficam marcados.
-                Menu {
-                    ForEach(videoStore.enabled) { c in
-                        Button {
-                            videoCategory = c.id
-                            modeRaw = VisualMode.videos.rawValue
-                        } label: {
-                            Label(c.name, systemImage: mode == .videos && currentVideo?.id == c.id ? "checkmark" : c.symbol)
-                        }
+            pick(.cover, "Capa da Música")
+            pick(.skinArt, "Arte da Skin")
+            Divider()
+            // Animações em cima, vídeos embaixo; o item e a escolha ficam marcados.
+            Menu {
+                ForEach([VisualMode.aurora, .fjord, .city, .universe]) { m in pick(m, m.title) }
+                Divider()
+                ForEach(videoStore.enabled) { c in
+                    Button {
+                        videoCategory = c.id
+                        modeRaw = VisualMode.videos.rawValue
+                    } label: {
+                        Label(c.name, systemImage: mode == .videos && currentVideo?.id == c.id ? "checkmark" : c.symbol)
                     }
-                    if videoStore.enabled.isEmpty { Text("Nenhuma categoria ligada") }
-                    Divider()
-                    Button { showVideoSettings = true } label: { Label("Configurar categorias…", systemImage: "gearshape") }
-                } label: {
-                    Label(mode == .videos ? "Vídeos: \(currentVideo?.name ?? "")" : "Vídeos",
-                          systemImage: mode == .videos ? "checkmark" : "film")
                 }
+                if videoStore.enabled.isEmpty { Text("Nenhuma categoria de vídeo ligada") }
+                Divider()
+                Button { showVideoSettings = true } label: { Label("Configurar categorias…", systemImage: "gearshape") }
+            } label: {
+                Label("Vídeos Personalizados", systemImage: isMotion ? "checkmark" : "film")
             }
         } label: {
             Image(systemName: mode.symbol)
                 .font(.system(size: 11, weight: .semibold))
         }
         .skinMenuChrome(compact: true)
+        .help("O que mostrar aqui")
+        .overlay(alignment: .leading) {
+            Button { showInfo.toggle() } label: { Image(systemName: "info.circle").font(.system(size: 11)) }
+                .buttonStyle(SkinButtonStyle(compact: true))
+                .offset(x: -30)
+                .help("Sobre os modos")
+                .accessibilityLabel("Sobre os modos do painel")
+                .popover(isPresented: $showInfo, arrowEdge: .bottom) { infoText }
+        }
         .padding(8)
-        .help("O que mostrar aqui: imagem, animação ou vídeo")
         .accessibilityLabel("Escolher o que aparece no lugar da capa")
         .sheet(isPresented: $showVideoSettings) { VideoCategoriesView() }
     }
 
     private var currentVideo: VideoCategory? { videoStore.category(videoCategory) ?? videoStore.enabled.first }
 
-    private func pick(_ m: VisualMode, _ title: String, subtitle: String?) -> some View {
-        Button { modeRaw = m.rawValue } label: {
-            Label(title, systemImage: mode == m ? "checkmark" : m.symbol)
-            if let subtitle { Text(subtitle) }
-        }
+    private var isMotion: Bool { ![.cover, .skinArt].contains(mode) }
+
+    private func pick(_ m: VisualMode, _ title: String) -> some View {
+        Button { modeRaw = m.rawValue } label: { Label(title, systemImage: mode == m ? "checkmark" : m.symbol) }
     }
 
     @ViewBuilder private var videos: some View {
