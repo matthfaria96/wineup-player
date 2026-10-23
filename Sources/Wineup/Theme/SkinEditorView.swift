@@ -7,6 +7,7 @@ import WineupLibrary
 /// camadas animadas; novo/duplicar, importar/exportar .wineupskin, apagar, restaurar original.
 struct SkinEditorView: View {
     @ObservedObject private var store = SkinStore.shared
+    @ObservedObject private var history = SkinHistory.shared
     @AppStorage("themeID") private var activeID = SkinStore.defaultID
     @State private var selectedID: String?
     @State private var error: String?
@@ -44,7 +45,9 @@ struct SkinEditorView: View {
             Button("Cancelar", role: .cancel) {}
         } message: { Text("O skin e as imagens dele saem do Mac. Exporte antes se quiser guardar uma cópia.") }
         .confirmationDialog("Restaurar “\(selected?.name ?? "")” ao padrão?", isPresented: $confirmRestore) {
-            Button("Restaurar padrão", role: .destructive) { if let s = selected { run { try store.restoreOfficial(s.id) } } }
+            Button("Restaurar padrão", role: .destructive) {
+                if let s = selected { run { try store.restoreOfficial(s.id) }; history.reset(s.id) }
+            }
             Button("Cancelar", role: .cancel) {}
         } message: { Text("Todos os seus ajustes neste skin oficial serão desfeitos.") }
         .alert("Duplicar skin", isPresented: Binding(get: { duplicateName != nil }, set: { if !$0 { duplicateName = nil } })) {
@@ -144,6 +147,17 @@ struct SkinEditorView: View {
                         .font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
                 }
                 Spacer()
+                ControlGroup {
+                    Button { undo() } label: { Image(systemName: "arrow.uturn.backward") }
+                        .help("Desfazer (⌘Z)")
+                        .keyboardShortcut("z", modifiers: .command)
+                        .disabled(!history.canUndo(skin.id))
+                    Button { redo() } label: { Image(systemName: "arrow.uturn.forward") }
+                        .help("Refazer (⇧⌘Z)")
+                        .keyboardShortcut("z", modifiers: [.command, .shift])
+                        .disabled(!history.canRedo(skin.id))
+                }
+                .fixedSize()
                 if store.isModifiedBuiltIn(skin.id) {
                     Button("Restaurar padrão") { confirmRestore = true }
                         .help("Desfaz os seus ajustes neste skin oficial")
@@ -288,29 +302,12 @@ struct SkinEditorView: View {
     // MARK: Animação
 
     @ViewBuilder private func layersTab(_ skin: Skin) -> some View {
-        SkinLayerStage(skin: skin, save: { m in run { try store.save(m) } }, addImage: {
+        SkinLayerStage(skin: skin, save: { m in commit(m) }, addImage: {
             guard let url = Self.pickImage() else { return nil }
             var name: String?
             run { name = try store.addAsset(url, to: skin.id) }
             return name
         })
-        ForEach(skin.manifest.panels.keys.sorted(), id: \.self) { key in
-            let layers = skin.manifest.panels[key]?.layers ?? []
-            if !layers.isEmpty {
-                Section("Painel: \(Self.panelName(key))") {
-                    ForEach(Array(layers.enumerated()), id: \.offset) { i, layer in
-                        Toggle(isOn: Binding(get: { layer.enabled }, set: { v in mutate(skin) { $0.panels[key]!.layers[i].enabled = v } })) {
-                            Text(layer.name?.capitalized ?? Self.kindName(layer.kind))
-                            Text(Self.kindName(layer.kind))
-                        }
-                        LabeledContent("Força") {
-                            Slider(value: Binding(get: { layer.intensity }, set: { v in mutate(skin) { $0.panels[key]!.layers[i].intensity = v } }), in: 0...1)
-                                .frame(width: 200)
-                        }
-                    }
-                }
-            }
-        }
     }
 
     // MARK: Cores
@@ -368,6 +365,23 @@ struct SkinEditorView: View {
     private func mutate(_ skin: Skin, _ change: (inout SkinManifest) -> Void) {
         guard var m = store.skin(skin.id)?.manifest else { return }
         change(&m)
+        commit(m)
+    }
+
+    /// Único caminho de gravação do editor: guarda o estado anterior para ⌘Z.
+    private func commit(_ m: SkinManifest) {
+        guard let before = store.skin(m.id)?.manifest, before != m else { return }
+        history.record(before)
+        run { try store.save(m) }
+    }
+
+    private func undo() {
+        guard let s = selected, let m = history.undo(current: s.manifest) else { return }
+        run { try store.save(m) }
+    }
+
+    private func redo() {
+        guard let s = selected, let m = history.redo(current: s.manifest) else { return }
         run { try store.save(m) }
     }
 
@@ -391,6 +405,7 @@ struct SkinEditorView: View {
         run {
             guard !store.isOfficial(skin.id) else { return }
             try store.delete(skin.id)
+            history.reset(skin.id)
             if store.skin(skin.id) == nil {
                 if activeID == skin.id { activeID = SkinStore.defaultID }
                 selectedID = activeID

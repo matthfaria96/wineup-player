@@ -9,18 +9,44 @@ struct SkinLayerStage: View {
     let save: (SkinManifest) -> Void
     let addImage: () -> String?
 
+    /// Área cujas animações estão no palco: "window" ou um painel ("player", "equalizer"...).
+    @State private var area = "window"
+    static let areas: [(String, String)] = [("window", "Janela"), ("player", "Player"), ("equalizer", "FX"),
+                                           ("playlist", "Lista"), ("artwork", "Capa"), ("lyrics", "Letras")]
+
     @State private var selected = 0
     @State private var selectedPoint: Int?
     /// Pontos em edição durante o arrasto (grava ao soltar, sem reescrever o arquivo a cada movimento).
     @State private var draft: [SkinManifest.Point]?
 
-    private var layers: [SkinManifest.Layer] { skin.manifest.window.layers }
+    private var layers: [SkinManifest.Layer] { Self.layers(of: skin.manifest, area) }
+
+    static func layers(of m: SkinManifest, _ area: String) -> [SkinManifest.Layer] {
+        area == "window" ? m.window.layers : (m.panels[area]?.layers ?? [])
+    }
+
+    /// Grava a lista de camadas na área (painel sem estilo próprio herda o padrão antes).
+    static func setLayers(_ list: [SkinManifest.Layer], in m: inout SkinManifest, _ area: String) {
+        if area == "window" { m.window.layers = list; return }
+        var style = m.panels[area] ?? m.panels["default"] ?? SkinManifest.PanelStyle()
+        style.layers = list
+        m.panels[area] = style
+    }
+
+    private var areaFill: SkinManifest.Fill? {
+        area == "window" ? skin.manifest.window.background : skin.manifest.panelStyle(area)?.fill
+    }
     private var layer: SkinManifest.Layer? { layers.indices.contains(selected) ? layers[selected] : nil }
     private var usesPoints: Bool { layer.map { $0.kind != .flow } ?? false }
 
     /// Seções do formulário: palco, lista de camadas e os ajustes da camada escolhida.
     var body: some View {
         Section {
+            Picker("Área", selection: $area) {
+                ForEach(Self.areas, id: \.0) { Text($0.1).tag($0.0) }
+            }
+            .pickerStyle(.segmented)
+            .onChange(of: area) { _, _ in selected = 0; selectedPoint = nil; draft = nil }
             stage.listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
         } footer: {
             Text(hint)
@@ -55,7 +81,7 @@ struct SkinLayerStage: View {
                 .background(RoundedRectangle(cornerRadius: 6).fill(i == selected ? Color.accentColor : Color.accentColor.opacity(0.15)))
             VStack(alignment: .leading, spacing: 1) {
                 Text(l.name?.capitalized ?? SkinEditorView.kindName(l.kind))
-                Text(l.kind == .flow ? SkinEditorView.kindName(l.kind) : "\(SkinEditorView.kindName(l.kind)) · \(l.points.count) ponto(s)")
+                Text(Self.summary(l))
                     .font(.system(size: 11)).foregroundStyle(.secondary)
             }
             Spacer()
@@ -98,6 +124,14 @@ struct SkinLayerStage: View {
         }
     }
 
+    static func summary(_ l: SkinManifest.Layer) -> String {
+        if l.kind == .flow { return SkinEditorView.kindName(l.kind) }
+        var parts = [SkinEditorView.kindName(l.kind)]
+        if l.kind == .stars, let n = l.count, n > 0 { parts.append("\(n) espalhadas") }
+        parts.append("\(l.points.count) posicionada\(l.points.count == 1 ? "" : "s")")
+        return parts.joined(separator: " · ")
+    }
+
     static func symbol(_ k: SkinManifest.Layer.Kind) -> String {
         switch k {
         case .stars: "sparkles"
@@ -124,7 +158,7 @@ struct SkinLayerStage: View {
             ZStack {
                 LinearGradient(colors: [theme.windowTop, theme.windowBottom], startPoint: .top, endPoint: .bottom)
                 if let art = theme.art {
-                    SkinFillView(art: art, fill: skin.manifest.window.background, layers: liveLayers, energy: { 0.4 })
+                    SkinFillView(art: art, fill: areaFill, layers: liveLayers, energy: { 0.4 })
                 }
                 if usesPoints {
                     ForEach(Array(points.enumerated()), id: \.offset) { i, p in
@@ -184,8 +218,10 @@ struct SkinLayerStage: View {
 
     private func update(_ i: Int, _ change: (inout SkinManifest.Layer) -> Void) {
         var m = skin.manifest
-        guard m.window.layers.indices.contains(i) else { return }
-        change(&m.window.layers[i])
+        var list = Self.layers(of: m, area)
+        guard list.indices.contains(i) else { return }
+        change(&list[i])
+        Self.setLayers(list, in: &m, area)
         save(m)
     }
 
@@ -202,9 +238,10 @@ struct SkinLayerStage: View {
             new.image = file; new.motion = "float"; new.intensity = 1; new.react = false
             new.points = [.init(x: 0.5, y: 0.5, r: 0.12)]
         }
-        m.window.layers.append(new)
+        let list = Self.layers(of: m, area) + [new]
+        Self.setLayers(list, in: &m, area)
         save(m)
-        selected = m.window.layers.count - 1
+        selected = list.count - 1
         selectedPoint = new.points.isEmpty ? nil : 0
     }
 
@@ -232,10 +269,12 @@ struct SkinLayerStage: View {
 
     private func removeLayer(_ i: Int) {
         var m = skin.manifest
-        guard m.window.layers.indices.contains(i) else { return }
-        m.window.layers.remove(at: i)
+        var list = Self.layers(of: m, area)
+        guard list.indices.contains(i) else { return }
+        list.remove(at: i)
+        Self.setLayers(list, in: &m, area)
         save(m)
-        selected = max(0, min(selected, m.window.layers.count - 1))
+        selected = max(0, min(selected, list.count - 1))
         selectedPoint = nil
     }
 }

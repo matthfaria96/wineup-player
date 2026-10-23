@@ -78,12 +78,11 @@ enum LayerArt {
 
     /// Estrelas que pulsam: halo, núcleo e quatro raios que giram devagar.
     static func stars(_ ctx: inout GraphicsContext, _ size: CGSize, _ t: Double, _ e: Double, _ layer: SkinManifest.Layer, salt: Int) {
-        var points = layer.points
-        if points.isEmpty {
-            points = (0..<(layer.count ?? 30)).map {
-                SkinManifest.Point(x: Scenes.rnd($0, 300 + salt), y: Scenes.rnd($0, 301 + salt), r: 0.004 + Scenes.rnd($0, 302 + salt) * 0.01)
-            }
-        }
+        // Estrelas espalhadas (count; 30 se não há pontos) + as posicionadas à mão.
+        let scattered = layer.count ?? (layer.points.isEmpty ? 30 : 0)
+        let points = (0..<scattered).map {
+            SkinManifest.Point(x: Scenes.rnd($0, 300 + salt), y: Scenes.rnd($0, 301 + salt), r: 0.004 + Scenes.rnd($0, 302 + salt) * 0.01)
+        } + layer.points
         let tint = color(layer.color, Color(hex: 0xFFF2A0))
         var glow = ctx
         glow.blendMode = .plusLighter
