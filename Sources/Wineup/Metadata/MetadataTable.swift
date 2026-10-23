@@ -12,15 +12,25 @@ struct MetadataTable: View {
         Table(visible, selection: $model.selection, sortOrder: $model.sortOrder,
               columnCustomization: $model.columnCustomization) {
             Group {
-                TableColumn("", value: \.sortConfidence) { row in RowThumb(row: row) }
-                    .width(26)
-                    .customizationID("thumb")
-                    .disabledCustomizationBehavior(.all)
+                // Nome com a capa e o selo de estado embutidos (antes eram uma coluna à parte).
                 TableColumn("Nome do Arquivo", value: \.sortFile) { row in
-                    Text(row.fileName).lineLimit(1).help(row.url.path)
+                    HStack(spacing: 6) {
+                        RowThumb(row: row)
+                        Text(row.fileName).lineLimit(1).help(row.url.path)
+                    }
                 }
-                .width(min: 120, ideal: 210)
+                .width(min: 140, ideal: 236)
                 .customizationID("file")
+                .disabledCustomizationBehavior(.visibility)
+                TableColumn("Duração", value: \.sortDuration) { row in
+                    Text(row.file.duration.map(LyricsBox.time) ?? "").monospacedDigit()
+                }
+                .width(52)
+                .alignment(.trailing)
+                .customizationID("duration")
+                TableColumn("Letra") { row in lyricsFlag(row) }
+                    .width(38)
+                    .customizationID("lyrics")
                 TableColumn("Caminho", value: \.sortPath) { row in
                     Text(row.url.deletingLastPathComponent().path).lineLimit(1).truncationMode(.head).help(row.url.path)
                 }
@@ -45,11 +55,11 @@ struct MetadataTable: View {
                 TableColumn("Álbum", value: \.sortAlbum) { row in cell(row, "album") }
                     .width(min: 70, ideal: 140)
                     .customizationID("album")
+            }
+            Group {
                 TableColumn("Disco", value: \.sortDisc) { row in cell(row, "discNumber").monospacedDigit() }
                     .width(40)
                     .customizationID("disc")
-            }
-            Group {
                 TableColumn("Ano", value: \.sortYear) { row in cell(row, "year").monospacedDigit() }
                     .width(44)
                     .customizationID("year")
@@ -72,21 +82,12 @@ struct MetadataTable: View {
                 TableColumn("Taxa de Amostragem", value: \.sortSampleRate) { row in Text(row.file.tech.sampleRateText) }
                     .width(min: 60, ideal: 80)
                     .customizationID("samplerate")
-                TableColumn("Duração", value: \.sortDuration) { row in
-                    Text(row.file.duration.map(LyricsBox.time) ?? "").monospacedDigit()
-                }
-                .width(52)
-                .alignment(.trailing)
-                .customizationID("duration")
                 TableColumn("Tamanho", value: \.file.size) { row in
                     Text(ByteCountFormatter.string(fromByteCount: row.file.size, countStyle: .file)).monospacedDigit()
                 }
                 .width(min: 56, ideal: 66)
                 .alignment(.trailing)
                 .customizationID("size")
-                TableColumn("Letra") { row in lyricsFlag(row) }
-                    .width(38)
-                    .customizationID("lyrics")
             }
             TableColumn("Confiança", value: \.sortConfidence) { row in ConfidenceBadge(row: row) }
                 .width(min: 70, ideal: 90)

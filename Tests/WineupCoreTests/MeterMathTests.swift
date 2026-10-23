@@ -63,3 +63,13 @@ private func sine(_ hz: Double, rate: Double = 44_100, count: Int = 1024) -> [Fl
     for _ in 0..<60 { _ = m.next(rms: 0, dt: dt) }
     #expect(m.value == 0)
 }
+
+/// Forma de onda: trecho forte mais alto que o calmo, silêncio zerado, e a mesma ordem vale para música baixa.
+@Test func waveformFollowsLoudness() {
+    let loud = Waveform.heights([-30, -18, -9, -60])
+    #expect(loud[2] > loud[1] && loud[1] > loud[0] && loud[3] == 0)
+    let quiet = Waveform.heights([-40, -32, -26])
+    #expect(quiet[2] > quiet[1] && quiet[1] > quiet[0])
+    let b = Waveform.buckets(meanSquares: [1, 1, 0.01, 0.01], count: 2)
+    #expect(abs(b[0]) < 0.01 && abs(b[1] + 20) < 0.01)
+}

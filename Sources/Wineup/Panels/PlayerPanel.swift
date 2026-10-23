@@ -21,7 +21,7 @@ struct PlayerPanel: View {
             VStack(alignment: .leading, spacing: 8) {
                 header
                 readout
-                WaveformView(seed: state.currentTrack?.id.seed ?? 0, progress: state.progress, onSeek: state.seek(to:))
+                WaveformView(url: state.currentTrack?.url, progress: state.progress, onSeek: state.seek(to:))
                     .frame(height: 26)
                     .opacity(state.currentTrack == nil ? 0.2 : 1)
                     .allowsHitTesting(state.currentTrack != nil)

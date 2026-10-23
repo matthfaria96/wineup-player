@@ -22,7 +22,8 @@ final class MetadataManagerModel: ObservableObject {
             }
         }
     }
-    static let columnsKey = "metadata.columns.v1"
+    /// v2: Nome com a capa embutida e Duração/Letra logo depois dele (a ordem salva na v1 escondia isso).
+    static let columnsKey = "metadata.columns.v2"
 
     static func loadColumns() -> TableColumnCustomization<MetadataRow> {
         if let data = UserDefaults.standard.data(forKey: columnsKey),
@@ -32,6 +33,14 @@ final class MetadataManagerModel: ObservableObject {
         // Começa como o Mp3tag: técnicas visíveis, extras do Wineup escondidas até o usuário pedir.
         var c = TableColumnCustomization<MetadataRow>()
         for id in ["comment", "composer", "samplerate", "size"] { c[visibility: id] = .hidden }
+        // Quem já tinha escolhido colunas na v1 mantém o que mostrou/escondeu (só a ordem recomeça).
+        if let data = UserDefaults.standard.data(forKey: "metadata.columns.v1"),
+           let old = try? JSONDecoder().decode(TableColumnCustomization<MetadataRow>.self, from: data) {
+            for id in ["path", "tag", "title", "track", "artist", "albumArtist", "album", "disc", "year", "genre", "comment",
+                       "composer", "codec", "bitrate", "samplerate", "duration", "size", "lyrics", "confidence"] {
+                c[visibility: id] = old[visibility: id]
+            }
+        }
         return c
     }
 

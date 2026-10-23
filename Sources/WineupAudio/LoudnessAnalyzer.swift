@@ -59,18 +59,32 @@ public final class LoudnessAnalyzer: @unchecked Sendable {
         return (Int64(size), date.timeIntervalSince1970)
     }
 
-    /// Decodifica em blocos, converte para Float32 não intercalado e passa pelo medidor BS.1770.
+    /// Mede o volume integrado (BS.1770) decodificando o arquivo inteiro.
     static func analyze(_ url: URL) -> LoudnessInfo? {
-        guard let decoder = try? AudioDecoder(url: url), (try? decoder.open()) != nil else { return nil }
+        var meter: LoudnessMeter?
+        let ok = AudioFileReader.read(url) { planar, sampleRate in
+            if meter == nil { meter = LoudnessMeter(sampleRate: sampleRate, channels: planar.count) }
+            meter?.process(planar)
+        }
+        guard ok, let meter, let lufs = meter.integrated() else { return nil }
+        return LoudnessInfo(integrated: lufs, peak: meter.peak)
+    }
+}
+
+/// Lê um arquivo de áudio inteiro em blocos, já em Float32 não intercalado (até 2 canais).
+enum AudioFileReader {
+    /// Chama `body` para cada bloco decodificado. false se o arquivo não pôde ser aberto.
+    @discardableResult
+    static func read(_ url: URL, _ body: ([UnsafeBufferPointer<Float>], Double) -> Void) -> Bool {
+        guard let decoder = try? AudioDecoder(url: url), (try? decoder.open()) != nil else { return false }
         defer { try? decoder.close() }
         let source = decoder.processingFormat
         guard let target = AVAudioFormat(standardFormatWithSampleRate: source.sampleRate,
-                                         channels: min(source.channelCount, 2)) else { return nil }
+                                         channels: min(source.channelCount, 2)) else { return false }
         let converter = source == target ? nil : AVAudioConverter(from: source, to: target)
         let chunk: AVAudioFrameCount = 65_536
         guard let input = AVAudioPCMBuffer(pcmFormat: source, frameCapacity: chunk),
-              let output = AVAudioPCMBuffer(pcmFormat: target, frameCapacity: chunk) else { return nil }
-        var meter = LoudnessMeter(sampleRate: target.sampleRate, channels: Int(target.channelCount))
+              let output = AVAudioPCMBuffer(pcmFormat: target, frameCapacity: chunk) else { return false }
         while true {
             guard (try? decoder.decode(into: input, length: chunk)) != nil, input.frameLength > 0 else { break }
             let buffer: AVAudioPCMBuffer
@@ -89,10 +103,9 @@ public final class LoudnessAnalyzer: @unchecked Sendable {
             }
             guard let data = buffer.floatChannelData else { break }
             let frames = Int(buffer.frameLength)
-            let planar = (0..<Int(buffer.format.channelCount)).map { UnsafeBufferPointer(start: data[$0], count: frames) }
-            meter.process(planar)
+            body((0..<Int(buffer.format.channelCount)).map { UnsafeBufferPointer(start: data[$0], count: frames) },
+                 target.sampleRate)
         }
-        guard let lufs = meter.integrated() else { return nil }
-        return LoudnessInfo(integrated: lufs, peak: meter.peak)
+        return true
     }
 }
