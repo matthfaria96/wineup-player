@@ -139,8 +139,11 @@ struct Theme: Identifiable, Equatable {
     }
 
     /// Fonte dos títulos do skin (ou a do sistema).
+    /// `size` do skin = tamanho de referência para 12 pt (fonte pixel pede menor; serifada pede maior).
     func titleFont(_ size: CGFloat, weight: Font.Weight = .semibold) -> Font {
-        art?.font(art?.manifest.titleFont, size: size * 1.15, fallbackWeight: weight) ?? .system(size: size, weight: weight)
+        guard let art, let ref = art.manifest.titleFont else { return .system(size: size, weight: weight) }
+        let factor = (ref.size ?? 13.8) / 12
+        return art.font(ref, size: size * factor, fallbackWeight: weight) ?? .system(size: size, weight: weight)
     }
 }
 

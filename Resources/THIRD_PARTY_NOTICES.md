@@ -47,6 +47,14 @@ Os clipes CC BY exigem crédito ao autor: os nomes completos estão nas páginas
 
 Moldura, botões e puxador foram desenhados pelo Wineup a partir da pintura.
 
+## Skin embutido "Neon Gótico"
+
+| Item | Autor | Licença | Fonte |
+|---|---|---|---|
+| Press Start 2P (fonte pixel) | CodeMan38 | SIL Open Font License 1.1 (texto em Skins/neon-gotico/OFL-PressStart2P.txt) | https://github.com/google/fonts/tree/main/ofl/pressstart2p |
+
+Personagem, raio, caveiras, corações, fundos, moldura e botões são arte original do Wineup (vetorial, gerada por código).
+
 <!-- versoes:inicio -->
 ## Versões exatas (geradas do Package.resolved a cada build)
 

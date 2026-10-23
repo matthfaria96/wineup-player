@@ -1,0 +1,244 @@
+{
+ "format": "wineup-skin",
+ "version": 1,
+ "id": "neon-gotico",
+ "name": "Neon Gótico",
+ "author": "Wineup",
+ "description": "Preto e rosa choque, scanlines e pixels: uma garota chibi de cabelo rosa com fones, caveiras, corações e um raio de neon que pulsa com a música. Personagem e arte originais do Wineup.",
+ "credits": [
+  {
+   "work": "Press Start 2P (fonte pixel)",
+   "author": "CodeMan38",
+   "license": "SIL Open Font License 1.1",
+   "source": "https://github.com/google/fonts/tree/main/ofl/pressstart2p"
+  }
+ ],
+ "colors": {
+  "windowTop": "#1A0612",
+  "windowBottom": "#070307",
+  "panelFill": "#0D0509E6",
+  "panelBorder": "#FF2D95B3",
+  "text": "#FFE6F4",
+  "mutedText": "#D97FB4",
+  "accent": "#FF2D95",
+  "rowSelection": "#FF2D9533",
+  "currentRow": "#FF6EC7",
+  "lyricsActive": "#FF8AD1",
+  "lyricsIdle": "#F3C6E2CC",
+  "control": "#FF2D95",
+  "artworkTint": "#2A0F22",
+  "display": "#FF4FAE",
+  "buttonText": "#FFD6EC",
+  "buttonTextOn": "#1A0612"
+ },
+ "window": {
+  "background": {
+   "image": "background.jpg",
+   "dim": 0.0
+  },
+  "layers": [
+   {
+    "kind": "stars",
+    "name": "brilhos",
+    "color": "#FF6EC7",
+    "count": 40,
+    "speed": 1.4,
+    "intensity": 0.55
+   },
+   {
+    "kind": "glow",
+    "name": "raio",
+    "points": [
+     {
+      "x": 0.84,
+      "y": 0.5,
+      "r": 0.2
+     }
+    ],
+    "color": "#FF2D95",
+    "speed": 1.6,
+    "intensity": 0.75
+   },
+   {
+    "kind": "image",
+    "name": "caveira",
+    "image": "skull.png",
+    "points": [
+     {
+      "x": 0.12,
+      "y": 0.86,
+      "r": 0.03
+     }
+    ],
+    "motion": "float",
+    "speed": 1.2,
+    "intensity": 0.9,
+    "react": false
+   }
+  ]
+ },
+ "panels": {
+  "default": {
+   "fill": {
+    "image": "panel-dark.jpg",
+    "dim": 0.25
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 10
+  },
+  "playlist": {
+   "fill": {
+    "image": "panel-list.jpg",
+    "dim": 0.15
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 10
+  },
+  "player": {
+   "fill": {
+    "image": "panel-player.jpg",
+    "dim": 0.1,
+    "focusX": 0.5
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 10,
+   "layers": [
+    {
+     "kind": "stars",
+     "name": "brilhos",
+     "color": "#FF6EC7",
+     "count": 12,
+     "speed": 1.5,
+     "intensity": 0.5
+    }
+   ]
+  },
+  "equalizer": {
+   "fill": {
+    "image": "panel-fx.jpg",
+    "dim": 0.3
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 10
+  },
+  "artwork": {
+   "fill": {
+    "image": "panel-dark.jpg",
+    "dim": 0.2
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 10,
+   "layers": [
+    {
+     "kind": "image",
+     "name": "garota",
+     "image": "chibi.png",
+     "points": [
+      {
+       "x": 0.83,
+       "y": 0.9,
+       "r": 0.11
+      }
+     ],
+     "motion": "float",
+     "speed": 1.0,
+     "intensity": 1.0,
+     "react": false
+    }
+   ]
+  },
+  "lyrics": {
+   "fill": {
+    "image": "panel-dark.jpg",
+    "dim": 0.35
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 10,
+   "layers": [
+    {
+     "kind": "glow",
+     "name": "luz",
+     "points": [
+      {
+       "x": 0.5,
+       "y": 0.08,
+       "r": 0.3
+      }
+     ],
+     "color": "#FF2D95",
+     "speed": 1.2,
+     "intensity": 0.3
+    },
+    {
+     "kind": "image",
+     "name": "raio",
+     "image": "bolt.png",
+     "points": [
+      {
+       "x": 0.86,
+       "y": 0.9,
+       "r": 0.05
+      }
+     ],
+     "motion": "pulse",
+     "speed": 1.5,
+     "intensity": 0.85,
+     "react": true
+    }
+   ]
+  }
+ },
+ "controls": {
+  "button": {
+   "image": "button.png",
+   "slice": 14,
+   "width": 7
+  },
+  "buttonOn": {
+   "image": "button-on.png",
+   "slice": 14,
+   "width": 7
+  },
+  "field": {
+   "image": "field.png",
+   "slice": 14,
+   "width": 7
+  },
+  "knob": "knob.png",
+  "knobSize": 22
+ },
+ "display": {
+  "glow": 1.0
+ },
+ "fonts": [
+  "PressStart2P-Regular.ttf"
+ ],
+ "titleFont": {
+  "name": "Press Start 2P",
+  "size": 9
+ }
+}

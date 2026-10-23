@@ -16,14 +16,19 @@ struct SkinsTests {
         return (SkinStore(builtInFolder: Self.builtIns, userFolder: user), user)
     }
 
-    @Test func starryNightIsCompleteAndAllFilesExist() throws {
+    @Test func everyBuiltInSkinIsCompleteAndReadable() throws {
         let (s, user) = store()
         defer { try? FileManager.default.removeItem(at: user.deletingLastPathComponent()) }
-        let skin = try #require(s.skin(SkinStore.defaultID))
-        #expect(skin.builtIn && skin.name == "Noite Estrelada")
-        for file in skin.manifest.referencedFiles {
-            #expect(FileManager.default.fileExists(atPath: skin.file(file).path), "falta \(file)")
+        #expect(s.skins.map(\.id) == ["neon-gotico", "noite-estrelada"])
+        for skin in s.skins {
+            #expect(skin.builtIn)
+            for file in skin.manifest.referencedFiles {
+                #expect(FileManager.default.fileExists(atPath: skin.file(file).path), "falta \(file) em \(skin.id)")
+            }
+            #expect(SkinLegibility.issues(skin.manifest, folder: skin.folder).isEmpty, "texto ilegível em \(skin.id)")
+            #expect(!skin.manifest.credits.isEmpty && !skin.manifest.description.isEmpty)
         }
+        let skin = try #require(s.skin(SkinStore.defaultID))
         let window = skin.manifest.window
         #expect(window.layers.map(\.kind) == [.flow, .swirl, .glow, .stars])
         #expect(window.layers.last?.points.count == 11)
@@ -132,7 +137,7 @@ struct SkinInspectTests {
         let preview = try s.inspect(zip)
         defer { try? FileManager.default.removeItem(at: preview.folder.deletingLastPathComponent()) }
         #expect(preview.name == "Noite Estrelada" && FileManager.default.fileExists(atPath: preview.file("frame.png").path))
-        #expect(s.skins.count == 1 && s.isInstalled(preview.id))
+        #expect(s.skins.count == 2 && s.isInstalled(preview.id))
     }
 }
 
