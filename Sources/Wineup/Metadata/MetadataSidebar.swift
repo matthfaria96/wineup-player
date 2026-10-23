@@ -173,40 +173,62 @@ struct LyricsBox: View {
     @State private var options: [LyricsCandidate] = []
     @State private var searching = false
     @State private var current: String?
+    @State private var showViewer = false
+
+    /// Letras disponíveis para ver, a nova primeiro.
+    private var sources: [LyricsSource] {
+        var out: [LyricsSource] = []
+        if let text = row.lyrics?.text { out.append(LyricsSource(id: "new", title: "Nova (LRCLIB)", text: text)) }
+        if let current { out.append(LyricsSource(id: "lrc", title: "Atual (.lrc)", text: current)) }
+        let embedded = row.file.value("lyrics")
+        if !embedded.isEmpty { out.append(LyricsSource(id: "tag", title: "Embutida", text: embedded)) }
+        return out
+    }
 
     var body: some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 6) {
-                if let l = row.lyrics, let text = l.text {
-                    Text(l.isSynced ? "Nova letra sincronizada (LRCLIB)" : "Nova letra sem sincronia (LRCLIB)")
-                        .font(.system(size: 11, weight: .medium)).foregroundStyle(Color.accentColor)
-                    preview(text)
-                    if row.file.hasSidecarLyrics { Text("Vai substituir o .lrc atual.").font(.system(size: 11)).foregroundStyle(.orange) }
-                } else if let current {
-                    Text("Letra atual (.lrc)").font(.system(size: 11)).foregroundStyle(.secondary)
-                    preview(current)
-                } else if row.file.hasEmbeddedLyrics {
-                    Text("Letra embutida no arquivo.").font(.system(size: 11)).foregroundStyle(.secondary)
+                if let first = sources.first {
+                    let info = LyricsInfo(first.text)
+                    HStack(spacing: 6) {
+                        Text(first.title).font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(first.id == "new" ? Color.accentColor : .secondary)
+                        LyricsKindBadge(info: info)
+                    }
+                    Text(info.summary).font(.system(size: 11)).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if first.id == "new", row.file.hasSidecarLyrics {
+                        Text("Vai substituir o .lrc atual ao salvar.").font(.system(size: 11)).foregroundStyle(.orange)
+                    }
+                    Button { showViewer = true } label: {
+                        Label("Abrir visualizador", systemImage: "music.note.list")
+                    }
+                    .controlSize(.small)
+                    .help("Tocar a música e ver a letra acompanhando")
                 } else {
                     Text("Sem letra.").font(.system(size: 11)).foregroundStyle(.secondary)
                 }
                 HStack {
                     Button(searching ? "Buscando…" : "Buscar letras") { search() }.disabled(searching)
-                    if row.lyrics != nil { Button("Descartar") { model.setLyrics(nil, for: row.id) } }
+                    if row.lyrics != nil { Button("Descartar nova") { model.setLyrics(nil, for: row.id) } }
                 }
                 .controlSize(.small)
                 ForEach(options) { option in
                     Button { model.setLyrics(option, for: row.id) } label: {
-                        HStack {
-                            Image(systemName: option.isSynced ? "clock" : "text.alignleft")
+                        HStack(spacing: 6) {
+                            Image(systemName: option.isSynced ? "clock.fill" : "text.alignleft")
+                                .foregroundStyle(option.isSynced ? Color.green : Color.orange)
                             Text("\(option.title) · \(option.artist)").lineLimit(1)
                             Spacer()
+                            Text(option.isSynced ? "sincronizada" : option.instrumental ? "instrumental" : "estática")
+                                .foregroundStyle(.secondary)
                             Text(option.duration.map { Self.time($0) } ?? "").monospacedDigit()
                         }
                         .font(.system(size: 11))
                     }
                     .buttonStyle(.plain)
                     .disabled(option.text == nil)
+                    .help(option.isSynced ? "Com marcas de tempo: acompanha a música" : "Sem marcas de tempo")
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -217,14 +239,11 @@ struct LyricsBox: View {
             options = []
             current = row.file.hasSidecarLyrics ? try? String(contentsOf: row.file.lyricsURL, encoding: .utf8) : nil
         }
-    }
-
-    private func preview(_ text: String) -> some View {
-        ScrollView {
-            Text(text).font(.system(size: 11, design: .monospaced)).frame(maxWidth: .infinity, alignment: .leading)
-                .textSelection(.enabled)
+        .sheet(isPresented: $showViewer) {
+            LyricsViewer(fileURL: row.url, songTitle: [row.value("artist"), row.value("title")]
+                            .filter { !$0.isEmpty }.joined(separator: " – "),
+                         sources: sources, onWillPlay: { model.pauseMainPlayback?() })
         }
-        .frame(height: 110)
     }
 
     private func search() {

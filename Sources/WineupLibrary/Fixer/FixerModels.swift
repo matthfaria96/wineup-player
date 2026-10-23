@@ -34,6 +34,8 @@ public struct FixerFile: Sendable, Identifiable, Equatable {
     public var size: Int64
     public var hasSidecarLyrics: Bool
     public var hasEmbeddedLyrics: Bool
+    /// true = letra com marcas de tempo, false = estática, nil = sem letra.
+    public var lyricsSynced: Bool?
     public var isWritable: Bool
     public var issues: Set<FixerIssue>
     public var duplicateGroup: Int?
@@ -56,7 +58,7 @@ public struct FixerFile: Sendable, Identifiable, Equatable {
 
 /// Resultado de uma base de metadados para uma faixa.
 public struct MatchCandidate: Sendable, Identifiable, Equatable {
-    public enum Source: String, Sendable { case musicBrainz = "MusicBrainz", acoustID = "AcoustID" }
+    public enum Source: String, Sendable { case musicBrainz = "MusicBrainz", acoustID = "AcoustID", shazam = "Shazam" }
 
     public var id: String { "\(recordingID)/\(releaseID ?? "-")" }
     public var source: Source

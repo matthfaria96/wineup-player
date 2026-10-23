@@ -7,6 +7,7 @@ import WineupLibrary
 final class MetadataManagerModel: ObservableObject {
     static let acoustIDKeyDefaults = "metadata.acoustIDKey"
     static let policyDefaults = "metadata.fillPolicy"
+    static let shazamDefaults = "metadata.useShazam"
 
     @Published private(set) var folder: URL?
     @Published var rows: [MetadataRow] = []
@@ -19,10 +20,16 @@ final class MetadataManagerModel: ObservableObject {
     @Published var policy: FillPolicy {
         didSet { UserDefaults.standard.set(policy.rawValue, forKey: Self.policyDefaults) }
     }
+    @Published var useShazam: Bool {
+        didSet { UserDefaults.standard.set(useShazam, forKey: Self.shazamDefaults) }
+    }
+    @Published private(set) var shazamStatus: ShazamRecognizer.Availability = .unknown
     @Published var acoustIDKey: String {
         didSet { UserDefaults.standard.set(acoustIDKey, forKey: Self.acoustIDKeyDefaults) }
     }
 
+    /// Pausa o player principal antes da prévia do visualizador de letra.
+    var pauseMainPlayback: (() -> Void)?
     private let writer: TagWriter?
     private var work: Task<Void, Never>?
 
@@ -30,6 +37,11 @@ final class MetadataManagerModel: ObservableObject {
         writer = database.map { TagWriter(database: $0, backups: BackupStore()) }
         policy = FillPolicy(rawValue: UserDefaults.standard.string(forKey: Self.policyDefaults) ?? "") ?? .missingOnly
         acoustIDKey = UserDefaults.standard.string(forKey: Self.acoustIDKeyDefaults) ?? ""
+        useShazam = UserDefaults.standard.object(forKey: Self.shazamDefaults) as? Bool ?? true
+    }
+
+    func refreshShazamStatus() {
+        Task { shazamStatus = await ShazamRecognizer.shared.availability }
     }
 
     var fpcalcFound: Bool { AcoustIDClient.fpcalcPath() != nil }
@@ -37,7 +49,8 @@ final class MetadataManagerModel: ObservableObject {
 
     private var fixer: MetadataFixer {
         let key = acoustIDKey.trimmingCharacters(in: .whitespaces)
-        return MetadataFixer(acoustID: key.isEmpty ? nil : AcoustIDClient(apiKey: key))
+        return MetadataFixer(acoustID: key.isEmpty ? nil : AcoustIDClient(apiKey: key),
+                             shazam: useShazam ? ShazamRecognizer.shared : nil)
     }
 
     // MARK: Lista
@@ -249,6 +262,7 @@ final class MetadataManagerModel: ObservableObject {
     }
 
     private func finishWork() {
+        refreshShazamStatus()
         work = nil
         progress = nil
         let ready = rows.filter(\.isDirty).count

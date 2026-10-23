@@ -29,15 +29,18 @@ public struct MetadataFixer: Sendable {
     private let acoustID: AcoustIDClient?
     private let fpcalc: String?
     private let hints: ITunesHintClient?
+    private let shazam: ShazamRecognizer?
 
     public init(musicBrainz: MusicBrainzClient = MusicBrainzClient(), covers: CoverArtClient = CoverArtClient(),
                 lyrics: LRCLibClient = LRCLibClient(), acoustID: AcoustIDClient? = nil,
-                fpcalc: String? = AcoustIDClient.fpcalcPath(), hints: ITunesHintClient? = ITunesHintClient()) {
+                fpcalc: String? = AcoustIDClient.fpcalcPath(), hints: ITunesHintClient? = ITunesHintClient(),
+                shazam: ShazamRecognizer? = nil) {
         self.musicBrainz = musicBrainz; self.covers = covers; self.lyrics = lyrics
-        self.acoustID = acoustID; self.fpcalc = fpcalc; self.hints = hints
+        self.acoustID = acoustID; self.fpcalc = fpcalc; self.hints = hints; self.shazam = shazam
     }
 
     public var canFingerprint: Bool { acoustID != nil && fpcalc != nil }
+    public var canRecognize: Bool { shazam != nil || canFingerprint }
 
     /// O que se sabe para a busca: tags; o que faltar vem do nome do arquivo.
     public static func query(for file: FixerFile) -> (title: String, artist: String, album: String?) {
@@ -50,23 +53,44 @@ public struct MetadataFixer: Sendable {
 
     public func findMatches(for file: FixerFile) async throws -> [MatchCandidate] {
         let q = Self.query(for: file)
-        guard !q.title.isEmpty else { return try await fingerprintMatch(file).map { [$0] } ?? [] }
+        var list = q.title.isEmpty ? [] : try await textMatches(title: q.title, artist: q.artist, album: q.album,
+                                                                duration: file.duration)
+        // Nome/título não bastou: reconhecer pelo som (Shazam, depois AcoustID).
+        if (list.first?.confidence ?? 0) < Self.autoApplyConfidence {
+            if let heard = try await shazamMatch(file) {
+                list.removeAll { $0.id == heard.id }
+                list.insert(heard, at: 0)
+            } else if let byPrint = try await fingerprintMatch(file) {
+                list.insert(byPrint, at: 0)
+            }
+        }
+        return list
+    }
+
+    private func textMatches(title: String, artist: String, album: String?, duration: Double?) async throws -> [MatchCandidate] {
         var list: [MatchCandidate] = []
         var genre: String?
         // Sem álbum no arquivo: a dica do iTunes leva à versão de estúdio no MusicBrainz.
-        if q.album == nil, let hint = try? await hints?.albumHint(title: q.title, artist: q.artist, duration: file.duration) {
+        if album == nil, let hint = try? await hints?.albumHint(title: title, artist: artist, duration: duration) {
             genre = hint.genre
-            list = (try? await musicBrainz.search(title: q.title, artist: q.artist, album: hint.album,
-                                                  duration: file.duration)) ?? []
+            list = (try? await musicBrainz.search(title: title, artist: artist, album: hint.album, duration: duration)) ?? []
             list = list.filter { TextMatch.similarity($0.album ?? "", hint.album) > 0.8 }
         }
-        let general = try await musicBrainz.search(title: q.title, artist: q.artist, album: q.album, duration: file.duration)
+        let general = try await musicBrainz.search(title: title, artist: artist, album: album, duration: duration)
         list += general.filter { g in !list.contains { $0.id == g.id } }
         if let genre { for i in list.indices where list[i].genre == nil { list[i].genre = genre } }
-        if (list.first?.confidence ?? 0) < Self.autoApplyConfidence, let byPrint = try await fingerprintMatch(file) {
-            list.insert(byPrint, at: 0)
-        }
         return list
+    }
+
+    /// O Shazam diz título e artista; o resto (álbum, ano, faixa, capa) vem do MusicBrainz.
+    private func shazamMatch(_ file: FixerFile) async throws -> MatchCandidate? {
+        guard let shazam, let heard = try? await shazam.recognize(file.url) else { return nil }
+        let found = try await textMatches(title: heard.title, artist: heard.artist, album: nil, duration: file.duration)
+        var best = found.first ?? MatchCandidate(source: .shazam, recordingID: "shazam:\(heard.isrc ?? heard.title)",
+                                                 title: heard.title, artist: heard.artist)
+        best.source = .shazam
+        best.confidence = max(best.confidence, 0.9)
+        return best
     }
 
     private func fingerprintMatch(_ file: FixerFile) async throws -> MatchCandidate? {

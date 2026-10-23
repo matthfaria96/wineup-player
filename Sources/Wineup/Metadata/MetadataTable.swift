@@ -29,7 +29,7 @@ struct MetadataTable: View {
             TableColumn("Capa · Letra") { row in
                 HStack(spacing: 6) {
                     flag(row.willHaveCover, pending: row.cover != nil, symbol: "photo")
-                    flag(row.willHaveLyrics, pending: row.lyrics?.text != nil, symbol: "text.quote")
+                    lyricsFlag(row)
                 }
             }
             .width(72)
@@ -64,6 +64,16 @@ struct MetadataTable: View {
         return Text(value)
             .foregroundColor(edited ? .accentColor : .primary)
             .fontWeight(edited ? .semibold : .regular)
+    }
+
+    /// Relógio verde = letra sincronizada; texto laranja = estática; apagado = sem letra.
+    private func lyricsFlag(_ row: MetadataRow) -> some View {
+        let synced = row.lyrics.map(\.isSynced) ?? row.file.lyricsSynced
+        let pending = row.lyrics?.text != nil
+        return Image(systemName: synced == true ? "clock.fill" : synced == false ? "text.alignleft" : "text.quote")
+            .foregroundStyle(pending ? Color.accentColor : synced == true ? .green : synced == false ? .orange : Color.red.opacity(0.75))
+            .opacity(synced == nil ? 0.55 : 1)
+            .help(synced == nil ? "Sem letra" : (synced! ? "Letra sincronizada" : "Letra estática (sem tempo)") + (pending ? " · será gravada" : ""))
     }
 
     private func flag(_ has: Bool, pending: Bool, symbol: String) -> some View {

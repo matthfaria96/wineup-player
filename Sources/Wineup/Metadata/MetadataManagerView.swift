@@ -30,7 +30,10 @@ struct MetadataManagerView: View {
         .sheet(item: Binding(get: { pickerRow.map(PickerID.init) }, set: { pickerRow = $0?.id })) { item in
             MatchPicker(model: model, rowID: item.id)
         }
-        .onAppear { model.openIfNeeded(state.browser.folder) }
+        .onAppear {
+            model.pauseMainPlayback = { [weak state] in if state?.isPlaying == true { state?.pause() } }
+            model.openIfNeeded(state.browser.folder)
+        }
         .frame(minWidth: 900, minHeight: 520)
     }
 
@@ -119,7 +122,14 @@ struct MetadataSettings: View {
                 Text("Substituir também o que já existe").tag(FillPolicy.overwrite)
             }
             .pickerStyle(.radioGroup)
-            Section("Identificar pelo som (AcoustID)") {
+            Section("Reconhecer pelo som (quando o nome não basta)") {
+                Toggle("Usar o Shazam", isOn: $model.useShazam)
+                Text(shazamText)
+                    .font(.caption)
+                    .foregroundStyle(shazamColor)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Section("AcoustID (alternativa livre)") {
                 TextField("Chave de aplicativo", text: $model.acoustIDKey)
                 Text(model.fpcalcFound
                      ? "fpcalc encontrado. Com a chave, músicas sem tags são reconhecidas pelo áudio."
@@ -134,6 +144,20 @@ struct MetadataSettings: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(16)
-        .frame(width: 380)
+        .frame(width: 400)
+        .onAppear { model.refreshShazamStatus() }
+    }
+
+    private var shazamText: String {
+        switch model.shazamStatus {
+        case .unknown: "Envia ao Shazam uma assinatura de 12 s do áudio (não o áudio). Ainda não foi testado nesta sessão."
+        case .available: "Shazam funcionando."
+        case .unavailable(let why): "\(why) Enquanto isso, use o AcoustID abaixo."
+        }
+    }
+
+    private var shazamColor: Color {
+        if case .unavailable = model.shazamStatus { return .orange }
+        return .secondary
     }
 }

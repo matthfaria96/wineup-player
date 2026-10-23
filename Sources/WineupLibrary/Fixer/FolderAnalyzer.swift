@@ -29,6 +29,8 @@ public enum FolderAnalyzer {
             file.hasEmbeddedLyrics = !(snap.fields["lyrics"] ?? "").isEmpty
         }
         file.hasSidecarLyrics = FileManager.default.fileExists(atPath: file.lyricsURL.path)
+        let text = file.hasSidecarLyrics ? try? String(contentsOf: file.lyricsURL, encoding: .utf8) : file.fields["lyrics"]
+        if let text, !text.isEmpty { file.lyricsSynced = LyricsInfo(text).isSynced }
         file.issues = issues(of: file)
         return file
     }

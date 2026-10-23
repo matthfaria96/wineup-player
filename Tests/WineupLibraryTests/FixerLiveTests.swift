@@ -24,3 +24,15 @@ struct FixerLiveTests {
         #expect(m.album == "OK Computer")
     }
 }
+
+@Suite("Shazam ao vivo", .enabled(if: ProcessInfo.processInfo.environment["WINEUP_SHAZAM_FILE"] != nil))
+struct ShazamLiveTests {
+    @Test func recognizeOrReportUnavailable() async throws {
+        let url = URL(fileURLWithPath: ProcessInfo.processInfo.environment["WINEUP_SHAZAM_FILE"]!)
+        let r = ShazamRecognizer()
+        let heard = try await r.recognize(url)
+        let state = await r.availability
+        print("shazam:", heard.map { "\($0.title) | \($0.artist)" } ?? "nil", state)
+        #expect(heard != nil || state != .unknown)
+    }
+}
