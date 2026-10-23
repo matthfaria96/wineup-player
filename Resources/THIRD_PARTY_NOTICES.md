@@ -55,6 +55,14 @@ Moldura, botões e puxador foram desenhados pelo Wineup a partir da pintura.
 
 Personagem chibi, raio, caveiras, corações, fundos, moldura e botões são arte original do Wineup (vetorial, gerada por código). A ilustração artwork.jpg foi feita pelo autor do Wineup.
 
+## Skin embutido "Emoboy"
+
+| Item | Autor | Licença | Fonte |
+|---|---|---|---|
+| Metal Mania (fonte gótica) | Open Window | SIL Open Font License 1.1 (texto em Skins/emoboy/OFL-MetalMania.txt) | https://github.com/google/fonts/tree/main/ofl/metalmania |
+
+A ilustração do encapuzado (artwork.jpg, e o fundo background.jpg derivado dela) foi fornecida pelo autor do Wineup. Metal corroído, telas, moldura, parafusos, botões, cruzes e brilhos são arte original do Wineup, gerada por código.
+
 <!-- versoes:inicio -->
 ## Versões exatas (geradas do Package.resolved a cada build)
 

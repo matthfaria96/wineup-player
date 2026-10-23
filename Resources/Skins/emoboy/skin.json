@@ -1,0 +1,289 @@
+{
+ "format": "wineup-skin",
+ "version": 1,
+ "id": "emoboy",
+ "name": "Emoboy",
+ "author": "Wineup",
+ "description": "Gótico, cyberpunk e sombrio: metal preto corroído em violeta, parafusos, telas com grade roxa, cruzes que brilham no escuro e o encapuzado de máscara olhando de volta. Feito para ouvir no volume máximo, de madrugada.",
+ "credits": [
+  {
+   "work": "Arte do Emoboy (capa e fundo)",
+   "author": "Imagem fornecida pelo autor do Wineup",
+   "license": "Uso no Wineup autorizado pelo autor",
+   "source": "masked.png"
+  },
+  {
+   "work": "Metal Mania (fonte gótica)",
+   "author": "Open Window",
+   "license": "SIL Open Font License 1.1",
+   "source": "https://github.com/google/fonts/tree/main/ofl/metalmania"
+  }
+ ],
+ "colors": {
+  "windowTop": "#160A22",
+  "windowBottom": "#07040B",
+  "panelFill": "#120A1AE6",
+  "panelBorder": "#9D4EDDB3",
+  "text": "#EBD8FF",
+  "mutedText": "#B892E0",
+  "accent": "#B44DFF",
+  "rowSelection": "#7B2CBF66",
+  "currentRow": "#D9A6FF",
+  "lyricsActive": "#D9A6FF",
+  "lyricsIdle": "#C9B2E6CC",
+  "control": "#9D4EDD",
+  "artworkTint": "#120A1A",
+  "display": "#C77DFF",
+  "buttonText": "#E2CCFF",
+  "buttonTextOn": "#FFFFFF",
+  "meterLow": "#9D4EDD",
+  "meterMid": "#E040FB",
+  "meterPeak": "#FF2E63"
+ },
+ "window": {
+  "background": {
+   "image": "background.jpg",
+   "dim": 0.0
+  },
+  "layers": [
+   {
+    "kind": "stars",
+    "name": "chuva roxa",
+    "color": "#C77DFF",
+    "count": 36,
+    "speed": 1.1,
+    "intensity": 0.5
+   },
+   {
+    "kind": "glow",
+    "name": "lua",
+    "points": [
+     {
+      "x": 0.86,
+      "y": 0.12,
+      "r": 0.2
+     }
+    ],
+    "color": "#E2B6FF",
+    "speed": 0.4,
+    "intensity": 0.35
+   },
+   {
+    "kind": "image",
+    "name": "cruz",
+    "image": "cross.png",
+    "points": [
+     {
+      "x": 0.06,
+      "y": 0.84,
+      "r": 0.035
+     }
+    ],
+    "motion": "float",
+    "speed": 0.9,
+    "intensity": 0.9,
+    "react": false
+   }
+  ]
+ },
+ "panels": {
+  "default": {
+   "fill": {
+    "image": "panel-metal.jpg",
+    "dim": 0.0
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 4
+  },
+  "playlist": {
+   "fill": {
+    "image": "panel-screen.jpg",
+    "dim": 0.0
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 4
+  },
+  "player": {
+   "fill": {
+    "image": "panel-metal.jpg",
+    "dim": 0.0
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 4,
+   "layers": [
+    {
+     "kind": "image",
+     "name": "LED",
+     "image": "led.png",
+     "points": [
+      {
+       "x": 0.955,
+       "y": 0.09,
+       "r": 0.02
+      }
+     ],
+     "motion": "pulse",
+     "speed": 1.4,
+     "intensity": 1.0,
+     "react": true
+    },
+    {
+     "kind": "glow",
+     "name": "brilho roxo",
+     "points": [
+      {
+       "x": 0.5,
+       "y": 0.0,
+       "r": 0.45
+      }
+     ],
+     "color": "#B44DFF",
+     "speed": 0.7,
+     "intensity": 0.1
+    }
+   ]
+  },
+  "equalizer": {
+   "fill": {
+    "image": "panel-eq.jpg",
+    "dim": 0.0
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 4,
+   "layers": [
+    {
+     "kind": "glow",
+     "name": "brilho roxo",
+     "points": [
+      {
+       "x": 0.5,
+       "y": 0.0,
+       "r": 0.5
+      }
+     ],
+     "color": "#B44DFF",
+     "speed": 0.7,
+     "intensity": 0.12
+    }
+   ]
+  },
+  "artwork": {
+   "fill": {
+    "image": "panel-metal-dark.jpg",
+    "dim": 0.0
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 4,
+   "layers": [
+    {
+     "kind": "glow",
+     "name": "brilho roxo",
+     "points": [
+      {
+       "x": 0.5,
+       "y": 0.0,
+       "r": 0.45
+      }
+     ],
+     "color": "#B44DFF",
+     "speed": 0.7,
+     "intensity": 0.08
+    }
+   ]
+  },
+  "lyrics": {
+   "fill": {
+    "image": "panel-screen.jpg",
+    "dim": 0.0
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 4,
+   "layers": [
+    {
+     "kind": "glow",
+     "name": "brilho roxo",
+     "points": [
+      {
+       "x": 0.5,
+       "y": 0.06,
+       "r": 0.35
+      }
+     ],
+     "color": "#B44DFF",
+     "speed": 0.7,
+     "intensity": 0.16
+    },
+    {
+     "kind": "image",
+     "name": "cruz",
+     "image": "cross.png",
+     "points": [
+      {
+       "x": 0.92,
+       "y": 0.88,
+       "r": 0.035
+      }
+     ],
+     "motion": "pulse",
+     "speed": 1.2,
+     "intensity": 0.8,
+     "react": true
+    }
+   ]
+  }
+ },
+ "controls": {
+  "button": {
+   "image": "button.png",
+   "slice": 14,
+   "width": 7
+  },
+  "buttonOn": {
+   "image": "button-on.png",
+   "slice": 14,
+   "width": 7
+  },
+  "field": {
+   "image": "field.png",
+   "slice": 14,
+   "width": 7
+  },
+  "knob": "knob.png",
+  "knobSize": 22
+ },
+ "display": {
+  "glow": 0.9
+ },
+ "fonts": [
+  "MetalMania-Regular.ttf"
+ ],
+ "titleFont": {
+  "name": "Metal Mania",
+  "size": 15
+ },
+ "artwork": "artwork.jpg"
+}
