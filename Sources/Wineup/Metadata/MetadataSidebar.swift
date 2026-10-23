@@ -6,9 +6,9 @@ import WineupLibrary
 struct MetadataSidebar: View {
     @ObservedObject var model: MetadataManagerModel
     let onPickMatch: (MetadataRow.ID) -> Void
-    /// O que o painel mostra (e o que "Buscar" procura): dados principais (campos e capa) e letra.
-    @AppStorage("metadata.panel.data") private var showData = true
-    @AppStorage("metadata.panel.lyrics") private var showLyrics = true
+    /// Aba do painel: "Geral" (campos e capa) ou "Letra". O botão Buscar procura o que a aba mostra.
+    enum Tab: String { case general, lyrics }
+    @AppStorage("metadata.panel.tab") private var tab: Tab = .general
 
     var body: some View {
         ScrollView {
@@ -18,44 +18,37 @@ struct MetadataSidebar: View {
                         .transition(.opacity)
                 } else {
                     matchBox(model.selectedRows.count == 1 ? model.selectedRows.first : nil)
-                    switches
-                    if showData {
+                    Picker("Mostrar", selection: $tab.animation(.snappy)) {
+                        Text("Geral").tag(Tab.general)
+                        Text("Letra").tag(Tab.lyrics)
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    switch tab {
+                    case .general:
                         VStack(alignment: .leading, spacing: 10) {
                             fields
                             CoverBox(model: model)
                         }
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                    }
-                    if showLyrics, model.selection.count == 1, let row = model.selectedRows.first {
-                        LyricsBox(model: model, row: row)
-                            .transition(.move(edge: .top).combined(with: .opacity))
+                        .transition(.move(edge: .leading).combined(with: .opacity))
+                    case .lyrics:
+                        Group {
+                            if model.selection.count == 1, let row = model.selectedRows.first {
+                                LyricsBox(model: model, row: row)
+                            } else {
+                                Text("Selecione uma música só para ver, buscar ou escrever a letra.")
+                                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                            }
+                        }
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
                     }
                     actions
                 }
             }
             .padding(12)
-            .animation(.snappy, value: showData)
-            .animation(.snappy, value: showLyrics)
             .animation(.snappy, value: model.selection.isEmpty)
         }
         .background(.background.secondary)
-    }
-
-    private var switches: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Toggle(isOn: $showData) {
-                Label("Dados principais", systemImage: "tag")
-            }
-            .help("Título, artista, álbum e demais campos, e a capa. Ligado: \"Buscar\" procura estes dados.")
-            Toggle(isOn: $showLyrics) {
-                Label("Letra", systemImage: "quote.bubble")
-            }
-            .help("Buscar a letra ou escrever à mão. Ligado: \"Buscar\" procura a letra.")
-        }
-        .toggleStyle(.switch)
-        .controlSize(.small)
-        .font(.system(size: 12))
-        .padding(.horizontal, 4)
     }
 
     private var fields: some View {
@@ -126,9 +119,11 @@ struct MetadataSidebar: View {
                     Text("\(model.selection.count) músicas selecionadas").font(.system(size: 12, weight: .medium))
                 }
                 HStack {
-                    Button(model.isBusy ? "Buscando…" : "Buscar") { model.searchSelection(data: showData, lyrics: showLyrics) }
-                        .disabled(model.isBusy || (!showData && !showLyrics))
-                        .help("Busca o que estiver ligado abaixo: dados principais e/ou letra")
+                    Button(model.isBusy ? "Buscando…" : tab == .lyrics ? "Buscar letra" : "Buscar dados") {
+                        model.searchSelection(data: tab == .general, lyrics: tab == .lyrics)
+                    }
+                    .disabled(model.isBusy)
+                    .help(tab == .lyrics ? "Procura a letra da seleção" : "Procura título, artista, álbum, capa e demais dados da seleção")
                     if let row { Button("Ver resultados…") { onPickMatch(row.id) } }
                 }
                 .controlSize(.small)
