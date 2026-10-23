@@ -251,24 +251,6 @@ struct PlaylistPanel: View {
                     .accessibilityLabel(style.title)
             }
             .frame(height: 22)
-            Menu {
-                let current = UserDefaults.standard.string(forKey: DisplayKeys.theme) ?? SkinStore.defaultID
-                Button { UserDefaults.standard.set(Theme.noneID, forKey: DisplayKeys.theme) } label: {
-                    Label("Sem skin (visual padrão)", systemImage: current == Theme.noneID ? "checkmark" : "circle.slash")
-                }
-                Divider()
-                ForEach(Theme.all) { theme in
-                    Button { UserDefaults.standard.set(theme.id, forKey: DisplayKeys.theme) } label: {
-                        Label(theme.name, systemImage: current == theme.id ? "checkmark" : "paintpalette")
-                    }
-                }
-                Divider()
-                Button("Editar, criar, importar ou exportar skins…") { openWindow(id: "themes") }
-            } label: {
-                Image(systemName: "paintpalette")
-            }
-            .skinMenuChrome(compact: true)
-            .help("Skin")
         }
         .padding(.horizontal, 14)
         .frame(height: 34)

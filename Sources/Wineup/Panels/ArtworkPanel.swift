@@ -10,6 +10,7 @@ struct ArtworkPanel: View {
     @AppStorage(VideoCategoryStore.selectedKey) private var videoCategory = ""
     @ObservedObject private var videoStore = VideoCategoryStore.shared
     @State private var showVideoSettings = false
+    @State private var showPicker = false
     @State private var showInfo = false
 
     private var infoText: some View {
@@ -68,33 +69,15 @@ struct ArtworkPanel: View {
 
     /// Menu no canto da capa: capa, cenas animadas e o submenu de vídeos por categoria.
     private var modeMenu: some View {
-        Menu {
-            pick(.cover, "Capa da Música")
-            pick(.skinArt, "Arte da Skin")
-            Divider()
-            // Animações em cima, vídeos embaixo; o item e a escolha ficam marcados.
-            Menu {
-                ForEach([VisualMode.aurora, .fjord, .city, .universe]) { m in pick(m, m.title) }
-                Divider()
-                ForEach(videoStore.enabled) { c in
-                    Button {
-                        videoCategory = c.id
-                        modeRaw = VisualMode.videos.rawValue
-                    } label: {
-                        Label(c.name, systemImage: mode == .videos && currentVideo?.id == c.id ? "checkmark" : c.symbol)
-                    }
-                }
-                if videoStore.enabled.isEmpty { Text("Nenhuma categoria de vídeo ligada") }
-                Divider()
-                Button { showVideoSettings = true } label: { Label("Configurar categorias…", systemImage: "gearshape") }
-            } label: {
-                Label("Vídeos Personalizados", systemImage: isMotion ? "checkmark" : "film")
-            }
-        } label: {
-            Image(systemName: mode.symbol)
-                .font(.system(size: 11, weight: .semibold))
+        Button { showPicker.toggle() } label: {
+            Image(systemName: mode.symbol).font(.system(size: 11, weight: .semibold))
         }
-        .skinMenuChrome(compact: true)
+        .buttonStyle(SkinButtonStyle(compact: true))
+        .popover(isPresented: $showPicker, arrowEdge: .bottom) {
+            VisualPicker(modeRaw: $modeRaw, videoCategory: $videoCategory, hasSkinArt: true) {
+                DispatchQueue.main.async { showVideoSettings = true }
+            }
+        }
         .help("O que mostrar aqui")
         .overlay(alignment: .leading) {
             Button { showInfo.toggle() } label: { Image(systemName: "info.circle").font(.system(size: 11)) }
@@ -106,7 +89,7 @@ struct ArtworkPanel: View {
         }
         .padding(8)
         .accessibilityLabel("Escolher o que aparece no lugar da capa")
-        .sheet(isPresented: $showVideoSettings) { VideoCategoriesView() }
+        .sheet(isPresented: $showVideoSettings) { MotionLibraryView(modeRaw: $modeRaw, videoCategory: $videoCategory) }
     }
 
     private var currentVideo: VideoCategory? { videoStore.category(videoCategory) ?? videoStore.enabled.first }

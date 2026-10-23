@@ -127,6 +127,22 @@ struct MainView: View {
                 .buttonStyle(SkinButtonStyle(compact: true))
                 .help("Tocar pela barra de menus: fecha a janela e deixa o player no topo do Mac (⌥⌘M)")
                 .accessibilityLabel("Tocar pela barra de menus")
+            // Skin: entre a barra de menus e o layout.
+            SkinMenu(help: "Skin") {
+                Button { themeID = Theme.noneID } label: {
+                    Label("Sem skin (visual padrão)", systemImage: themeID == Theme.noneID ? "checkmark" : "circle.slash")
+                }
+                Divider()
+                ForEach(Theme.all) { skin in
+                    Button { themeID = skin.id } label: {
+                        Label(skin.name, systemImage: themeID == skin.id ? "checkmark" : "paintpalette")
+                    }
+                }
+                Divider()
+                Button("Editar, criar, importar ou exportar skins…") { openWindow(id: "themes") }
+            } label: {
+                Image(systemName: "paintpalette")
+            }
             // Seletor de layout que mostra o modo atual (no Compacto, só o ícone).
             SkinMenu(help: "Layout: Padrão, Compacto ou Completo") {
                 Picker("Layout", selection: $layoutRaw) {
