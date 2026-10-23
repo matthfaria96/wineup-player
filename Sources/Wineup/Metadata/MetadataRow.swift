@@ -28,6 +28,8 @@ struct MetadataRow: Identifiable, Equatable {
     var replaceLyrics = false
     var proposal: FixProposal?
     var status: Status = .idle
+    /// Problemas que o usuário mandou ignorar neste arquivo (não contam e não voltam).
+    var ignored: Set<FixerIssue> = []
 
     var id: String { file.id }
     var url: URL { file.url }
@@ -71,7 +73,7 @@ struct MetadataRow: Identifiable, Equatable {
 
     /// Problemas que continuam depois das alterações pendentes.
     var openIssues: [FixerIssue] {
-        file.issues.filter { issue in
+        file.issues.subtracting(ignored).filter { issue in
             switch issue {
             case .missingTitle: value("title").isEmpty
             case .missingArtist: value("artist").isEmpty

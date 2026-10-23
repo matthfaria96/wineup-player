@@ -9,6 +9,16 @@ struct WaveformView: View {
     @Environment(\.theme) private var theme
 
     var body: some View {
+        content
+            .accessibilityElement()
+            .accessibilityLabel("Posição da música")
+            .accessibilityValue("\(Int((progress * 100).rounded())) por cento")
+            .accessibilityAdjustableAction { direction in
+                onSeek(min(max(progress + (direction == .increment ? 0.05 : -0.05), 0), 1))
+            }
+    }
+
+    private var content: some View {
         GeometryReader { geo in
             Canvas { context, size in
                 let barWidth: CGFloat = 2

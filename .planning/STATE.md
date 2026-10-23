@@ -59,3 +59,14 @@ Nenhuma ainda.
 Última sessão: 2026-10-20
 Parou em: Roadmap criado, aguardando aprovação
 Arquivo de retomada: Nenhum
+
+## Atualização 2026-10-23 (fora das fases: pedidos diretos do usuário)
+
+Feito e testado (189 testes, conferência visual no app):
+- Gerenciador de metadados no estilo Mp3tag: busca por álbum (MusicBrainz, etapa 2 com campos marcáveis e faixas × arquivos por arrasto), procurar capas (Cover Art Archive + iTunes), letras (catálogo principal, reserva NetEase, Musixmatch com token do usuário; a tela não cita fontes), visualizador de .lrc, histórico com desfazer por lote, duplicadas → Lixeira com confirmação, ignorar problemas, colunas técnicas configuráveis.
+- Consentimento antes da primeira consulta online (NET-02).
+- Player: velocidade em menu (0,5×–3×), atalhos clássicos Z X C V B/setas, modo mini sempre por cima, página do artista (Reproduzir tudo/Embaralhar sem repetir single×álbum), VoiceOver nos controles próprios, arrastar painéis por coluna, janela única sem restauração de sessão de janelas.
+- Shazam removido (usuário não quer).
+
+Pendentes conscientes:
+- DISC-02 (ordem de capas com imagem da pasta), UI-02 (formato de skin documentado), SYS-04 (assinatura: sem certificado), SYS-05 (conferir versões nos avisos), NET-01 (liga/desliga por provedor; hoje é um consentimento geral), NET-04 (opção de salvar capa ao lado em vez de embutir).

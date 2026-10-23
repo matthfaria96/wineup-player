@@ -3,6 +3,8 @@ import SwiftUI
 /// Botão de contorno fino, usado nas barras de controle.
 struct ChromeButton<Label: View>: View {
     var isOn = false
+    /// Nome lido pelo VoiceOver quando o rótulo é só um ícone.
+    var spoken: String?
     let action: () -> Void
     @ViewBuilder var label: Label
 
@@ -27,12 +29,39 @@ struct ChromeButton<Label: View>: View {
                 )
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isOn ? .isSelected : [])
+        .modifier(SpokenName(name: spoken))
+    }
+}
+
+private struct SpokenName: ViewModifier {
+    let name: String?
+    func body(content: Content) -> some View {
+        if let name { content.accessibilityLabel(name) } else { content }
     }
 }
 
 extension ChromeButton where Label == Image {
     init(symbol: String, isOn: Bool = false, action: @escaping () -> Void) {
-        self.init(isOn: isOn, action: action) { Image(systemName: symbol) }
+        self.init(isOn: isOn, spoken: Self.spokenName(symbol), action: action) { Image(systemName: symbol) }
+    }
+
+    /// Nome lido pelo VoiceOver para os ícones usados nos controles.
+    static func spokenName(_ symbol: String) -> String {
+        switch symbol {
+        case "backward.fill": "Anterior"
+        case "forward.fill": "Próxima"
+        case "play.fill": "Tocar"
+        case "pause.fill": "Pausar"
+        case "stop.fill": "Parar"
+        case "shuffle": "Aleatório"
+        case "repeat": "Repetir"
+        case "repeat.1": "Repetir uma"
+        case "folder": "Abrir arquivos"
+        case "minus": "Diminuir"
+        case "plus": "Aumentar"
+        default: symbol
+        }
     }
 }
 

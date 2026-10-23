@@ -45,5 +45,18 @@ struct ChromeSlider: View {
                 }
             )
         }
+        // VoiceOver: um controle ajustável (setas para cima/baixo); o nome vem de quem usa.
+        .accessibilityElement()
+        .accessibilityValue(spokenValue)
+        .accessibilityAdjustableAction { direction in
+            let step = (range.upperBound - range.lowerBound) / 20
+            value = min(max(value + (direction == .increment ? step : -step), range.lowerBound), range.upperBound)
+        }
+    }
+
+    private var spokenValue: String {
+        if range.lowerBound < 0 { return String(format: "%+.0f dB", value) }
+        let span = range.upperBound - range.lowerBound
+        return "\(Int(((value - range.lowerBound) / max(span, 0.0001) * 100).rounded())) por cento"
     }
 }

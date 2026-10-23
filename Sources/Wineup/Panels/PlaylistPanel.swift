@@ -6,6 +6,14 @@ struct PlaylistPanel: View {
     @ObservedObject var state: PlayerState
     @ObservedObject var browser: LibraryBrowser
     @Environment(\.theme) private var theme
+    /// Página do artista: lançamento escolhido (nil = todas as músicas).
+    @State private var artistRelease: String?
+
+    private var isArtistPage: Bool { browser.view == .artists && browser.group != nil && state.query.isEmpty }
+
+    private var artistHeader: ArtistHeader {
+        ArtistHeader(state: state, artist: browser.group?.title ?? "", tracks: state.visibleTracks, release: $artistRelease)
+    }
 
     var body: some View {
         Panel(title: "") {
@@ -13,18 +21,24 @@ struct PlaylistPanel: View {
                 NavBar(state: state, browser: browser)
                 Divider().opacity(0.5)
                 titleBlock
-                if browser.group != nil && state.query.isEmpty { groupHeader }
+                if isArtistPage {
+                    backRow
+                    artistHeader
+                } else if browser.group != nil && state.query.isEmpty { groupHeader }
                 if showsColumns { columnHeader }
                 Group {
                     if !state.query.isEmpty {
                         trackList(state.searchResults)
                     } else if browser.showsGroups {
                         LibraryGroupsView(state: state, browser: browser)
+                    } else if isArtistPage {
+                        trackList(artistHeader.listed())
                     } else {
                         trackList(state.visibleTracks)
                     }
                 }
                 .frame(maxHeight: .infinity)
+                .onChange(of: browser.group?.id) { _, _ in artistRelease = nil }
                 footer
             }
         }
@@ -112,6 +126,20 @@ struct PlaylistPanel: View {
         .foregroundStyle(theme.text)
         .padding(.horizontal, 16)
         .padding(.bottom, 8)
+    }
+
+    /// Voltar para a lista de artistas (na página do artista).
+    private var backRow: some View {
+        HStack {
+            Button { browser.closeGroup() } label: {
+                Label(browser.view.title, systemImage: "chevron.left").labelStyle(.titleAndIcon)
+            }
+            .buttonStyle(.borderless)
+            .foregroundStyle(theme.mutedText)
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 4)
     }
 
     private var columnHeader: some View {

@@ -23,7 +23,22 @@ struct LyricsPanel: View {
                                     .foregroundStyle(theme.mutedText)
                                     .padding(.top, 30)
                             }
-                            if isStatusMessage {
+                            if state.lyricsOrigin == .askConsent {
+                                VStack(spacing: 10) {
+                                    Text("Buscar letras online?").font(.system(size: 15, weight: .semibold))
+                                        .foregroundStyle(theme.text)
+                                    Text("Esta faixa não tem letra salva. " + OnlineConsent.whatIsSent)
+                                        .font(.system(size: 11)).foregroundStyle(theme.mutedText)
+                                        .multilineTextAlignment(.center)
+                                    HStack {
+                                        Button("Agora não") { state.answerLyricsConsent(false) }
+                                        Button("Permitir") { state.answerLyricsConsent(true) }.buttonStyle(.borderedProminent)
+                                    }
+                                    .controlSize(.small)
+                                }
+                                .padding(.horizontal, 20)
+                                .padding(.top, 24)
+                            } else if isStatusMessage {
                                 // "Título\nexplicação": título discreto e a explicação menor.
                                 let parts = (state.lyricLines.first ?? "").components(separatedBy: "\n")
                                 VStack(spacing: 6) {
@@ -84,7 +99,7 @@ struct LyricsPanel: View {
     /// "Procurando…" / "Sem letra…" não são letra: aparecem pequenos e discretos.
     private var isStatusMessage: Bool {
         switch state.lyricsOrigin {
-        case .none, .searching: true
+        case .none, .searching, .askConsent: true
         default: false
         }
     }
@@ -100,7 +115,7 @@ struct LyricsPanel: View {
             Button("Salvar .lrc") { state.saveOnlineLyrics() }
                 .buttonStyle(.borderless).font(.system(size: 10))
                 .help("Gravar esta letra como .lrc ao lado da música")
-        case .searching:
+        case .searching, .askConsent:
             EmptyView()
         case .none:
             EmptyView()

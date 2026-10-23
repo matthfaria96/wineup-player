@@ -29,6 +29,8 @@ struct AlbumSearchView: View {
             let q = model.albumQuery
             artist = q.artist
             album = q.album
+            // Consentimento antes de qualquer consulta (inclusive a que adivinha o álbum).
+            guard model.allowOnline() else { dismiss(); return }
             Task {
                 if album.isEmpty, let hint = await model.suggestAlbum() { album = hint }
                 if !artist.isEmpty || !album.isEmpty { search() }
@@ -87,6 +89,7 @@ struct AlbumSearchView: View {
     }
 
     private func search() {
+        guard model.allowOnline() else { dismiss(); return }
         searching = true
         error = nil
         Task {

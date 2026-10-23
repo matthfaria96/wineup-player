@@ -48,7 +48,7 @@ public final class EffectChain: @unchecked Sendable {
     }
 
     public func setRate(_ rate: Float) {
-        timePitch.rate = Self.clamp(rate, 0.5, 2.0, fallback: 1)
+        timePitch.rate = Self.clamp(rate, 0.5, 3.0, fallback: 1)
         // Em 1× o TimePitch não altera nada, mas custa CPU: fica em bypass.
         timePitch.bypass = abs(timePitch.rate - 1) < 0.001
     }

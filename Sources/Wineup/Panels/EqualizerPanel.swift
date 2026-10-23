@@ -102,6 +102,7 @@ struct EqualizerPanel: View {
         VStack(spacing: 4) {
             ChromeSlider(value: value, range: -12...12, axis: .vertical, knobLength: 9, knobThickness: 18)
                 .frame(maxHeight: .infinity)
+                .accessibilityLabel(label == "Pre" ? "Pré-amplificação" : "Equalizador \(label) hertz")
             Text(label)
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(theme.text)

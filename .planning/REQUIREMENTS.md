@@ -27,7 +27,7 @@
 - [x] **SAFE-01**: Toda gravação de tag passa por um único gravador que faz backup antes, verifica depois e registra no diário
 - [x] **SAFE-02**: Toda gravação pode ser desfeita a partir do diário
 - [x] **SAFE-03**: Gravar e reler tags preserva campos desconhecidos, versão de ID3 e capas em FLAC, MP3, M4A, Ogg/Opus e WAV (testado com arquivos de exemplo)
-- [ ] **SAFE-04**: Usuário edita tags simples (título, artista, álbum, faixa, ano, gênero) de uma ou várias faixas, com prévia antes de gravar
+- [x] **SAFE-04**: Usuário edita tags simples (título, artista, álbum, faixa, ano, gênero) de uma ou várias faixas, com prévia antes de gravar
 
 ### Áudio (AUD)
 
@@ -41,63 +41,63 @@
 
 ### Reprodução e fila (PLAY)
 
-- [ ] **PLAY-01**: Usuário monta uma fila, reordena, repete (uma/todas) e embaralha
-- [ ] **PLAY-02**: Usuário cria, salva, renomeia e apaga playlists, e importa/exporta M3U/M3U8
-- [ ] **PLAY-03**: Ao reabrir o app, a fila, a faixa e a posição da última sessão são restauradas
-- [ ] **PLAY-04**: "Reproduzir tudo" de um artista evita repetir a mesma gravação lançada em single e álbum (configurável)
+- [x] **PLAY-01**: Usuário monta uma fila, reordena, repete (uma/todas) e embaralha
+- [x] **PLAY-02**: Usuário cria, salva, renomeia e apaga playlists, e importa/exporta M3U/M3U8
+- [x] **PLAY-03**: Ao reabrir o app, a fila, a faixa e a posição da última sessão são restauradas
+- [x] **PLAY-04**: "Reproduzir tudo" de um artista evita repetir a mesma gravação lançada em single e álbum (configurável)
 
 ### Discografia, capas e letras (DISC)
 
-- [ ] **DISC-01**: Página do artista mostra álbuns, EPs e o álbum "Singles" do app como visões, sem reescrever tags
+- [x] **DISC-01**: Página do artista mostra álbuns, EPs e o álbum "Singles" do app como visões, sem reescrever tags
 - [ ] **DISC-02**: A capa exibida segue a ordem: arte do arquivo, imagem na pasta, capa do lançamento, placeholder — sem gravar nos arquivos
-- [ ] **DISC-03**: Letras embutidas e arquivos `.lrc` são exibidos, com destaque sincronizado quando houver tempo
-- [ ] **DISC-04**: Usuário reproduz tudo ou embaralha a partir da página do artista, com a ordenação ativa visível
+- [x] **DISC-03**: Letras embutidas e arquivos `.lrc` são exibidos, com destaque sincronizado quando houver tempo
+- [x] **DISC-04**: Usuário reproduz tudo ou embaralha a partir da página do artista, com a ordenação ativa visível
 
 ### Navegação da biblioteca (NAV)
 
 - [x] **NAV-01**: Na primeira abertura, o app adiciona e carrega automaticamente a pasta Música do usuário (`~/Music`) como raiz da biblioteca
-- [ ] **NAV-02**: Usuário escolhe como ver a biblioteca: por Álbum, por Banda/Artista, por Pastas, por Estilo (gênero dos metadados; faixas sem gênero ficam em "Sem categoria") ou por Playlists
-- [ ] **NAV-03**: Na visão por Álbum, faixas sem álbum e faixas de álbuns com uma única música aparecem num álbum "Singles" criado pelo app (agrupamento virtual, sem reescrever tags)
-- [ ] **NAV-04**: Na visão de Playlists aparecem as playlists do usuário e uma playlist automática por cor de tag, exibida só quando há ao menos uma faixa com aquela cor; uma opção desativa as playlists de tags
+- [x] **NAV-02**: Usuário escolhe como ver a biblioteca: por Álbum, por Banda/Artista, por Pastas, por Estilo (gênero dos metadados; faixas sem gênero ficam em "Sem categoria") ou por Playlists
+- [x] **NAV-03**: Na visão por Álbum, faixas sem álbum e faixas de álbuns com uma única música aparecem num álbum "Singles" criado pelo app (agrupamento virtual, sem reescrever tags)
+- [x] **NAV-04**: Na visão de Playlists aparecem as playlists do usuário e uma playlist automática por cor de tag, exibida só quando há ao menos uma faixa com aquela cor; uma opção desativa as playlists de tags
 
 ### Perfil do usuário (PROF)
 
-- [ ] **PROF-01**: Playlists, cores de tag atribuídas às faixas, preferências de exibição e presets de EQ ficam salvos num perfil do usuário persistido automaticamente
-- [ ] **PROF-02**: Usuário exporta o perfil para um arquivo e importa um perfil (em outro Mac ou após reinstalar), com prévia do que será importado, sem perder o ecossistema montado
+- [x] **PROF-01**: Playlists, cores de tag atribuídas às faixas, preferências de exibição e presets de EQ ficam salvos num perfil do usuário persistido automaticamente
+- [x] **PROF-02**: Usuário exporta o perfil para um arquivo e importa um perfil (em outro Mac ou após reinstalar), com prévia do que será importado, sem perder o ecossistema montado
 
 ### Interface (UI)
 
-- [ ] **UI-01**: Os painéis atuais (AMP, FX, Playlist, Search, Lyrics, Capa) passam a ser alimentados pelos serviços reais
+- [x] **UI-01**: Os painéis atuais (AMP, FX, Playlist, Search, Lyrics, Capa) passam a ser alimentados pelos serviços reais
 - [ ] **UI-02**: Temas são definidos por um formato de skin próprio documentado; Grafite, Vinho e Verde viram skins embutidas
-- [ ] **UI-03**: Os controles customizados (sliders, botões, listas) funcionam com VoiceOver e teclado
-- [ ] **UI-04**: Disposição, tema e tamanho de janela persistem entre sessões
-- [ ] **UI-05**: Usuário altera o design de exibição da janela e do conteúdo (disposição dos painéis, tema/skin e estilo da lista: compacta, com capas ou em grade) num seletor de exibição
+- [x] **UI-03**: Os controles customizados (sliders, botões, listas) funcionam com VoiceOver e teclado
+- [x] **UI-04**: Disposição, tema e tamanho de janela persistem entre sessões
+- [x] **UI-05**: Usuário altera o design de exibição da janela e do conteúdo (disposição dos painéis, tema/skin e estilo da lista: compacta, com capas ou em grade) num seletor de exibição
 
 ### Sistema e distribuição (SYS)
 
-- [ ] **SYS-01**: Teclas de mídia, Central de Controle e tela de bloqueio controlam a reprodução e mostram a faixa atual
-- [ ] **SYS-02**: Atalhos de teclado clássicos (Z X C V B, espaço, setas) controlam o player
-- [ ] **SYS-03**: Modo mini sempre no topo
+- [x] **SYS-01**: Teclas de mídia, Central de Controle e tela de bloqueio controlam a reprodução e mostram a faixa atual
+- [x] **SYS-02**: Atalhos de teclado clássicos (Z X C V B, espaço, setas) controlam o player
+- [x] **SYS-03**: Modo mini sempre no topo
 - [ ] **SYS-04**: Script de release assina com Developer ID, notariza e gera `.dmg` que abre num Mac limpo
 - [ ] **SYS-05**: Avisos de terceiros listam versões exatas e as bibliotecas LGPL continuam substituíveis no `.app`
 
 ### Library Fixer (FIX)
 
-- [ ] **FIX-01**: Usuário escolhe pastas e o Fixer diagnostica, sem gravar nada: tags ausentes/inconsistentes, capa ausente ou pequena, `.lrc` órfão, duplicatas idênticas
-- [ ] **FIX-02**: Cada correção proposta mostra origem, confiança por campo e o diff antes/depois
-- [ ] **FIX-03**: Usuário aceita tudo, escolhe correções específicas ou corrige manualmente
-- [ ] **FIX-04**: Correção de baixa confiança nunca sobrescreve um campo já preenchido
-- [ ] **FIX-05**: Usuário ignora um problema e ele não reaparece nas próximas análises
-- [ ] **FIX-06**: Um lote aplicado pode ser desfeito por inteiro
-- [ ] **FIX-07**: Duplicatas são só relatadas; remover exige confirmação e vai para a Lixeira
+- [x] **FIX-01**: Usuário escolhe pastas e o Fixer diagnostica, sem gravar nada: tags ausentes/inconsistentes, capa ausente ou pequena, `.lrc` órfão, duplicatas idênticas
+- [x] **FIX-02**: Cada correção proposta mostra origem, confiança por campo e o diff antes/depois
+- [x] **FIX-03**: Usuário aceita tudo, escolhe correções específicas ou corrige manualmente
+- [x] **FIX-04**: Correção de baixa confiança nunca sobrescreve um campo já preenchido
+- [x] **FIX-05**: Usuário ignora um problema e ele não reaparece nas próximas análises
+- [x] **FIX-06**: Um lote aplicado pode ser desfeito por inteiro
+- [x] **FIX-07**: Duplicatas são só relatadas; remover exige confirmação e vai para a Lixeira
 
 ### Provedores online (NET)
 
 - [ ] **NET-01**: Usuário liga, por provedor, consultas a MusicBrainz/Cover Art Archive; o padrão é offline
-- [ ] **NET-02**: Antes do primeiro envio, o app mostra exatamente o que será enviado e pede consentimento
-- [ ] **NET-03**: Identificação por impressão acústica (AcoustID/Chromaprint) sugere o lançamento com confiança, considerando duração e contexto do álbum
+- [x] **NET-02**: Antes do primeiro envio, o app mostra exatamente o que será enviado e pede consentimento
+- [x] **NET-03**: Identificação por impressão acústica (AcoustID/Chromaprint) sugere o lançamento com confiança, considerando duração e contexto do álbum
 - [ ] **NET-04**: Fixer busca capas online e permite escolher entre embutir no arquivo ou salvar ao lado
-- [ ] **NET-05**: Requisições respeitam os limites de cada serviço e podem ser interrompidas e retomadas
+- [x] **NET-05**: Requisições respeitam os limites de cada serviço e podem ser interrompidas e retomadas
 
 ## v2 Requirements
 

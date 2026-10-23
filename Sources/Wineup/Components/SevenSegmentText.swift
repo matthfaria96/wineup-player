@@ -16,6 +16,9 @@ struct SevenSegmentText: View {
                 glyph(ch)
             }
         }
+        .accessibilityElement()
+        .accessibilityLabel(text.hasPrefix("-") ? "Tempo restante" : "Tempo")
+        .accessibilityValue(text.trimmingCharacters(in: CharacterSet(charactersIn: "-")))
     }
 
     @ViewBuilder private func glyph(_ ch: Character) -> some View {

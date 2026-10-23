@@ -115,7 +115,8 @@ final class MetadataManagerModel: ObservableObject {
             let urls = await Task.detached { FolderAnalyzer.audioFiles(in: folder) }.value
             let files = await FolderAnalyzer.analyze(urls)
             guard self.folder == folder else { return }
-            rows = files.map { MetadataRow(file: $0) }
+            let ignored = IgnoredIssuesStore.shared.all()
+            rows = files.map { MetadataRow(file: $0, ignored: ignored[$0.url.path] ?? []) }
             selection = []
             isLoading = false
             let problems = rows.filter { !$0.openIssues.isEmpty }.count
@@ -253,14 +254,23 @@ final class MetadataManagerModel: ObservableObject {
     }
 
     func lyricsOptions(for row: MetadataRow) async -> [LyricsCandidate] {
+        guard allowOnline() else { return [] }
         do { return try await fixer.lyricsOptions(for: row.file, match: row.proposal?.match) } catch {
             message = "Não foi possível buscar letras: \(Self.describe(error))"
             return []
         }
     }
 
+    /// Toda busca online passa por aqui: na primeira vez, pede o consentimento.
+    func allowOnline() -> Bool {
+        if OnlineConsent.ensure() { return true }
+        message = "Consultas online desligadas. Para ligar, abra Opções."
+        return false
+    }
+
     private func run(_ ids: [MetadataRow.ID],
                      _ step: @escaping @MainActor (MetadataManagerModel, MetadataFixer, MetadataRow.ID) async throws -> Void) {
+        guard allowOnline() else { return }
         cancelWork()
         let fixer = fixer
         progress = (0, ids.count)
@@ -355,6 +365,7 @@ final class MetadataManagerModel: ObservableObject {
 
     /// Álbum desconhecido: descobre pela música (título + artista) na busca do iTunes.
     func suggestAlbum() async -> String? {
+        guard OnlineConsent.isGranted else { return nil }
         guard let row = (selectedRows.isEmpty ? rows : selectedRows).first else { return nil }
         let q = MetadataFixer.query(for: row.file)
         return try? await ITunesHintClient().albumHint(title: q.title, artist: q.artist, duration: row.file.duration)?.album
@@ -389,27 +400,112 @@ final class MetadataManagerModel: ObservableObject {
         let targets = (onlySelection ? selectedRows : rows).filter(\.isDirty)
         guard !targets.isEmpty else { message = "Nenhuma alteração para salvar."; return }
         var saved = 0, failed = 0
+        var items: [SaveBatch.Item] = []
         for row in targets {
             guard let i = index(of: row.id) else { continue }
+            var item = SaveBatch.Item(path: row.url.path)
             do {
                 if row.hasTagChanges {
                     guard row.file.isWritable else { throw TagWriterError.unsupportedFormat }
-                    try writer.apply(row.tagChanges, url: row.url)
+                    item.journalID = try writer.apply(row.tagChanges, url: row.url).id
                 }
                 if let text = row.lyrics?.text {
+                    let lrc = row.file.lyricsURL
+                    let backup = row.replaceLyrics ? try history.backupLyrics(of: lrc) : nil
                     _ = try LyricsFileWriter.write(text, for: row.url, replace: row.replaceLyrics)
+                    item.lyricsBackup = backup
+                    item.wroteLyrics = true
                 }
                 var fresh = FolderAnalyzer.read(row.url)
                 fresh.duplicateGroup = row.file.duplicateGroup
                 if fresh.duplicateGroup != nil { fresh.issues.insert(.duplicate) }
-                rows[i] = MetadataRow(file: fresh, proposal: row.proposal, status: .saved)
+                rows[i] = MetadataRow(file: fresh, proposal: row.proposal, status: .saved, ignored: row.ignored)
                 saved += 1
             } catch {
                 rows[i].status = .failed(Self.describe(error))
                 failed += 1
             }
+            if item.journalID != nil || item.wroteLyrics { items.append(item) }
         }
-        message = "\(saved) músicas salvas" + (failed > 0 ? " · \(failed) com erro" : "") + " · backup de cada arquivo guardado"
+        if !items.isEmpty {
+            try? history.add(SaveBatch(folder: folder?.path ?? "", items: items))
+            refreshHistory()
+        }
+        message = "\(saved) músicas salvas" + (failed > 0 ? " · \(failed) com erro" : "")
+            + " · dá para desfazer em Histórico (⌘Z)"
+    }
+
+    // MARK: Problemas ignorados
+
+    /// Ignora problemas nas linhas (todos os abertos, ou só `issue`); fica salvo para as próximas análises.
+    func ignore(_ issue: FixerIssue?, ids: Set<MetadataRow.ID>) {
+        for id in ids {
+            guard let i = index(of: id) else { continue }
+            rows[i].ignored.formUnion(issue.map { [$0] } ?? Set(rows[i].openIssues))
+            try? IgnoredIssuesStore.shared.set(rows[i].ignored, for: rows[i].url.path)
+        }
+    }
+
+    func unignore(ids: Set<MetadataRow.ID>) {
+        for id in ids {
+            guard let i = index(of: id) else { continue }
+            rows[i].ignored = []
+            try? IgnoredIssuesStore.shared.set([], for: rows[i].url.path)
+        }
+    }
+
+    // MARK: Duplicadas
+
+    /// Manda os arquivos para a Lixeira (com o .lrc ao lado, se houver) e tira da lista.
+    func trash(paths: Set<String>) {
+        var moved = 0
+        var failed: [String] = []
+        for path in paths {
+            let url = URL(fileURLWithPath: path)
+            do {
+                try FileManager.default.trashItem(at: url, resultingItemURL: nil)
+                let lrc = url.deletingPathExtension().appendingPathExtension("lrc")
+                if FileManager.default.fileExists(atPath: lrc.path) { try? FileManager.default.trashItem(at: lrc, resultingItemURL: nil) }
+                moved += 1
+            } catch {
+                failed.append(url.lastPathComponent)
+            }
+        }
+        let remaining = rows.filter { !paths.contains($0.url.path) || failed.contains($0.fileName) }
+        let regrouped = FolderAnalyzer.markDuplicates(remaining.map(\.file))
+        rows = zip(remaining, regrouped).map { old, file in
+            var row = old
+            row.file = file
+            return row
+        }
+        selection.subtract(paths)
+        message = "\(moved) arquivo(s) na Lixeira" + (failed.isEmpty ? "" : " · não deu: \(failed.joined(separator: ", "))")
+    }
+
+    // MARK: Histórico e desfazer
+
+    let history = SaveHistoryStore.shared
+    @Published private(set) var batches: [SaveBatch] = []
+
+    func refreshHistory() { batches = history.batches() }
+
+    var lastUndoable: SaveBatch? { batches.first { !$0.undone } }
+
+    /// Desfaz um lote inteiro e relê os arquivos afetados que estão na lista.
+    func undo(_ batch: SaveBatch) {
+        guard let writer else { return }
+        let result = BatchUndo.undo(batch, writer: writer)
+        if result.failed.isEmpty || result.restored > 0 { try? history.markUndone(batch.id) }
+        refreshHistory()
+        let paths = Set(batch.items.map(\.path))
+        for i in rows.indices where paths.contains(rows[i].url.path) {
+            var fresh = FolderAnalyzer.read(rows[i].url)
+            fresh.duplicateGroup = rows[i].file.duplicateGroup
+            if fresh.duplicateGroup != nil { fresh.issues.insert(.duplicate) }
+            rows[i] = MetadataRow(file: fresh, ignored: rows[i].ignored)
+        }
+        message = "\(result.restored) músicas voltaram ao que eram"
+            + (result.failed.isEmpty ? "" : " · não deu para desfazer: \(result.failed.joined(separator: ", ")) (alterado depois por outro programa?)")
     }
 
     static func describe(_ error: Error) -> String {

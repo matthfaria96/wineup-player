@@ -9,6 +9,9 @@ struct MetadataManagerView: View {
     @State private var showSettings = false
     @State private var showAlbumSearch = false
     @State private var showCoverSearch = false
+    @State private var showHistory = false
+    @State private var confirmUndo = false
+    @State private var showDuplicates = false
 
     init(state: PlayerState) {
         self.state = state
@@ -31,12 +34,21 @@ struct MetadataManagerView: View {
         .navigationSubtitle(model.folder.map { NavPlaces.displayPath($0) } ?? "")
         .sheet(isPresented: $showAlbumSearch) { AlbumSearchView(model: model) }
         .sheet(isPresented: $showCoverSearch) { CoverSearchView(model: model) }
+        .sheet(isPresented: $showHistory) { HistoryView(model: model) }
+        .sheet(isPresented: $showDuplicates) { DuplicatesView(model: model) }
+        .confirmationDialog("Desfazer a última gravação?", isPresented: $confirmUndo) {
+            Button("Desfazer") { if let last = model.lastUndoable { model.undo(last) } }
+            Button("Cancelar", role: .cancel) {}
+        } message: {
+            Text("\(model.lastUndoable?.items.count ?? 0) música(s) voltam às tags, capas e letras de antes.")
+        }
         .sheet(item: Binding(get: { pickerRow.map(PickerID.init) }, set: { pickerRow = $0?.id })) { item in
             MatchPicker(model: model, rowID: item.id)
         }
         .onAppear {
             model.pauseMainPlayback = { [weak state] in if state?.isPlaying == true { state?.pause() } }
             model.openIfNeeded(state.browser.folder)
+            model.refreshHistory()
         }
         .frame(minWidth: 900, minHeight: 520)
     }
@@ -80,6 +92,17 @@ struct MetadataManagerView: View {
             }
             .help("Gravar todas as alterações pendentes (com backup)")
             .disabled(model.dirtyCount == 0 || model.isBusy)
+            Button { confirmUndo = model.lastUndoable != nil } label: {
+                Label("Desfazer última gravação", systemImage: "arrow.uturn.backward")
+            }
+            .keyboardShortcut("z", modifiers: .command)
+            .help("Desfazer a última gravação (⌘Z): tags, capas e letras voltam ao que eram")
+            .disabled(model.lastUndoable == nil || model.isBusy)
+            Button { showDuplicates = true } label: { Label("Duplicadas", systemImage: "square.on.square") }
+                .help("Comparar duplicadas e mandar as cópias piores para a Lixeira")
+                .disabled(!model.rows.contains { $0.file.duplicateGroup != nil })
+            Button { showHistory = true } label: { Label("Histórico", systemImage: "clock.arrow.circlepath") }
+                .help("Histórico de gravações, com desfazer por lote")
             Button { showSettings.toggle() } label: { Label("Opções", systemImage: "gearshape") }
                 .popover(isPresented: $showSettings) { MetadataSettings(model: model) }
         }
@@ -139,6 +162,13 @@ struct MetadataSettings: View {
                 Text("Substituir também o que já existe").tag(FillPolicy.overwrite)
             }
             .pickerStyle(.radioGroup)
+            Section("Consultas online") {
+                Toggle("Permitir buscar dados, capas e letras na internet", isOn: Binding(
+                    get: { OnlineConsent.isGranted },
+                    set: { OnlineConsent.answer = $0 ? .granted : .denied }))
+                Text(OnlineConsent.whatIsSent)
+                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
             Section("Letras: conta Musixmatch (opcional)") {
                 SecureField("Token da sua conta", text: $model.musixmatchToken)
                 Text("Usado só quando o catálogo principal não tem a letra. O Musixmatch bloqueia o acesso sem conta.")

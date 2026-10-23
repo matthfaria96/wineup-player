@@ -18,6 +18,7 @@ struct WineupApp: App {
                 .onAppear {
                     appDelegate.onOpen = { [weak state] urls in state?.load(urls: urls) }
                     appDelegate.reopenMain = { [openWindow] in openWindow(id: "main") }
+                    ClassicKeys.install(state: state)
                 }
                 .task { await state.startLibrary() }
         }
@@ -73,8 +74,27 @@ struct WineupApp: App {
                 Button("Anterior") { state.step(by: -1) }.keyboardShortcut(.leftArrow, modifiers: [.command, .option])
                 Button("Parar") { state.stop() }.keyboardShortcut(".")
                 Button("Faixa aleatória") { state.playRandom() }.keyboardShortcut("s", modifiers: [.command, .option])
+                Divider()
+                Button("Mais rápido") { state.changeRate(by: 5) }.keyboardShortcut("=", modifiers: [.command, .option])
+                Button("Mais devagar") { state.changeRate(by: -5) }.keyboardShortcut("-", modifiers: [.command, .option])
+                Button("Velocidade normal") { state.setRate(1) }.keyboardShortcut("0", modifiers: [.command, .option])
+                Divider()
+                // Atalhos de uma tecla (janela principal, fora de campos de texto); só informativos aqui.
+                Section("Atalhos clássicos") {
+                    Button("Z anterior · X tocar · C pausar · V parar · B próxima") {}.disabled(true)
+                    Button("← → 5 segundos · ↑ ↓ volume · espaço tocar/pausar") {}.disabled(true)
+                }
             }
             CommandMenu("Exibição") {
+                Button("Modo mini") {
+                    if NSApp.windows.contains(where: { $0.identifier?.rawValue.hasPrefix("mini") == true && $0.isVisible }) {
+                        MiniMode.exit(openWindow: openWindow)
+                    } else {
+                        MiniMode.enter(openWindow: openWindow)
+                    }
+                }
+                .keyboardShortcut("m", modifiers: [.command, .option])
+                Divider()
                 Picker("Ver pasta por", selection: Binding(get: { state.browser.view }, set: { state.browser.setView($0) })) {
                     ForEach(ViewMode.allCases) { Text($0.title).tag($0) }
                 }
@@ -101,6 +121,13 @@ struct WineupApp: App {
                 .preferredColorScheme(.dark)
         }
         .defaultSize(width: 1240, height: 760)
+        .handlesExternalEvents(matching: [])
+
+        Window("Wineup mini", id: "mini") {
+            MiniPlayerView(state: state) { MiniMode.exit(openWindow: openWindow) }
+        }
+        .windowResizability(.contentSize)
+        .windowStyle(.hiddenTitleBar)
         .handlesExternalEvents(matching: [])
 
         Window("Sobre o Wineup Player", id: "about") {
@@ -147,7 +174,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             for window in NSApp.windows {
                 window.isRestorable = false
                 let id = window.identifier?.rawValue ?? ""
-                if id.hasPrefix("metadata") || id.hasPrefix("about") { window.close() }
+                if id.hasPrefix("metadata") || id.hasPrefix("about") || id.hasPrefix("mini") { window.close() }
             }
         }
     }

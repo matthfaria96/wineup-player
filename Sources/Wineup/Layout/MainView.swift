@@ -89,6 +89,11 @@ struct MainView: View {
             .background(RoundedRectangle(cornerRadius: 7).fill(Color.white.opacity(0.06)))
             .overlay(RoundedRectangle(cornerRadius: 7).stroke(theme.panelBorder, lineWidth: 1))
             Spacer(minLength: 8)
+            Button { MiniMode.enter(openWindow: openWindow) } label: { Image(systemName: "pip") }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .help("Modo mini: barra pequena sempre por cima (⌥⌘M)")
+                .accessibilityLabel("Modo mini")
             // Seletor de layout que mostra o modo atual (no Compacto, só o ícone).
             Menu {
                 Picker("Layout", selection: $layoutRaw) {

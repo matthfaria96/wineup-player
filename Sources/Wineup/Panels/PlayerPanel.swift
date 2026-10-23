@@ -105,20 +105,9 @@ struct PlayerPanel: View {
         HStack(spacing: 8) {
             Image(systemName: "speaker.wave.2.fill").font(.system(size: 10)).foregroundStyle(theme.mutedText)
             ChromeSlider(value: $state.volume, knobThickness: 12).frame(height: 16)
-            // Velocidade: 0,5× a 2× em passos de 0,25 (clique no valor volta a 1×).
-            HStack(spacing: 2) {
-                ChromeButton(symbol: "minus") { state.changeRate(by: -1) }.frame(width: 20)
-                    .disabled(state.playbackRate <= 0.5)
-                Text(Self.rateText(state.playbackRate))
-                    .font(.system(size: 10, weight: .semibold)).monospacedDigit()
-                    .foregroundStyle(state.playbackRate == 1 ? theme.mutedText : theme.accent)
-                    .frame(width: 36)
-                    .contentShape(Rectangle())
-                    .onTapGesture { state.playbackRate = 1 }
-                ChromeButton(symbol: "plus") { state.changeRate(by: 1) }.frame(width: 20)
-                    .disabled(state.playbackRate >= 2)
-            }
-            .help("Velocidade (0,5× a 2×). Clique no valor para voltar a 1×.")
+                .accessibilityLabel("Volume")
+            // Velocidade: botão com o valor; o menu (como o do YouTube) tem slider, − / + e atalhos.
+            SpeedButton(state: state)
             // Lado: L = música inteira na esquerda, • = normal, R = inteira na direita.
             Picker("Lado", selection: $state.side) {
                 Text("L").tag(-1)
@@ -134,8 +123,7 @@ struct PlayerPanel: View {
     }
 
     static func rateText(_ rate: Double) -> String {
-        let text = rate == rate.rounded() ? String(format: "%.0f×", rate) : String(format: "%.2f×", rate)
-        return text.replacingOccurrences(of: ".", with: ",")
+        String(format: "%.2f×", rate).replacingOccurrences(of: ".", with: ",")
     }
 }
 
@@ -146,6 +134,7 @@ private struct LiveMeter: View {
 
     var body: some View {
         LevelMeter(levels: meter.levels)
+            .accessibilityHidden(true)
             .onAppear { meter.start(tap: tap) }
             .onDisappear { meter.stop() }
     }

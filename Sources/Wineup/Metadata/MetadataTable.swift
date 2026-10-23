@@ -102,6 +102,17 @@ struct MetadataTable: View {
             Button("Salvar") { model.selection = ids; model.save(onlySelection: true) }
             Button("Desfazer alterações") { model.selection = ids; model.revertSelection() }
             Divider()
+            Menu("Ignorar problema") {
+                Button("Todos os problemas desta seleção") { model.ignore(nil, ids: ids) }
+                Divider()
+                ForEach(FixerIssue.allCases, id: \.self) { issue in
+                    Button(issue.label) { model.ignore(issue, ids: ids) }
+                }
+            }
+            if model.rows.contains(where: { ids.contains($0.id) && !$0.ignored.isEmpty }) {
+                Button("Voltar a mostrar problemas ignorados") { model.unignore(ids: ids) }
+            }
+            Divider()
             Button("Mostrar no Finder") {
                 NSWorkspace.shared.activateFileViewerSelecting(model.rows.filter { ids.contains($0.id) }.map(\.url))
             }

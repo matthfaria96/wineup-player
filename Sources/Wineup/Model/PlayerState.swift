@@ -38,11 +38,19 @@ final class PlayerState: ObservableObject {
     @Published var playbackRate = PlayerState.saved("playbackRate", 1.0) {
         didSet { audio.setRate(playbackRate); UserDefaults.standard.set(playbackRate, forKey: "playbackRate") }
     }
-    static let rateSteps: [Double] = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
+    /// Faixa e passos da velocidade (menu de velocidade e atalhos).
+    static let rateRange: ClosedRange<Double> = 0.5...3.0
+    static let rateStep = 0.05
+    static let ratePresets: [Double] = [0.75, 1.0, 1.25, 1.5, 2.0, 3.0]
 
-    func changeRate(by step: Int) {
-        let index = Self.rateSteps.firstIndex { abs($0 - playbackRate) < 0.01 } ?? 2
-        playbackRate = Self.rateSteps[min(max(index + step, 0), Self.rateSteps.count - 1)]
+    /// Soma passos de 0,05× (arredondado, dentro de 0,5×...3×).
+    func changeRate(by steps: Int) {
+        setRate(playbackRate + Double(steps) * Self.rateStep)
+    }
+
+    func setRate(_ rate: Double) {
+        let clamped = min(max(rate, Self.rateRange.lowerBound), Self.rateRange.upperBound)
+        playbackRate = (clamped / Self.rateStep).rounded() * Self.rateStep
     }
     /// Fila de reprodução: a lista de onde a música foi tocada (navegar não interrompe a sequência).
     @Published var queue = PlaybackQueue<Track>() {
@@ -592,7 +600,13 @@ final class PlayerState: ObservableObject {
                 let found = lines?.isEmpty == false
                 self.lyricLines = found ? lines! : ["Letra indisponível\nEsta faixa não tem letra salva."]
                 self.lyricsOrigin = found ? .local(synced: timed != nil) : .none
-                if !found, self.lyricsOnline { self.fetchOnlineLyrics(for: track, url: url) }
+                if !found, self.lyricsOnline {
+                    switch OnlineConsent.answer {
+                    case .granted: self.fetchOnlineLyrics(for: track, url: url)
+                    case nil: self.lyricsOrigin = .askConsent
+                    case .denied: break
+                    }
+                }
             }
         }
     }
@@ -616,6 +630,13 @@ final class PlayerState: ObservableObject {
             self.lyricLines = timed.map { $0.lines.map(\.text) } ?? text.split(whereSeparator: \.isNewline).map(String.init)
             self.lyricsOrigin = .online(found, url: url)
         }
+    }
+
+    /// Resposta ao pedido de consentimento mostrado no painel de letras.
+    func answerLyricsConsent(_ granted: Bool) {
+        OnlineConsent.answer = granted ? .granted : .denied
+        if !granted { lyricsOrigin = .none; return }
+        if let track = currentTrack, let url = track.url { fetchOnlineLyrics(for: track, url: url) }
     }
 
     static let noLyricsMessage = "Letra indisponível\nEsta faixa não tem letra salva e não a encontramos no nosso catálogo online."
@@ -644,7 +665,7 @@ final class SelectionModel: ObservableObject {
 
 /// Origem da letra do painel.
 enum LyricsOrigin: Equatable {
-    case none, searching
+    case none, searching, askConsent
     case local(synced: Bool)
     case online(LyricsCandidate, url: URL)
 }
