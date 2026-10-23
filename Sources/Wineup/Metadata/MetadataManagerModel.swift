@@ -22,8 +22,9 @@ final class MetadataManagerModel: ObservableObject {
             }
         }
     }
-    /// v2: Nome com a capa embutida e Duração/Letra logo depois dele (a ordem salva na v1 escondia isso).
-    static let columnsKey = "metadata.columns.v2"
+    /// v3: Nome com a capa e a confiança embutidas; Duração e Letra logo depois; depois Caminho, Título, Artista,
+    /// Álbum e Ano. A ordem salva nas versões anteriores escondia isso; só o mostrar/esconder é aproveitado.
+    static let columnsKey = "metadata.columns.v3"
 
     static func loadColumns() -> TableColumnCustomization<MetadataRow> {
         if let data = UserDefaults.standard.data(forKey: columnsKey),
@@ -34,10 +35,10 @@ final class MetadataManagerModel: ObservableObject {
         var c = TableColumnCustomization<MetadataRow>()
         for id in ["comment", "composer", "samplerate", "size"] { c[visibility: id] = .hidden }
         // Quem já tinha escolhido colunas na v1 mantém o que mostrou/escondeu (só a ordem recomeça).
-        if let data = UserDefaults.standard.data(forKey: "metadata.columns.v1"),
+        if let data = UserDefaults.standard.data(forKey: "metadata.columns.v2") ?? UserDefaults.standard.data(forKey: "metadata.columns.v1"),
            let old = try? JSONDecoder().decode(TableColumnCustomization<MetadataRow>.self, from: data) {
             for id in ["path", "tag", "title", "track", "artist", "albumArtist", "album", "disc", "year", "genre", "comment",
-                       "composer", "codec", "bitrate", "samplerate", "duration", "size", "lyrics", "confidence"] {
+                       "composer", "codec", "bitrate", "samplerate", "duration", "size", "lyrics"] {
                 c[visibility: id] = old[visibility: id]
             }
         }
@@ -48,6 +49,10 @@ final class MetadataManagerModel: ObservableObject {
     @Published private(set) var isLoading = false
     @Published private(set) var progress: (done: Int, total: Int)?
     @Published var message: String?
+    /// Músicas da busca em andamento (ou da última), na ordem: o painel de cards do rodapé mostra estas.
+    @Published private(set) var workIDs: [MetadataRow.ID] = []
+    /// Resumo da última busca, mostrado quando ela termina.
+    @Published var report: SearchReport?
     @Published var policy: FillPolicy {
         didSet { UserDefaults.standard.set(policy.rawValue, forKey: Self.policyDefaults) }
     }
@@ -283,6 +288,7 @@ final class MetadataManagerModel: ObservableObject {
         cancelWork()
         let fixer = fixer
         progress = (0, ids.count)
+        workIDs = ids
         work = Task { [weak self] in
             for (n, id) in ids.enumerated() {
                 guard let self, !Task.isCancelled else { break }
@@ -310,6 +316,25 @@ final class MetadataManagerModel: ObservableObject {
         let review = rows.filter { $0.status == .review }.count
         let lyrics = rows.filter { $0.lyrics?.text != nil }.count
         message = "\(ready) prontas para salvar · \(lyrics) letras encontradas" + (review > 0 ? " · \(review) para revisar (confiança baixa)" : "")
+        let searched = rows.filter { workIDs.contains($0.id) }
+        if !searched.isEmpty { report = SearchReport(searched) }
+    }
+
+    /// Letra escrita à mão (vira um .lrc estático, ou sincronizado se tiver marcas [mm:ss]).
+    func setManualLyrics(_ text: String, for id: MetadataRow.ID) {
+        guard let i = index(of: id) else { return }
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { setLyrics(nil, for: id); return }
+        let synced = trimmed.range(of: #"\[\d{1,2}:\d{2}"#, options: .regularExpression) != nil
+        setLyrics(LyricsCandidate(id: "manual", title: rows[i].value("title"), artist: rows[i].value("artist"),
+                                  duration: rows[i].file.duration, synced: synced ? trimmed : nil, plain: synced ? nil : trimmed),
+                  for: id)
+    }
+
+    /// Busca da seleção conforme os interruptores do painel: dados principais e/ou letra.
+    func searchSelection(data: Bool, lyrics: Bool) {
+        if data { autoFix(onlySelection: true) }
+        if lyrics && !data { fetchLyrics(onlySelection: true) }
     }
 
     // MARK: Letras em lote
@@ -566,5 +591,31 @@ final class MetadataManagerModel: ObservableObject {
         case is URLError: "Sem conexão"
         default: "Erro ao gravar"
         }
+    }
+}
+
+/// O que a última busca conseguiu: completas, parciais (com o que faltou) e sem nada.
+struct SearchReport: Identifiable {
+    struct Partial: Identifiable { let id: String; let name: String; let found: [String]; let missing: [String] }
+
+    let id = UUID()
+    let total: Int
+    let complete: Int
+    let partial: [Partial]
+    let notFound: [String]
+    let review: Int
+    /// "Letra: 4 · Capa: 2" — o que mais faltou, somando as parciais.
+    let missingTotals: [(String, Int)]
+
+    init(_ rows: [MetadataRow]) {
+        total = rows.count
+        complete = rows.filter { $0.isComplete && $0.status != .notFound }.count
+        partial = rows.filter { !$0.isComplete && !$0.foundItems.isEmpty }
+            .map { Partial(id: $0.id, name: $0.fileName, found: $0.foundItems, missing: $0.missingEssentials) }
+        notFound = rows.filter { $0.status == .notFound || ($0.foundItems.isEmpty && !$0.isComplete) }.map(\.fileName)
+        review = rows.filter { $0.status == .review }.count
+        var counts: [String: Int] = [:]
+        for p in partial { for m in p.missing { counts[m, default: 0] += 1 } }
+        missingTotals = counts.sorted { $0.value > $1.value }
     }
 }

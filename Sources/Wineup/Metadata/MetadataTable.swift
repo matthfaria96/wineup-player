@@ -12,16 +12,11 @@ struct MetadataTable: View {
         Table(visible, selection: $model.selection, sortOrder: $model.sortOrder,
               columnCustomization: $model.columnCustomization) {
             Group {
-                // Nome com a capa e o selo de estado embutidos (antes eram uma coluna à parte).
-                TableColumn("Nome do Arquivo", value: \.sortFile) { row in
-                    HStack(spacing: 6) {
-                        RowThumb(row: row)
-                        Text(row.fileName).lineLimit(1).help(row.url.path)
-                    }
-                }
-                .width(min: 140, ideal: 236)
-                .customizationID("file")
-                .disabledCustomizationBehavior(.visibility)
+                // Nome com a capa, o selo de estado, a bolinha de "dados encontrados" e a confiança da busca.
+                TableColumn("Nome do Arquivo", value: \.sortFile) { row in NameCell(row: row) }
+                    .width(min: 160, ideal: 260)
+                    .customizationID("file")
+                    .disabledCustomizationBehavior(.visibility)
                 TableColumn("Duração", value: \.sortDuration) { row in
                     Text(row.file.duration.map(LyricsBox.time) ?? "").monospacedDigit()
                 }
@@ -36,42 +31,42 @@ struct MetadataTable: View {
                 }
                 .width(min: 80, ideal: 150)
                 .customizationID("path")
-                TableColumn("Etiqueta", value: \.file.tech.tagFormat) { row in Text(row.file.tech.tagFormat).lineLimit(1) }
-                    .width(min: 60, ideal: 90)
-                    .customizationID("tag")
                 TableColumn("Título", value: \.sortTitle) { row in cell(row, "title") }
                     .width(min: 80, ideal: 160)
                     .customizationID("title")
+                TableColumn("Artista", value: \.sortArtist) { row in cell(row, "artist") }
+                    .width(min: 70, ideal: 130)
+                    .customizationID("artist")
+                TableColumn("Álbum", value: \.sortAlbum) { row in cell(row, "album") }
+                    .width(min: 70, ideal: 140)
+                    .customizationID("album")
+                TableColumn("Ano", value: \.sortYear) { row in cell(row, "year").monospacedDigit() }
+                    .width(44)
+                    .customizationID("year")
                 TableColumn("Faixa", value: \.sortTrack) { row in cell(row, "trackNumber").monospacedDigit() }
                     .width(40)
                     .alignment(.trailing)
                     .customizationID("track")
-                TableColumn("Artista", value: \.sortArtist) { row in cell(row, "artist") }
-                    .width(min: 70, ideal: 130)
-                    .customizationID("artist")
-                TableColumn("Artista do Álbum", value: \.sortAlbumArtist) { row in cell(row, "albumArtist") }
-                    .width(min: 70, ideal: 130)
-                    .customizationID("albumArtist")
-                TableColumn("Álbum", value: \.sortAlbum) { row in cell(row, "album") }
-                    .width(min: 70, ideal: 140)
-                    .customizationID("album")
-            }
-            Group {
-                TableColumn("Disco", value: \.sortDisc) { row in cell(row, "discNumber").monospacedDigit() }
-                    .width(40)
-                    .customizationID("disc")
-                TableColumn("Ano", value: \.sortYear) { row in cell(row, "year").monospacedDigit() }
-                    .width(44)
-                    .customizationID("year")
                 TableColumn("Gênero", value: \.sortGenre) { row in cell(row, "genre") }
                     .width(min: 60, ideal: 110)
                     .customizationID("genre")
+            }
+            Group {
+                TableColumn("Artista do Álbum", value: \.sortAlbumArtist) { row in cell(row, "albumArtist") }
+                    .width(min: 70, ideal: 130)
+                    .customizationID("albumArtist")
+                TableColumn("Disco", value: \.sortDisc) { row in cell(row, "discNumber").monospacedDigit() }
+                    .width(40)
+                    .customizationID("disc")
                 TableColumn("Comentário", value: \.sortComment) { row in cell(row, "comment") }
                     .width(min: 60, ideal: 110)
                     .customizationID("comment")
                 TableColumn("Compositor", value: \.sortComposer) { row in cell(row, "composer") }
                     .width(min: 60, ideal: 110)
                     .customizationID("composer")
+                TableColumn("Etiqueta", value: \.file.tech.tagFormat) { row in Text(row.file.tech.tagFormat).lineLimit(1) }
+                    .width(min: 60, ideal: 90)
+                    .customizationID("tag")
                 TableColumn("Codec", value: \.file.tech.codec) { row in Text(row.file.tech.codec).lineLimit(1) }
                     .width(min: 60, ideal: 110)
                     .customizationID("codec")
@@ -89,9 +84,6 @@ struct MetadataTable: View {
                 .alignment(.trailing)
                 .customizationID("size")
             }
-            TableColumn("Confiança", value: \.sortConfidence) { row in ConfidenceBadge(row: row) }
-                .width(min: 70, ideal: 90)
-                .customizationID("confidence")
         }
         .font(.system(size: 11))
         .tableStyle(.inset(alternatesRowBackgrounds: true))
@@ -136,126 +128,10 @@ struct MetadataTable: View {
             .fontWeight(edited ? .semibold : .regular)
     }
 
-    /// Relógio verde = letra sincronizada; texto laranja = estática; apagado = sem letra.
+    /// Letra: relógio verde = sincronizada; texto laranja = estática; traço vermelho = sem letra.
+    /// Azul = letra nova, ainda não gravada. Passar o mouse explica.
     private func lyricsFlag(_ row: MetadataRow) -> some View {
-        let synced = row.lyrics.map(\.isSynced) ?? row.file.lyricsSynced
-        let pending = row.lyrics?.text != nil
-        return Image(systemName: synced == true ? "clock.fill" : synced == false ? "text.alignleft" : "text.quote")
-            .foregroundStyle(pending ? Color.accentColor : synced == true ? .green : synced == false ? .orange : Color.red.opacity(0.75))
-            .opacity(synced == nil ? 0.55 : 1)
-            .help(synced == nil ? "Sem letra" : (synced! ? "Letra sincronizada" : "Letra estática (sem tempo)") + (pending ? " · será gravada" : ""))
-    }
-
-}
-
-/// Ícone do estado da linha (problemas, buscando, pronta, salva, erro).
-struct StatusIcon: View {
-    let row: MetadataRow
-
-    var body: some View {
-        Group {
-            switch row.status {
-            case .searching: ProgressView().controlSize(.mini)
-            case .saved: Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-            case .ready: Image(systemName: "pencil.circle.fill").foregroundStyle(Color.accentColor)
-            case .review: Image(systemName: "questionmark.circle.fill").foregroundStyle(.orange)
-            case .notFound: Image(systemName: "minus.circle").foregroundStyle(.secondary)
-            case .failed: Image(systemName: "xmark.circle.fill").foregroundStyle(.red)
-            case .idle:
-                if row.openIssues.isEmpty { Image(systemName: "circle").foregroundStyle(.tertiary) }
-                else { Image(systemName: "exclamationmark.circle").foregroundStyle(.orange) }
-            }
-        }
-        .help(tooltip)
-    }
-
-    private var tooltip: String {
-        let issues = row.openIssues.map(\.label).joined(separator: ", ")
-        return [row.status.label, issues].filter { !$0.isEmpty }.joined(separator: " · ")
-    }
-}
-
-/// Confiança da correspondência (verde ≥ 80 %, laranja abaixo).
-struct ConfidenceBadge: View {
-    let row: MetadataRow
-
-    var body: some View {
-        if let c = row.confidence {
-            HStack(spacing: 4) {
-                Capsule().fill(color(c)).frame(width: 30 * c + 4, height: 5)
-                Text("\(Int((c * 100).rounded()))%").monospacedDigit().foregroundStyle(.secondary)
-            }
-            .help(row.proposal?.match.map { "\($0.source.rawValue): \($0.title) · \($0.artist) · \($0.album ?? "sem álbum")" } ?? "")
-        } else if case .failed(let m) = row.status {
-            Text(m).foregroundStyle(.red).lineLimit(1).help(m)
-        } else if row.status == .notFound {
-            Text("Não encontrada").foregroundStyle(.secondary)
-        }
-    }
-
-    private func color(_ c: Double) -> Color {
-        c >= MetadataFixer.autoApplyConfidence ? .green : c >= 0.6 ? .orange : .red
-    }
-}
-
-/// Miniatura da capa da linha com o estado num selo no canto (como as miniaturas do Mp3tag,
-/// mais o selo: alteração pendente, salva, revisar, problema, erro).
-struct RowThumb: View {
-    let row: MetadataRow
-    @State private var image: NSImage?
-
-    var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            Group {
-                if let image {
-                    Image(nsImage: image).resizable().interpolation(.medium).scaledToFill()
-                } else {
-                    Image(systemName: "music.note").font(.system(size: 9)).foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Color.secondary.opacity(0.15))
-                }
-            }
-            .frame(width: 16, height: 16)
-            .clipShape(RoundedRectangle(cornerRadius: 2))
-            StatusBadge(row: row).offset(x: 4, y: 3)
-        }
-        .frame(width: 20, height: 17)
-        .help(StatusBadge.tooltip(row))
-        .task(id: "\(row.id)|\(row.cover?.data.count ?? -1)|\(row.file.coverBytes)") {
-            image = await ThumbnailCache.shared.thumbnail(for: row)
-        }
-    }
-}
-
-/// Selo de estado (pequeno, sobre a miniatura). Sem selo = nada a fazer.
-struct StatusBadge: View {
-    let row: MetadataRow
-
-    var body: some View {
-        switch row.status {
-        case .searching: ProgressView().controlSize(.mini).scaleEffect(0.6).frame(width: 10, height: 10)
-        case .saved: badge("checkmark", .green)
-        case .ready: badge("pencil", .accentColor)
-        case .review: badge("questionmark", .orange)
-        case .notFound: badge("minus", .gray)
-        case .failed: badge("xmark", .red)
-        case .idle:
-            if !row.openIssues.isEmpty { badge("exclamationmark", .orange) }
-        }
-    }
-
-    private func badge(_ symbol: String, _ color: Color) -> some View {
-        Image(systemName: symbol)
-            .font(.system(size: 6, weight: .black))
-            .foregroundStyle(.white)
-            .frame(width: 10, height: 10)
-            .background(Circle().fill(color))
-            .overlay(Circle().stroke(Color(nsColor: .windowBackgroundColor), lineWidth: 1))
-    }
-
-    static func tooltip(_ row: MetadataRow) -> String {
-        let issues = row.openIssues.map(\.label).joined(separator: ", ")
-        return [row.status.label, issues].filter { !$0.isEmpty }.joined(separator: " · ")
+        LyricsFlag(row: row)
     }
 }
 

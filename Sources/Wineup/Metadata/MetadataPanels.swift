@@ -1,0 +1,202 @@
+import SwiftUI
+import WineupLibrary
+
+/// Barra acima da tabela: a busca trouxe dados; salvar tudo de uma vez ou só ver as alteradas.
+struct SaveBanner: View {
+    @ObservedObject var model: MetadataManagerModel
+
+    var body: some View {
+        let count = model.dirtyCount
+        HStack(spacing: 10) {
+            Image(systemName: "arrow.down.circle.fill").font(.system(size: 16)).foregroundStyle(Color.accentColor)
+                .symbolEffect(.bounce, value: count)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(count == 1 ? "1 música com dados encontrados" : "\(count) músicas com dados encontrados")
+                    .font(.system(size: 12, weight: .semibold))
+                    .contentTransition(.numericText())
+                Text("Deseja salvar todas as alterações? Antes de gravar, o Wineup guarda um backup de cada arquivo.")
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button("Ver alteradas") { withAnimation(.snappy) { model.filter = .changed } }
+                .disabled(model.filter == .changed)
+            Button("Salvar todas") { model.save(onlySelection: false) }
+                .buttonStyle(.borderedProminent)
+                .disabled(model.isBusy)
+        }
+        .controlSize(.small)
+        .padding(.horizontal, 12).padding(.vertical, 8)
+        .background(Color.accentColor.opacity(0.1))
+        .overlay(alignment: .bottom) { Divider() }
+        .animation(.snappy, value: count)
+    }
+}
+
+/// Painel que sobe do rodapé: um card quadrado por música da busca, com capa, nome e estado.
+struct WorkQueuePanel: View {
+    @ObservedObject var model: MetadataManagerModel
+    private let columns = [GridItem(.adaptive(minimum: 92, maximum: 120), spacing: 8)]
+
+    var body: some View {
+        let rows = model.workIDs.compactMap { id in model.rows.first { $0.id == id } }
+        VStack(spacing: 0) {
+            Divider()
+            HStack {
+                Text(model.isBusy ? "Buscando" : "Última busca").font(.system(size: 12, weight: .semibold))
+                Text("\(rows.filter { RowLook($0) != .searching && $0.status != .idle || $0.isDirty }.count) de \(rows.count)")
+                    .font(.system(size: 11)).foregroundStyle(.secondary).monospacedDigit()
+                Spacer()
+                Legend()
+            }
+            .padding(.horizontal, 12).padding(.top, 8).padding(.bottom, 6)
+            ScrollView {
+                LazyVGrid(columns: columns, spacing: 8) {
+                    ForEach(rows) { row in
+                        QueueCard(row: row)
+                            .onTapGesture { model.selection = [row.id] }
+                    }
+                }
+                .padding(.horizontal, 12).padding(.bottom, 10)
+            }
+        }
+        .frame(height: 210)
+        .background(.background.secondary)
+    }
+}
+
+/// Card de uma música da busca.
+private struct QueueCard: View {
+    let row: MetadataRow
+
+    var body: some View {
+        let look = RowLook(row)
+        VStack(spacing: 4) {
+            ZStack(alignment: .topTrailing) {
+                RowThumb(row: row, size: 64)
+                if row.isDirty {
+                    FoundDot(visible: true).offset(x: 4, y: -2)
+                }
+            }
+            Text(row.value("title").isEmpty ? row.fileName : row.value("title"))
+                .font(.system(size: 10, weight: .medium)).lineLimit(1).truncationMode(.middle)
+            Text(caption(look)).font(.system(size: 9)).foregroundStyle(look.color == .yellow ? Color.orange : look.color)
+                .lineLimit(1)
+        }
+        .padding(6)
+        .frame(maxWidth: .infinity)
+        .aspectRatio(1, contentMode: .fit)
+        .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.05)))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(look.color.opacity(look == .searching ? 0.6 : 0.25), lineWidth: 1))
+        .help(RowLook.tooltip(row))
+        .animation(.snappy, value: look)
+    }
+
+    private func caption(_ look: RowLook) -> String {
+        switch look {
+        case .searching: "Buscando…"
+        case .complete: "Completa"
+        case .incomplete: row.isDirty ? "Encontrada · falta salvar" : "Falta: " + row.missingEssentials.joined(separator: ", ")
+        case .review: "Revisar"
+        case .notFound: "Nada encontrado"
+        case .failed: "Erro"
+        }
+    }
+}
+
+/// Legenda das cores dos selos.
+struct Legend: View {
+    var body: some View {
+        HStack(spacing: 10) {
+            item(.green, "checkmark", "Completa")
+            item(.yellow, "exclamationmark", "Falta algo")
+            item(.orange, "questionmark", "Revisar")
+            item(.red, "minus", "Nada encontrado")
+            HStack(spacing: 3) { FoundDot(visible: true); Text("Encontrado, falta salvar") }
+        }
+        .font(.system(size: 10))
+        .foregroundStyle(.secondary)
+    }
+
+    private func item(_ color: Color, _ symbol: String, _ text: String) -> some View {
+        HStack(spacing: 3) {
+            Image(systemName: symbol).font(.system(size: 6, weight: .black))
+                .foregroundStyle(color == .yellow ? Color.black.opacity(0.75) : .white)
+                .frame(width: 10, height: 10).background(Circle().fill(color))
+            Text(text)
+        }
+    }
+}
+
+/// Resumo ao terminar a busca: o que veio completo, o que veio pela metade (e o que faltou), o que não veio.
+struct SearchReportView: View {
+    let report: SearchReport
+    @ObservedObject var model: MetadataManagerModel
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 10) {
+                Image(systemName: report.notFound.isEmpty && report.partial.isEmpty ? "checkmark.seal.fill" : "list.bullet.clipboard")
+                    .font(.system(size: 26)).foregroundStyle(Color.accentColor)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Busca concluída").font(.title3.weight(.semibold))
+                    Text("\(report.total) músicas verificadas").foregroundStyle(.secondary)
+                }
+            }
+            HStack(spacing: 10) {
+                stat("\(report.complete)", "completas", .green)
+                stat("\(report.partial.count)", "parciais", .yellow)
+                stat("\(report.notFound.count)", "sem resultado", .red)
+                if report.review > 0 { stat("\(report.review)", "para revisar", .orange) }
+            }
+            if !report.missingTotals.isEmpty {
+                Text("O que não foi encontrado: " + report.missingTotals.map { "\($0.0) (\($0.1))" }.joined(separator: " · "))
+                    .font(.system(size: 12)).foregroundStyle(.secondary)
+            }
+            if !report.partial.isEmpty || !report.notFound.isEmpty {
+                List {
+                    if !report.partial.isEmpty {
+                        Section("Parciais") {
+                            ForEach(report.partial) { p in
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(p.name).lineLimit(1)
+                                    Text("Encontrado: \(p.found.joined(separator: ", "))").foregroundStyle(.green)
+                                    Text("Faltou: \(p.missing.joined(separator: ", "))").foregroundStyle(.orange)
+                                }
+                                .font(.system(size: 11))
+                            }
+                        }
+                    }
+                    if !report.notFound.isEmpty {
+                        Section("Sem resultado") {
+                            ForEach(report.notFound, id: \.self) { Text($0).font(.system(size: 11)).foregroundStyle(.red) }
+                        }
+                    }
+                }
+                .frame(minHeight: 160, maxHeight: 280)
+            }
+            HStack {
+                Text("Nada foi gravado ainda.").font(.system(size: 11)).foregroundStyle(.secondary)
+                Spacer()
+                Button("Fechar") { dismiss() }.keyboardShortcut(.cancelAction)
+                if model.dirtyCount > 0 {
+                    Button("Salvar todas (\(model.dirtyCount))") { model.save(onlySelection: false); dismiss() }
+                        .keyboardShortcut(.defaultAction)
+                        .buttonStyle(.borderedProminent)
+                }
+            }
+        }
+        .padding(20)
+        .frame(width: 520)
+    }
+
+    private func stat(_ value: String, _ label: String, _ color: Color) -> some View {
+        VStack(spacing: 2) {
+            Text(value).font(.title2.weight(.bold)).monospacedDigit().foregroundStyle(color == .yellow ? Color.orange : color)
+            Text(label).font(.system(size: 11)).foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(RoundedRectangle(cornerRadius: 8).fill(color.opacity(0.1)))
+    }
+}

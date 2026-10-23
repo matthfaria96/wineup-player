@@ -12,6 +12,7 @@ struct MetadataManagerView: View {
     @State private var showHistory = false
     @State private var confirmUndo = false
     @State private var showDuplicates = false
+    @State private var showQueue = false
 
     init(state: PlayerState) {
         self.state = state
@@ -23,10 +24,18 @@ struct MetadataManagerView: View {
             MetadataSidebar(model: model, onPickMatch: { pickerRow = $0 })
                 .frame(minWidth: 250, idealWidth: 280, maxWidth: 360)
             VStack(spacing: 0) {
+                if model.dirtyCount > 0 && !model.isBusy {
+                    SaveBanner(model: model).transition(.move(edge: .top).combined(with: .opacity))
+                }
                 MetadataTable(model: model, onPickMatch: { pickerRow = $0 })
+                if showQueue && !model.workIDs.isEmpty {
+                    WorkQueuePanel(model: model).transition(.move(edge: .bottom).combined(with: .opacity))
+                }
                 Divider()
                 statusBar
             }
+            .animation(.snappy, value: model.dirtyCount > 0 && !model.isBusy)
+            .animation(.snappy, value: showQueue)
             .frame(minWidth: 560)
         }
         .toolbar { toolbar }
@@ -36,6 +45,9 @@ struct MetadataManagerView: View {
         .sheet(isPresented: $showCoverSearch) { CoverSearchView(model: model) }
         .sheet(isPresented: $showHistory) { HistoryView(model: model) }
         .sheet(isPresented: $showDuplicates) { DuplicatesView(model: model) }
+        .sheet(item: $model.report) { SearchReportView(report: $0, model: model) }
+        // A busca começa: o painel de cards sobe sozinho; ao terminar, fica até o usuário fechar.
+        .onChange(of: model.isBusy) { _, busy in if busy { showQueue = true } }
         .confirmationDialog("Desfazer a última gravação?", isPresented: $confirmUndo) {
             Button("Desfazer") { if let last = model.lastUndoable { model.undo(last) } }
             Button("Cancelar", role: .cancel) {}
@@ -132,7 +144,23 @@ struct MetadataManagerView: View {
                 .monospacedDigit()
                 .help("Seleção e total: quantidade (duração | tamanho)")
             Spacer()
-            if let p = model.progress {
+            if !model.workIDs.isEmpty {
+                Button { showQueue.toggle() } label: {
+                    HStack(spacing: 6) {
+                        if let p = model.progress {
+                            ProgressView(value: Double(p.done), total: Double(max(p.total, 1))).frame(width: 140)
+                            Text("\(p.done) de \(p.total)").monospacedDigit()
+                        } else if let m = model.message {
+                            Text(m).lineLimit(1)
+                        }
+                        Image(systemName: "chevron.up").rotationEffect(.degrees(showQueue ? 180 : 0))
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(showQueue ? "Esconder as músicas da busca" : "Ver cada música da busca e o estado dela")
+                if model.progress != nil { Button("Parar") { model.cancelWork() }.controlSize(.small) }
+            } else if let p = model.progress {
                 ProgressView(value: Double(p.done), total: Double(max(p.total, 1)))
                     .frame(width: 140)
                 Text("\(p.done) de \(p.total)").monospacedDigit()

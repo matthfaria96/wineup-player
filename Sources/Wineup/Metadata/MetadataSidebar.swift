@@ -6,25 +6,56 @@ import WineupLibrary
 struct MetadataSidebar: View {
     @ObservedObject var model: MetadataManagerModel
     let onPickMatch: (MetadataRow.ID) -> Void
+    /// O que o painel mostra (e o que "Buscar" procura): dados principais (campos e capa) e letra.
+    @AppStorage("metadata.panel.data") private var showData = true
+    @AppStorage("metadata.panel.lyrics") private var showLyrics = true
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
                 if model.selection.isEmpty {
                     CollectionSummary(model: model)
+                        .transition(.opacity)
                 } else {
-                    fields
-                    CoverBox(model: model)
-                    if model.selection.count == 1, let row = model.selectedRows.first {
-                        matchBox(row)
+                    matchBox(model.selectedRows.count == 1 ? model.selectedRows.first : nil)
+                    switches
+                    if showData {
+                        VStack(alignment: .leading, spacing: 10) {
+                            fields
+                            CoverBox(model: model)
+                        }
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                    }
+                    if showLyrics, model.selection.count == 1, let row = model.selectedRows.first {
                         LyricsBox(model: model, row: row)
+                            .transition(.move(edge: .top).combined(with: .opacity))
                     }
                     actions
                 }
             }
             .padding(12)
+            .animation(.snappy, value: showData)
+            .animation(.snappy, value: showLyrics)
+            .animation(.snappy, value: model.selection.isEmpty)
         }
         .background(.background.secondary)
+    }
+
+    private var switches: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Toggle(isOn: $showData) {
+                Label("Dados principais", systemImage: "tag")
+            }
+            .help("Título, artista, álbum e demais campos, e a capa. Ligado: \"Buscar\" procura estes dados.")
+            Toggle(isOn: $showLyrics) {
+                Label("Letra", systemImage: "quote.bubble")
+            }
+            .help("Buscar a letra ou escrever à mão. Ligado: \"Buscar\" procura a letra.")
+        }
+        .toggleStyle(.switch)
+        .controlSize(.small)
+        .font(.system(size: 12))
+        .padding(.horizontal, 4)
     }
 
     private var fields: some View {
@@ -70,19 +101,37 @@ struct MetadataSidebar: View {
         }
     }
 
-    private func matchBox(_ row: MetadataRow) -> some View {
+    /// Primeiro bloco: o que a busca achou para a música (ou o estado da seleção) e o botão de buscar.
+    private func matchBox(_ row: MetadataRow?) -> some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 6) {
-                if let m = row.proposal?.match {
-                    Text("\(m.title) · \(m.artist)").font(.system(size: 12, weight: .medium)).lineLimit(2)
-                    Text([m.album, m.year, m.source.rawValue].compactMap { $0 }.joined(separator: " · "))
-                        .font(.system(size: 11)).foregroundStyle(.secondary)
+                if let row {
+                    HStack(alignment: .top, spacing: 8) {
+                        RowThumb(row: row, size: 36)
+                        VStack(alignment: .leading, spacing: 2) {
+                            if let m = row.proposal?.match {
+                                Text("\(m.title) · \(m.artist)").font(.system(size: 12, weight: .medium)).lineLimit(2)
+                                Text([m.album, m.year, m.source.rawValue].compactMap { $0 }.joined(separator: " · "))
+                                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                            } else {
+                                Text(row.status == .notFound ? "Nada encontrado nas bases." : "Ainda não buscado.")
+                                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                            }
+                            Text(RowLook.tooltip(row)).font(.system(size: 10)).foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
                     ConfidenceBadge(row: row).font(.system(size: 11))
                 } else {
-                    Text(row.status == .notFound ? "Nada encontrado nas bases." : "Ainda não buscado.")
-                        .font(.system(size: 11)).foregroundStyle(.secondary)
+                    Text("\(model.selection.count) músicas selecionadas").font(.system(size: 12, weight: .medium))
                 }
-                Button("Ver resultados…") { onPickMatch(row.id) }.controlSize(.small)
+                HStack {
+                    Button(model.isBusy ? "Buscando…" : "Buscar") { model.searchSelection(data: showData, lyrics: showLyrics) }
+                        .disabled(model.isBusy || (!showData && !showLyrics))
+                        .help("Busca o que estiver ligado abaixo: dados principais e/ou letra")
+                    if let row { Button("Ver resultados…") { onPickMatch(row.id) } }
+                }
+                .controlSize(.small)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         } label: {
@@ -186,6 +235,8 @@ struct LyricsBox: View {
     @State private var searching = false
     @State private var current: String?
     @State private var showViewer = false
+    @State private var editing = false
+    @State private var draft = ""
 
     /// Letras disponíveis para ver, a nova primeiro.
     private var sources: [LyricsSource] {
@@ -222,9 +273,33 @@ struct LyricsBox: View {
                 }
                 HStack {
                     Button(searching ? "Buscando…" : "Buscar letras") { search() }.disabled(searching)
+                    Button(editing ? "Cancelar edição" : "Escrever à mão") {
+                        draft = sources.first?.text ?? ""
+                        withAnimation(.snappy) { editing.toggle() }
+                    }
                     if row.lyrics != nil { Button("Descartar nova") { model.setLyrics(nil, for: row.id) } }
                 }
                 .controlSize(.small)
+                if editing {
+                    VStack(alignment: .leading, spacing: 4) {
+                        TextEditor(text: $draft)
+                            .font(.system(size: 12))
+                            .frame(minHeight: 160)
+                            .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.secondary.opacity(0.3)))
+                        Text("Uma linha por verso. Com marcas como [01:23.45] no início, vira letra sincronizada.")
+                            .font(.system(size: 10)).foregroundStyle(.secondary)
+                        HStack {
+                            Spacer()
+                            Button("Usar esta letra") {
+                                model.setManualLyrics(draft, for: row.id)
+                                withAnimation(.snappy) { editing = false }
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
+                        .controlSize(.small)
+                    }
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
                 ForEach(options) { option in
                     Button { model.setLyrics(option, for: row.id) } label: {
                         HStack(spacing: 6) {

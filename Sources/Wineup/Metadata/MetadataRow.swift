@@ -71,6 +71,28 @@ struct MetadataRow: Identifiable, Equatable {
     var willHaveCover: Bool { cover != nil || file.hasCover }
     var willHaveLyrics: Bool { lyrics?.text != nil || file.hasLyrics }
 
+    /// Itens essenciais de uma música "ok" que ainda faltam depois das alterações pendentes (nomes visíveis).
+    /// Problema que o usuário mandou ignorar não conta como falta.
+    var missingEssentials: [String] {
+        let checks: [(String, Bool, FixerIssue)] = [
+            ("Título", value("title").isEmpty, .missingTitle), ("Artista", value("artist").isEmpty, .missingArtist),
+            ("Álbum", value("album").isEmpty, .missingAlbum), ("Capa", !willHaveCover, .missingCover),
+            ("Letra", !willHaveLyrics, .missingLyrics),
+        ]
+        return checks.filter { $0.1 && !ignored.contains($0.2) }.map(\.0)
+    }
+
+    /// Título, artista, álbum, capa e letra preenchidos.
+    var isComplete: Bool { missingEssentials.isEmpty }
+
+    /// Itens que a busca trouxe e ainda não foram gravados (nomes visíveis).
+    var foundItems: [String] {
+        var out = edits.keys.sorted().map(MetadataFieldName.label)
+        if cover != nil { out.append("Capa") }
+        if lyrics?.text != nil { out.append("Letra") }
+        return out
+    }
+
     /// Problemas que continuam depois das alterações pendentes.
     var openIssues: [FixerIssue] {
         file.issues.subtracting(ignored).filter { issue in
