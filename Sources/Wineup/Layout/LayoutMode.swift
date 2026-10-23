@@ -23,11 +23,11 @@ enum LayoutMode: String, CaseIterable, Identifiable {
 
     var minSize: (width: Double, height: Double) {
         switch self {
-        // Altura mínima garante a capa quadrada na largura total da coluna (380):
-        // Player 236 + FX 190 + Capa (24 + 12 + 356 + 12 + ~70) + espaçamentos e barra.
-        case .standard: (820, 960)
+        // Altura certa para a capa quadrada na largura da coluna (~380), sem texto embaixo:
+        // Player 236 + FX 190 + Capa (título 24 + moldura + 12 + ~341 + 12) + espaçamentos e barra.
+        case .standard: (820, 888)
         case .compact: (430, 760)
-        case .full: (1160, 960)
+        case .full: (1160, 888)
         }
     }
 

@@ -35,8 +35,8 @@ struct ArtworkPanel: View {
         Panel(title: mode == .cover ? "Capa" : mode == .skinArt ? "Arte" : mode == .videos ? "Vídeo" : "Visual") {
             cover
                 .aspectRatio(1, contentMode: .fit)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(12)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .padding(.horizontal, 12).padding(.top, 4).padding(.bottom, 12)
         }
     }
 

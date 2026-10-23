@@ -179,7 +179,8 @@ extension MainView {
             let top = frame.maxY
             frame.size.width = target
             if mode == .compact { frame.size.height = max(frame.height, 820) }
-            else { frame.size.height = max(frame.height, mode.minSize.height) }
+            // Padrão e Completo: altura exata da coluna da capa, sem sobras acima e abaixo dela.
+            else { frame.size.height = mode.minSize.height }
             frame.origin.y = top - frame.height
             window.setFrame(frame, display: true, animate: true)
         }
