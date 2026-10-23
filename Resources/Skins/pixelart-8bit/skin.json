@@ -1,0 +1,194 @@
+{
+ "format": "wineup-skin",
+ "version": 1,
+ "id": "pixelart-8bit",
+ "name": "Pixelart 8bit",
+ "author": "Wineup",
+ "description": "Aventura em pixel art de 8 bits: masmorra de tijolos verdes, cerca de madeira, botões dourados e corações que batem com a música. Pixels limpos, sem ruído.",
+ "credits": [
+  {
+   "work": "Press Start 2P (fonte pixel)",
+   "author": "CodeMan38",
+   "license": "SIL Open Font License 1.1",
+   "source": "https://github.com/google/fonts/tree/main/ofl/pressstart2p"
+  }
+ ],
+ "colors": {
+  "windowTop": "#13261A",
+  "windowBottom": "#0A140E",
+  "panelFill": "#0D1A12E6",
+  "panelBorder": "#B07A3EB3",
+  "text": "#F4F1DC",
+  "mutedText": "#A9B8E8",
+  "accent": "#F2C443",
+  "rowSelection": "#6E62B855",
+  "currentRow": "#F2C443",
+  "lyricsActive": "#F2C443",
+  "lyricsIdle": "#C9D3F2CC",
+  "control": "#5FB05A",
+  "artworkTint": "#101838",
+  "display": "#7EE07A",
+  "buttonText": "#F4F1DC",
+  "buttonTextOn": "#2A1A04",
+  "meterLow": "#5FB05A",
+  "meterMid": "#F2C443",
+  "meterPeak": "#E83A3A"
+ },
+ "window": {
+  "background": {
+   "image": "background.jpg",
+   "dim": 0.0
+  },
+  "layers": [
+   {
+    "kind": "stars",
+    "name": "vaga-lumes",
+    "color": "#FFF6B0",
+    "count": 14,
+    "speed": 0.8,
+    "intensity": 0.35
+   }
+  ]
+ },
+ "panels": {
+  "default": {
+   "fill": {
+    "image": "panel-dark.jpg",
+    "dim": 0.1
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 4
+  },
+  "playlist": {
+   "fill": {
+    "image": "panel-list.jpg",
+    "dim": 0.0
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 4
+  },
+  "player": {
+   "fill": {
+    "image": "panel-player.jpg",
+    "dim": 0.1
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 4,
+   "layers": [
+    {
+     "kind": "image",
+     "name": "fada",
+     "image": "fairy.png",
+     "points": [
+      {
+       "x": 0.9,
+       "y": 0.12,
+       "r": 0.025
+      }
+     ],
+     "motion": "float",
+     "speed": 1.0,
+     "intensity": 0.8,
+     "react": false
+    }
+   ]
+  },
+  "equalizer": {
+   "fill": {
+    "image": "panel-fx.jpg",
+    "dim": 0.15
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 4
+  },
+  "artwork": {
+   "fill": {
+    "image": "panel-dark.jpg",
+    "dim": 0.1
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 4,
+   "layers": []
+  },
+  "lyrics": {
+   "fill": {
+    "image": "panel-list.jpg",
+    "dim": 0.0
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 4,
+   "layers": [
+    {
+     "kind": "image",
+     "name": "coração",
+     "image": "heart.png",
+     "points": [
+      {
+       "x": 0.88,
+       "y": 0.92,
+       "r": 0.035
+      }
+     ],
+     "motion": "pulse",
+     "speed": 1.2,
+     "intensity": 0.9,
+     "react": true
+    }
+   ]
+  }
+ },
+ "controls": {
+  "button": {
+   "image": "button.png",
+   "slice": 14,
+   "width": 7
+  },
+  "buttonOn": {
+   "image": "button-on.png",
+   "slice": 14,
+   "width": 7
+  },
+  "field": {
+   "image": "field.png",
+   "slice": 14,
+   "width": 7
+  },
+  "knob": "knob.png",
+  "knobSize": 18
+ },
+ "display": {
+  "glow": 0.6
+ },
+ "fonts": [
+  "PressStart2P-Regular.ttf"
+ ],
+ "titleFont": {
+  "name": "Press Start 2P",
+  "size": 9
+ },
+ "artwork": "artwork.jpg"
+}
