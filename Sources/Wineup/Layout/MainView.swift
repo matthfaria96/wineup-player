@@ -83,13 +83,6 @@ struct MainView: View {
     /// A faixa decorada do topo: começa depois dos botões da janela.
     private func headerBar(theme: Theme, compact: Bool) -> some View {
         HStack(spacing: 8) {
-            Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 18, height: 18)
-            if !compact {
-                Text("Wineup Player")
-                    .font(theme.art == nil ? .system(size: 13, weight: .semibold) : theme.titleFont(13, weight: .bold))
-                    .foregroundStyle(theme.text)
-                    .shadow(color: .black.opacity(theme.art == nil ? 0 : 0.7), radius: 2, y: 1)
-            }
             HStack(spacing: 3) {
                 Button { state.browser.goBack() } label: { Image(systemName: "chevron.left").frame(width: 14) }
                     .disabled(state.browser.backStack.isEmpty)

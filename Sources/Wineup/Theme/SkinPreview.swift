@@ -11,7 +11,6 @@ struct SkinPreview: View {
         let theme = Theme(skin)
         VStack(spacing: 6) {
             HStack(spacing: 6) {
-                Text("Wineup Player").font(theme.titleFont(12, weight: .bold)).foregroundStyle(theme.text)
                 Button {} label: { Image(systemName: "chevron.left").frame(width: 12) }.buttonStyle(SkinButtonStyle(compact: true))
                 Button {} label: { Label("Metadados", systemImage: "tag").lineLimit(1).fixedSize() }.buttonStyle(SkinButtonStyle())
                 Spacer()
