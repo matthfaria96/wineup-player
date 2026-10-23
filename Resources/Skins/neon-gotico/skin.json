@@ -148,24 +148,7 @@
     "width": 10
    },
    "cornerRadius": 10,
-   "layers": [
-    {
-     "kind": "image",
-     "name": "garota",
-     "image": "chibi.png",
-     "points": [
-      {
-       "x": 0.83,
-       "y": 0.9,
-       "r": 0.11
-      }
-     ],
-     "motion": "float",
-     "speed": 1.0,
-     "intensity": 1.0,
-     "react": false
-    }
-   ]
+   "layers": []
   },
   "lyrics": {
    "fill": {
@@ -240,5 +223,6 @@
  "titleFont": {
   "name": "Press Start 2P",
   "size": 9
- }
+ },
+ "artwork": "artwork.jpg"
 }

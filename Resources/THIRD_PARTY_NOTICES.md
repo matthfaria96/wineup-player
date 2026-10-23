@@ -53,7 +53,7 @@ Moldura, botões e puxador foram desenhados pelo Wineup a partir da pintura.
 |---|---|---|---|
 | Press Start 2P (fonte pixel) | CodeMan38 | SIL Open Font License 1.1 (texto em Skins/neon-gotico/OFL-PressStart2P.txt) | https://github.com/google/fonts/tree/main/ofl/pressstart2p |
 
-Personagem, raio, caveiras, corações, fundos, moldura e botões são arte original do Wineup (vetorial, gerada por código).
+Personagem chibi, raio, caveiras, corações, fundos, moldura e botões são arte original do Wineup (vetorial, gerada por código). A ilustração artwork.jpg foi feita pelo autor do Wineup.
 
 <!-- versoes:inicio -->
 ## Versões exatas (geradas do Package.resolved a cada build)

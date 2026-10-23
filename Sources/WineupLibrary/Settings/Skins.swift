@@ -27,6 +27,8 @@ public struct SkinManifest: Codable, Equatable, Sendable, Identifiable {
     /// Fonte dos títulos (nome PostScript ou de família) e do texto comum.
     public var titleFont: FontRef?
     public var bodyFont: FontRef?
+    /// Ilustração do skin para o painel da capa (modo "Arte do skin" e música sem capa).
+    public var artwork: String?
 
     public init(id: String, name: String) {
         self.id = id
@@ -196,6 +198,7 @@ public struct SkinManifest: Codable, Equatable, Sendable, Identifiable {
     /// Todos os arquivos que o manifesto cita (para validar e exportar).
     public var referencedFiles: [String] {
         var out = fonts
+        if let artwork { out.append(artwork) }
         if let b = window.background?.image { out.append(b) }
         out += window.layers.compactMap(\.image)
         for p in panels.values {
@@ -439,7 +442,7 @@ private extension KeyedDecodingContainer {
 
 extension SkinManifest {
     enum CodingKeys: String, CodingKey {
-        case format, version, id, name, author, description, credits, colors, window, panels, controls, display, fonts, titleFont, bodyFont
+        case format, version, id, name, author, description, credits, colors, window, panels, controls, display, fonts, titleFont, bodyFont, artwork
     }
 
     public init(from decoder: Decoder) throws {
@@ -453,6 +456,7 @@ extension SkinManifest {
         fonts = try c.value(.fonts, [])
         titleFont = try c.decodeIfPresent(FontRef.self, forKey: .titleFont)
         bodyFont = try c.decodeIfPresent(FontRef.self, forKey: .bodyFont)
+        artwork = try c.decodeIfPresent(String.self, forKey: .artwork)
     }
 }
 

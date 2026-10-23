@@ -36,6 +36,7 @@ struct ArtworkPanel: View {
                                      startPoint: .top, endPoint: .bottom))
             switch mode {
             case .cover: artwork
+            case .skinArt: skinArtwork ?? AnyView(artwork)
             case .videos: videos
             default:
                 VisualScene(mode: mode, energy: { [weak state] in
@@ -105,12 +106,25 @@ struct ArtworkPanel: View {
         }
     }
 
+    /// Ilustração do skin em uso (nil se o skin não tem).
+    private var skinArtwork: AnyView? {
+        guard let art = theme.art, let image = art.image(art.manifest.artwork) else { return nil }
+        // Preenche o quadrado da capa sem vazar (foco no rosto, que fica na parte de cima).
+        return AnyView(GeometryReader { geo in
+            Image(nsImage: image).resizable().interpolation(.high).scaledToFill()
+                .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
+                .clipped()
+        })
+    }
+
     @ViewBuilder private var artwork: some View {
         ZStack {
             if let image = state.cover {
                 Image(nsImage: image)
                     .resizable()
                     .scaledToFill()
+            } else if let skin = skinArtwork {
+                skin
             } else {
                 Image(systemName: "music.note")
                     .font(.system(size: 90, weight: .regular))

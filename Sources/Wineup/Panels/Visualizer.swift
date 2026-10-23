@@ -5,13 +5,14 @@ import SwiftUI
 /// O que o painel da capa mostra: a capa ou uma cena animada que reage à música.
 /// As cenas são desenhadas pelo app (sem imagens de terceiros); "Seus vídeos" toca clipes de uma pasta do usuário.
 enum VisualMode: String, CaseIterable, Identifiable {
-    case cover, aurora, fjord, city, universe, videos
+    case cover, skinArt, aurora, fjord, city, universe, videos
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
         case .cover: "Capa da música"
+        case .skinArt: "Arte do skin"
         case .aurora: "Aurora na Noruega"
         case .fjord: "Verão na Suécia"
         case .city: "Cidade à beira-mar"
@@ -23,6 +24,7 @@ enum VisualMode: String, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .cover: "photo"
+        case .skinArt: "paintpalette"
         case .aurora: "sparkles"
         case .fjord: "leaf"
         case .city: "building.2"
