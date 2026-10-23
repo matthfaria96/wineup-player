@@ -88,6 +88,12 @@ struct WineupApp: App {
             }
         }
 
+        Window("Metadados", id: "metadata") {
+            MetadataManagerView(state: state)
+                .preferredColorScheme(.dark)
+        }
+        .defaultSize(width: 1240, height: 760)
+
         Window("Sobre o Wineup Player", id: "about") {
             AboutView()
         }

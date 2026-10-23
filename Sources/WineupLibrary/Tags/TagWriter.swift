@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 import GRDB
 import WineupCore
 
@@ -45,16 +46,38 @@ public final class TagWriter: Sendable {
         if let v = c.year { out.append(("year", v)) }
         if let v = c.trackNumber { out.append(("trackNumber", String(v))) }
         if let v = c.discNumber { out.append(("discNumber", String(v))) }
+        if let v = c.composer { out.append(("composer", v)) }
+        if let v = c.comment { out.append(("comment", v)) }
         return out
     }
 
+    /// Imagens esperadas depois de gravar a capa (todas trocadas por uma capa frontal).
+    /// MP4 (covr) não guarda o tipo da imagem: volta como "outra" (0).
+    private static func expectedPictures(_ c: TagChanges, before: TagSnapshot, url: URL) -> [TagSnapshot.PictureInfo] {
+        guard let cover = c.cover, !cover.data.isEmpty else { return before.pictures }
+        let digest = SHA256.hash(data: cover.data).map { String(format: "%02x", $0) }.joined()
+        let typeless = ["m4a", "mp4", "aac", "alac"].contains(url.pathExtension.lowercased())
+        return [TagSnapshot.PictureInfo(type: typeless ? 0 : 3, byteCount: cover.data.count, sha256: digest)]
+    }
+
+    private static func describe(_ pictures: [TagSnapshot.PictureInfo]) -> String? {
+        guard let first = pictures.first else { return nil }
+        let kb = max(1, first.byteCount / 1024)
+        return pictures.count == 1 ? "capa (\(kb) KB)" : "\(pictures.count) imagens"
+    }
+
     /// Só campos cujo valor realmente muda; valor vazio equivale a ausente.
-    private static func effective(_ c: TagChanges, before: TagSnapshot) -> [(field: String, old: String?, new: String?)] {
-        requested(c).compactMap { field, value in
+    private static func effective(_ c: TagChanges, before: TagSnapshot, url: URL) -> [(field: String, old: String?, new: String?)] {
+        var out: [(field: String, old: String?, new: String?)] = requested(c).compactMap { field, value in
             let new: String? = value.isEmpty ? nil : value
             let old = before.fields[field]
             return old == new ? nil : (field, old, new)
         }
+        let pictures = expectedPictures(c, before: before, url: url)
+        if pictures != before.pictures {
+            out.append(("pictures", describe(before.pictures), describe(pictures)))
+        }
+        return out
     }
 
     private func load(_ fileID: Int64) throws -> (record: AudioFileRecord, url: URL) {
@@ -66,6 +89,19 @@ public final class TagWriter: Sendable {
         return (record, url)
     }
 
+    /// Arquivo escolhido pelo usuário no gerenciador de metadados (pode estar fora da biblioteca).
+    /// Mesma cópia de trabalho, verificação, backup e diário; o banco só é atualizado se o arquivo for indexado.
+    @discardableResult
+    public func apply(_ changes: TagChanges, url: URL) throws -> JournalEntry {
+        let path = url.standardizedFileURL.path
+        let fileID = try database.pool.read {
+            try Int64.fetchOne($0, sql: "SELECT id FROM audio_file WHERE path = ?", arguments: [path])
+        }
+        if let fileID { return try apply(changes, fileID: fileID) }
+        guard FileManager.default.fileExists(atPath: path) else { throw TagWriterError.writeFailed }
+        return try write(changes, url: URL(fileURLWithPath: path), fileID: nil)
+    }
+
     // MARK: dryRun
 
     public func dryRun(_ changes: TagChanges, fileID: Int64) throws -> [TagDiff] {
@@ -73,7 +109,7 @@ public final class TagWriter: Sendable {
         let (_, url) = try load(fileID)
         guard backendFor(url) != nil else { throw TagWriterError.unsupportedFormat }
         let before = try TagSnapshot.read(url)
-        return Self.effective(changes, before: before).map {
+        return Self.effective(changes, before: before, url: url).map {
             TagDiff(field: $0.field, oldValue: $0.old, newValue: $0.new, confidence: .high)
         }
     }
@@ -83,12 +119,18 @@ public final class TagWriter: Sendable {
     @discardableResult
     public func apply(_ changes: TagChanges, fileID: Int64) throws -> JournalEntry {
         guard !changes.isEmpty else { throw TagWriterError.emptyChanges }
-        let (record, url) = try load(fileID)
+        let (_, url) = try load(fileID)
+        return try write(changes, url: url, fileID: fileID)
+    }
+
+    private func write(_ changes: TagChanges, url: URL, fileID: Int64?) throws -> JournalEntry {
+        guard !changes.isEmpty else { throw TagWriterError.emptyChanges }
         guard let backend = backendFor(url) else { throw TagWriterError.unsupportedFormat }
+        let recordPath = url.path
 
         let journalID = UUID()
         let before = try TagSnapshot.read(url)
-        let planned = Self.effective(changes, before: before)
+        let planned = Self.effective(changes, before: before, url: url)
         let ext = url.pathExtension
         let work = url.deletingLastPathComponent()
             .appendingPathComponent(".wineup-\(UUID().uuidString)").appendingPathExtension(ext)
@@ -106,14 +148,15 @@ public final class TagWriter: Sendable {
             let after = try TagSnapshot.read(work)
 
             var expected = before
-            for p in planned { expected.fields[p.field] = p.new }
+            for p in planned where p.field != "pictures" { expected.fields[p.field] = p.new }
+            expected.pictures = Self.expectedPictures(changes, before: before, url: url)
             let wrong = after.differences(from: expected)
             guard wrong.isEmpty else { throw TagWriterError.verificationFailed(fields: wrong) }
 
             _ = try FileManager.default.replaceItemAt(url, withItemAt: work)
             swapped = true
             let stat = try FileStat.of(url)
-            let tags = try TagReader.read(url)
+            let tags = fileID == nil ? nil : try TagReader.read(url)
             let diffs = planned.map { TagDiff(field: $0.field, oldValue: $0.old, newValue: $0.new, confidence: .high) }
             let diffsJSON = try Self.encode(planned.map { DiffDTO(field: $0.field, old: $0.old, new: $0.new) })
             let beforeJSON = try Self.encode(before)
@@ -121,7 +164,7 @@ public final class TagWriter: Sendable {
             let createdAt = Date()
             let backupPath = backup?.path
             try database.pool.write { db in
-                try JournalRecord(id: journalID.uuidString, audioFileID: fileID, path: record.path,
+                try JournalRecord(id: journalID.uuidString, audioFileID: fileID, path: recordPath,
                                   backupPath: backupPath, diffsJSON: diffsJSON, status: "applied",
                                   afterInode: Int64(stat.inode), afterSize: stat.size,
                                   afterMtimeNs: stat.mtimeNs, createdAt: createdAt).insert(db)
@@ -129,7 +172,7 @@ public final class TagWriter: Sendable {
                 try beforeRec.insert(db)
                 var afterRec = TagSnapshotRecord(journalID: journalID.uuidString, kind: "after", json: afterJSON)
                 try afterRec.insert(db)
-                try Self.updateFile(db, id: fileID, stat: stat, tags: tags, name: url)
+                if let fileID, let tags { try Self.updateFile(db, id: fileID, stat: stat, tags: tags, name: url) }
             }
             return JournalEntry(id: journalID, fileURL: url, diffs: diffs, createdAt: createdAt,
                                 backupURL: backup)
@@ -137,13 +180,13 @@ public final class TagWriter: Sendable {
             if !swapped {
                 if let backup { backups.remove(backup) }
                 backup = nil
-                recordFailure(journalID: journalID, fileID: fileID, path: record.path)
+                recordFailure(journalID: journalID, fileID: fileID, path: recordPath)
             }
             throw error
         }
     }
 
-    private func recordFailure(journalID: UUID, fileID: Int64, path: String) {
+    private func recordFailure(journalID: UUID, fileID: Int64?, path: String) {
         try? database.pool.write { db in
             try JournalRecord(id: journalID.uuidString, audioFileID: fileID, path: path,
                               diffsJSON: "[]", status: "failed").insert(db)
@@ -168,7 +211,6 @@ public final class TagWriter: Sendable {
     public func undo(entryID: UUID) throws {
         let rec = try database.pool.read { try JournalRecord.fetchOne($0, key: entryID.uuidString) }
         guard let rec, rec.status == "applied", let backupPath = rec.backupPath,
-              let fileID = rec.audioFileID,
               FileManager.default.fileExists(atPath: backupPath) else { throw TagWriterError.entryNotUndoable }
         let url = URL(fileURLWithPath: rec.path)
         let current = try FileStat.of(url)
@@ -182,11 +224,12 @@ public final class TagWriter: Sendable {
         try backups.duplicate(URL(fileURLWithPath: backupPath), to: work)
         _ = try FileManager.default.replaceItemAt(url, withItemAt: work)
         let stat = try FileStat.of(url)
-        let tags = try TagReader.read(url)
+        let fileID = rec.audioFileID
+        let tags = fileID == nil ? nil : try TagReader.read(url)
         try database.pool.write { db in
             try db.execute(sql: "UPDATE journal SET status = 'undone', undone_at = ? WHERE id = ?",
                            arguments: [Date(), rec.id])
-            try Self.updateFile(db, id: fileID, stat: stat, tags: tags, name: url)
+            if let fileID, let tags { try Self.updateFile(db, id: fileID, stat: stat, tags: tags, name: url) }
         }
     }
 

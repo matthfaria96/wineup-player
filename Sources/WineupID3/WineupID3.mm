@@ -6,6 +6,8 @@
 #include <taglib/id3v2header.h>
 #include <taglib/id3v2frame.h>
 #include <taglib/textidentificationframe.h>
+#include <taglib/attachedpictureframe.h>
+#include <taglib/tbytevector.h>
 #include <taglib/tstring.h>
 
 #include <string>
@@ -85,8 +87,29 @@ void setNumber(TagLib::ID3v2::Tag *tag, const char *frameID, int value) {
     setText(tag, frameID, String::number(value) + suffix);
 }
 
+struct Extra {
+    const char *composer;
+    const char *comment;
+    const unsigned char *cover;
+    long coverLen;
+    const char *coverMime;
+};
+
+void setCover(TagLib::ID3v2::Tag *tag, const Extra &x) {
+    tag->removeFrames("APIC");
+    auto *frame = new TagLib::ID3v2::AttachedPictureFrame();
+    frame->setMimeType(utf8(x.coverMime ? x.coverMime : "image/jpeg"));
+    frame->setType(TagLib::ID3v2::AttachedPictureFrame::FrontCover);
+    frame->setPicture(TagLib::ByteVector(reinterpret_cast<const char *>(x.cover), (unsigned int)x.coverLen));
+    tag->addFrame(frame);
+}
+
 void apply(TagLib::ID3v2::Tag *tag, const char *title, const char *artist, const char *album,
-           const char *albumArtist, const char *genre, const char *year, int track, int disc) {
+           const char *albumArtist, const char *genre, const char *year, int track, int disc,
+           const Extra &x) {
+    if (x.composer) setText(tag, "TCOM", utf8(x.composer));
+    if (x.comment) tag->setComment(utf8(x.comment));
+    if (x.cover && x.coverLen > 0) setCover(tag, x);
     if (title) tag->setTitle(utf8(title));
     if (artist) tag->setArtist(utf8(artist));
     if (album) tag->setAlbum(utf8(album));
@@ -102,8 +125,10 @@ void apply(TagLib::ID3v2::Tag *tag, const char *title, const char *artist, const
 
 extern "C" int wid3_write(const char *path, const char *title, const char *artist, const char *album,
                           const char *albumArtist, const char *genre, const char *year,
-                          int track, int disc) {
+                          int track, int disc, const char *composer, const char *comment,
+                          const unsigned char *cover, long coverLen, const char *coverMime) {
     if (!path) return -1;
+    Extra extra{composer, comment, cover, coverLen, coverMime};
     try {
         switch (kindOf(path)) {
         case Kind::mp3: {
@@ -111,7 +136,7 @@ extern "C" int wid3_write(const char *path, const char *title, const char *artis
             if (!f.isValid()) return -2;
             bool had = f.hasID3v2Tag();
             int version = had ? (int)f.ID3v2Tag()->header()->majorVersion() : 3;
-            apply(f.ID3v2Tag(true), title, artist, album, albumArtist, genre, year, track, disc);
+            apply(f.ID3v2Tag(true), title, artist, album, albumArtist, genre, year, track, disc, extra);
             bool ok = f.save(TagLib::MPEG::File::ID3v2, TagLib::File::StripNone,
                              version == 3 ? TagLib::ID3v2::v3 : TagLib::ID3v2::v4,
                              TagLib::File::DoNotDuplicate);
@@ -122,7 +147,7 @@ extern "C" int wid3_write(const char *path, const char *title, const char *artis
             if (!f.isValid()) return -2;
             bool had = f.hasID3v2Tag();
             int version = had ? (int)f.ID3v2Tag()->header()->majorVersion() : 4;
-            apply(f.ID3v2Tag(), title, artist, album, albumArtist, genre, year, track, disc);
+            apply(f.ID3v2Tag(), title, artist, album, albumArtist, genre, year, track, disc, extra);
             // Só ID3v2: o chunk LIST/INFO existente fica intacto.
             bool ok = f.save(TagLib::RIFF::WAV::File::ID3v2, TagLib::File::StripNone,
                              version == 3 ? TagLib::ID3v2::v3 : TagLib::ID3v2::v4);

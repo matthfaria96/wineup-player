@@ -16,6 +16,12 @@ public struct SFBTagBackend: TagBackend {
         if let v = changes.year { m.releaseDate = v }
         if let v = changes.trackNumber { m.trackNumber = v }
         if let v = changes.discNumber { m.discNumber = v }
+        if let v = changes.composer { m.composer = v }
+        if let v = changes.comment { m.comment = v }
+        if let cover = changes.cover {
+            m.removeAllAttachedPictures()
+            m.attachPicture(AttachedPicture(imageData: cover.data, type: .frontCover))
+        }
         try file.writeMetadata()
     }
 }

@@ -6,6 +6,7 @@ struct MainView: View {
     @Binding var layoutRaw: String
     @Binding var themeID: String
     @StateObject private var model = MainViewModel()
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         let theme = Theme.named(themeID)
@@ -63,13 +64,13 @@ struct MainView: View {
             }
             .buttonStyle(.borderless)
             .foregroundStyle(theme.mutedText)
-            Button { MetadataSummary.show(state: state) } label: {
+            Button { openWindow(id: "metadata") } label: {
                 if compact { Image(systemName: "tag") }
                 else { Label("Metadados", systemImage: "tag").labelStyle(.titleAndIcon) }
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
-            .help("Metadados: verificar e corrigir as informações das músicas")
+            .help("Metadados: gerenciador completo de tags, capas e letras")
             Spacer(minLength: 8)
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass").foregroundStyle(theme.mutedText)
