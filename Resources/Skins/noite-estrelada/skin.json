@@ -280,5 +280,6 @@
  "titleFont": {
   "name": "Cormorant Garamond",
   "weight": "semibold"
- }
+ },
+ "artwork": "background.jpg"
 }

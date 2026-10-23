@@ -221,7 +221,12 @@ struct SkinEditorView: View {
                 if let dim { bg.dim = dim }
                 m.window.background = bg
             }
-        } header: { Text("Janela") }
+            artRow(skin, "Arte do skin", file: skin.manifest.artwork, dim: nil) { m, name, _ in
+                if let name { m.artwork = name }
+            }
+        } header: { Text("Janela") } footer: {
+            Text("A arte do skin aparece no painel da capa (modo Arte do skin, ou quando a música não tem capa).")
+        }
         Section {
             ForEach(["default", "player", "equalizer", "playlist", "artwork", "lyrics"], id: \.self) { key in
                 let style = skin.manifest.panels[key]

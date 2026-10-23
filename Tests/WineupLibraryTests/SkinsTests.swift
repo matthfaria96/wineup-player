@@ -27,6 +27,11 @@ struct SkinsTests {
             }
             #expect(SkinLegibility.issues(skin.manifest, folder: skin.folder).isEmpty, "texto ilegível em \(skin.id)")
             #expect(!skin.manifest.credits.isEmpty && !skin.manifest.description.isEmpty)
+            // Mesmo padrão em todos os oficiais: arte, moldura, botões, campo, puxador, fontes e animações.
+            let m = skin.manifest
+            #expect(m.artwork != nil && m.window.background != nil && !m.window.layers.isEmpty, "\(skin.id)")
+            #expect(m.controls.button != nil && m.controls.buttonOn != nil && m.controls.field != nil && m.controls.knob != nil, "\(skin.id)")
+            #expect(m.panelStyle("player")?.frame != nil && !m.fonts.isEmpty && m.titleFont != nil, "\(skin.id)")
         }
         let skin = try #require(s.skin(SkinStore.defaultID))
         let window = skin.manifest.window

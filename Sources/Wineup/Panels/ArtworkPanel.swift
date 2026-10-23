@@ -16,7 +16,7 @@ struct ArtworkPanel: View {
     private var mode: VisualMode { VisualMode(rawValue: modeRaw) ?? .cover }
 
     var body: some View {
-        Panel(title: mode == .cover ? "Capa" : "Visual") {
+        Panel(title: mode == .cover ? "Capa" : mode == .skinArt ? "Arte" : mode == .videos ? "Vídeo" : "Visual") {
             VStack(alignment: .leading, spacing: 12) {
                 cover
                     .aspectRatio(1, contentMode: .fit)
@@ -54,12 +54,15 @@ struct ArtworkPanel: View {
     /// Menu no canto da capa: capa, cenas animadas e o submenu de vídeos por categoria.
     private var modeMenu: some View {
         Menu {
-            ForEach(VisualMode.allCases.filter { $0 != .videos }) { m in
-                Button { modeRaw = m.rawValue } label: {
-                    Label(m.title, systemImage: mode == m ? "checkmark" : m.symbol)
-                }
+            // Organizado em grupos: o que é imagem, o que é animação, o que é vídeo.
+            Section("Imagem") {
+                pick(.cover, "Capa da música", subtitle: "Arte do skin quando a música não tem capa")
+                pick(.skinArt, "Arte do skin", subtitle: theme.art?.manifest.artwork == nil ? "Este skin não tem arte" : nil)
             }
-            Menu {
+            Section("Animação") {
+                ForEach([VisualMode.aurora, .fjord, .city, .universe]) { m in pick(m, m.title, subtitle: nil) }
+            }
+            Section("Vídeos") {
                 ForEach(videoStore.enabled) { c in
                     Button {
                         videoCategory = c.id
@@ -69,10 +72,7 @@ struct ArtworkPanel: View {
                     }
                 }
                 if videoStore.enabled.isEmpty { Text("Nenhuma categoria ligada") }
-                Divider()
                 Button { showVideoSettings = true } label: { Label("Configurar categorias…", systemImage: "gearshape") }
-            } label: {
-                Label("Vídeos", systemImage: "film")
             }
         } label: {
             Image(systemName: mode.symbol)
@@ -80,9 +80,16 @@ struct ArtworkPanel: View {
         }
         .skinMenuChrome(compact: true)
         .padding(8)
-        .help("Capa, cena animada ou vídeos por categoria")
+        .help("O que mostrar aqui: imagem, animação ou vídeo")
         .accessibilityLabel("Escolher o que aparece no lugar da capa")
         .sheet(isPresented: $showVideoSettings) { VideoCategoriesView() }
+    }
+
+    private func pick(_ m: VisualMode, _ title: String, subtitle: String?) -> some View {
+        Button { modeRaw = m.rawValue } label: {
+            Label(title, systemImage: mode == m ? "checkmark" : m.symbol)
+            if let subtitle { Text(subtitle) }
+        }
     }
 
     @ViewBuilder private var videos: some View {
