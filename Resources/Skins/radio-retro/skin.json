@@ -1,0 +1,165 @@
+{
+ "format": "wineup-skin",
+ "version": 1,
+ "id": "radio-retro",
+ "name": "Radio Retro",
+ "author": "Wineup",
+ "description": "Aparelho de som dos anos 90: metal azul-ardósia escovado, botões prateados com LED verde, visor de cristal líquido e filetes dourados.",
+ "credits": [
+  {
+   "work": "VT323 (fonte de terminal/visor)",
+   "author": "Peter Hull",
+   "license": "SIL Open Font License 1.1",
+   "source": "https://github.com/google/fonts/tree/main/ofl/vt323"
+  }
+ ],
+ "colors": {
+  "windowTop": "#2A2C45",
+  "windowBottom": "#16172A",
+  "panelFill": "#2B2D48E6",
+  "panelBorder": "#A9ADCF99",
+  "text": "#E8EAF6",
+  "mutedText": "#9EA3C8",
+  "accent": "#3DFF5A",
+  "rowSelection": "#1E2CC8AA",
+  "currentRow": "#3DFF5A",
+  "lyricsActive": "#3DFF5A",
+  "lyricsIdle": "#B9F5C4BB",
+  "control": "#E0A43A",
+  "artworkTint": "#24263E",
+  "display": "#3DFF5A",
+  "buttonText": "#1A1B2E",
+  "buttonTextOn": "#FFFFFF",
+  "meterLow": "#3DFF5A",
+  "meterMid": "#E8E43A",
+  "meterPeak": "#FF6A2A"
+ },
+ "window": {
+  "background": {
+   "image": "background.jpg",
+   "dim": 0.0
+  },
+  "layers": [
+   {
+    "kind": "glow",
+    "name": "luz do visor",
+    "points": [
+     {
+      "x": 0.62,
+      "y": 0.12,
+      "r": 0.22
+     }
+    ],
+    "color": "#3DFF5A",
+    "speed": 0.8,
+    "intensity": 0.12
+   }
+  ]
+ },
+ "panels": {
+  "default": {
+   "fill": {
+    "image": "panel-metal.jpg",
+    "dim": 0.0
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 6
+  },
+  "playlist": {
+   "fill": {
+    "image": "panel-screen.jpg",
+    "dim": 0.0
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 6
+  },
+  "player": {
+   "fill": {
+    "image": "panel-metal.jpg",
+    "dim": 0.0
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 6
+  },
+  "equalizer": {
+   "fill": {
+    "image": "panel-eq.jpg",
+    "dim": 0.0
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 6
+  },
+  "artwork": {
+   "fill": {
+    "image": "panel-metal.jpg",
+    "dim": 0.0
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 6,
+   "layers": []
+  },
+  "lyrics": {
+   "fill": {
+    "image": "panel-screen.jpg",
+    "dim": 0.0
+   },
+   "frame": {
+    "image": "frame.png",
+    "slice": 48,
+    "width": 10
+   },
+   "cornerRadius": 6,
+   "layers": []
+  }
+ },
+ "controls": {
+  "button": {
+   "image": "button.png",
+   "slice": 14,
+   "width": 7
+  },
+  "buttonOn": {
+   "image": "button-on.png",
+   "slice": 14,
+   "width": 7
+  },
+  "field": {
+   "image": "field.png",
+   "slice": 14,
+   "width": 7
+  },
+  "knob": "knob.png",
+  "knobSize": 20
+ },
+ "display": {
+  "glow": 0.7
+ },
+ "artwork": "artwork.jpg",
+ "fonts": [
+  "VT323-Regular.ttf"
+ ],
+ "titleFont": {
+  "name": "VT323",
+  "size": 15
+ }
+}
