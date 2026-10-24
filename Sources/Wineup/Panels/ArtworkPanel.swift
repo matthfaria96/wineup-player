@@ -19,10 +19,19 @@ struct ArtworkPanel: View {
     private var mode: VisualMode { VisualMode(rawValue: modeRaw) ?? .firstUse }
 
     var body: some View {
-        Panel(title: mode == .cover ? "Capa" : mode == .skinArt ? "Arte" : mode == .videos ? "Vídeo" : "Visual") {
+        Panel(title: panelTitle) {
             cover
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .padding(.horizontal, 12).padding(.top, 4).padding(.bottom, 12)
+        }
+    }
+
+    private var panelTitle: LocalizedStringKey {
+        switch mode {
+        case .cover: "Capa"
+        case .skinArt: "Arte"
+        case .videos: "Vídeo"
+        default: "Visual"
         }
     }
 

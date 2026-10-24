@@ -31,7 +31,7 @@ struct LyricsPanel: View {
                                 VStack(spacing: 10) {
                                     Text("Buscar letras online?").font(.system(size: 15, weight: .semibold))
                                         .foregroundStyle(theme.text)
-                                    Text("Esta faixa não tem letra salva. " + OnlineConsent.whatIsSent)
+                                    Text("Esta faixa não tem letra salva. \(OnlineConsent.whatIsSent)")
                                         .font(.system(size: 11)).foregroundStyle(theme.mutedText)
                                         .multilineTextAlignment(.center)
                                     HStack {
@@ -139,11 +139,13 @@ struct LyricsPanel: View {
 
     private var statusLine: String {
         switch state.lyricsOrigin {
-        case .local(let synced): synced ? "Letra sincronizada, do arquivo" : "Letra estática, do arquivo"
-        case .online(let l, _): (l.isSynced ? "Letra sincronizada" : "Letra estática") + ", encontrada online (não salva)"
-        case .searching: "Procurando a letra…"
-        case .askConsent: "Aguardando permissão para buscar online"
-        case .none: "Sem letra"
+        case .local(let synced): synced ? String(localized: "Letra sincronizada, do arquivo") : String(localized: "Letra estática, do arquivo")
+        case .online(let l, _):
+            l.isSynced ? String(localized: "Letra sincronizada, encontrada online (não salva)")
+                : String(localized: "Letra estática, encontrada online (não salva)")
+        case .searching: String(localized: "Procurando a letra…")
+        case .askConsent: String(localized: "Aguardando permissão para buscar online")
+        case .none: String(localized: "Sem letra")
         }
     }
 

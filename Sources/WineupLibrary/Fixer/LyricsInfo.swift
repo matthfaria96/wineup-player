@@ -51,9 +51,9 @@ public struct LyricsInfo: Sendable, Equatable {
 
     public var label: String {
         switch kind {
-        case .synced: "Sincronizada"
-        case .plain: "Estática"
-        case .empty: "Vazia"
+        case .synced: String(localized: "Sincronizada")
+        case .plain: String(localized: "Estática")
+        case .empty: String(localized: "Vazia")
         }
     }
 
@@ -61,12 +61,13 @@ public struct LyricsInfo: Sendable, Equatable {
     public var summary: String {
         switch kind {
         case .synced:
-            let span = [firstTime, lastTime].compactMap { $0 }.map(Self.clock).joined(separator: " a ")
-            return "\(lines.count) linhas com marca de tempo (\(span)): acompanha a música, linha por linha."
+            let times = [firstTime, lastTime].compactMap { $0 }.map(Self.clock)
+            let span = times.count == 2 ? String(localized: "\(times[0]) a \(times[1])") : times.joined()
+            return String(localized: "\(lines.count) linhas com marca de tempo (\(span)): acompanha a música, linha por linha.")
         case .plain:
-            return "\(lines.count) linhas sem marca de tempo: aparece inteira, não acompanha a música."
+            return String(localized: "\(lines.count) linhas sem marca de tempo: aparece inteira, não acompanha a música.")
         case .empty:
-            return "Arquivo sem texto."
+            return String(localized: "Arquivo sem texto.")
         }
     }
 

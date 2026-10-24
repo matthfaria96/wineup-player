@@ -30,12 +30,12 @@ struct VisualPicker: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             row("Capa da Música", nil, "photo", selected: mode == .cover) { modeRaw = VisualMode.cover.rawValue; dismiss() }
-            row("Arte da Skin", hasSkinArt ? nil : "Esta skin não tem arte", "paintpalette", selected: mode == .skinArt) {
+            row("Arte da Skin", hasSkinArt ? nil : String(localized: "Esta skin não tem arte"), "paintpalette", selected: mode == .skinArt) {
                 modeRaw = VisualMode.skinArt.rawValue; dismiss()
             }
             Divider().padding(.vertical, 4)
             HStack(spacing: 4) {
-                row("Vídeos Personalizados", MotionChoice.label(motion) ?? "Nenhum selecionado", "film", selected: isMotion) {
+                row("Vídeos Personalizados", MotionChoice.label(motion) ?? String(localized: "Nenhum selecionado"), "film", selected: isMotion) {
                     // Primeira vez (nada escolhido): abre a configuração. Depois: usa o escolhido.
                     if MotionChoice.label(motion) == nil { dismiss(); onConfigure() } else { apply(); dismiss() }
                 }
@@ -54,7 +54,7 @@ struct VisualPicker: View {
         else if motion.hasPrefix("video:") { videoCategory = String(motion.dropFirst(6)); modeRaw = VisualMode.videos.rawValue }
     }
 
-    private func row(_ title: String, _ subtitle: String?, _ symbol: String, selected: Bool, action: @escaping () -> Void) -> some View {
+    private func row(_ title: LocalizedStringKey, _ subtitle: String?, _ symbol: String, selected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 10) {
                 Image(systemName: symbol).frame(width: 20).foregroundStyle(.secondary)

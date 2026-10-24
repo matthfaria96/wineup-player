@@ -101,12 +101,12 @@ private struct QueueCard: View {
 
     private func caption(_ look: RowLook) -> String {
         switch look {
-        case .searching: "Buscando…"
-        case .complete: "Completa"
-        case .incomplete: row.isDirty ? "Falta salvar" : "Incompleta"
-        case .review: "Revisar"
-        case .notFound: "Nada"
-        case .failed: "Erro"
+        case .searching: String(localized: "Buscando…")
+        case .complete: String(localized: "Completa")
+        case .incomplete: row.isDirty ? String(localized: "Falta salvar") : String(localized: "Incompleta")
+        case .review: String(localized: "Revisar")
+        case .notFound: String(localized: "Nada")
+        case .failed: String(localized: "Erro")
         }
     }
 }
@@ -125,7 +125,7 @@ struct Legend: View {
         .foregroundStyle(.secondary)
     }
 
-    private func item(_ color: Color, _ symbol: String, _ text: String) -> some View {
+    private func item(_ color: Color, _ symbol: String, _ text: LocalizedStringKey) -> some View {
         HStack(spacing: 3) {
             Image(systemName: symbol).font(.system(size: 6, weight: .black))
                 .foregroundStyle(color == .yellow ? Color.black.opacity(0.75) : .white)
@@ -158,7 +158,7 @@ struct SearchReportView: View {
                 if report.review > 0 { stat("\(report.review)", "para revisar", .orange) }
             }
             if !report.missingTotals.isEmpty {
-                Text("O que não foi encontrado: " + report.missingTotals.map { "\($0.0) (\($0.1))" }.joined(separator: " · "))
+                Text("O que não foi encontrado: \(report.missingTotals.map { "\($0.0) (\($0.1))" }.joined(separator: " · "))")
                     .font(.system(size: 12)).foregroundStyle(.secondary)
             }
             if !report.partial.isEmpty || !report.notFound.isEmpty {
@@ -198,9 +198,9 @@ struct SearchReportView: View {
         .frame(width: 520)
     }
 
-    private func stat(_ value: String, _ label: String, _ color: Color) -> some View {
+    private func stat(_ value: String, _ label: LocalizedStringKey, _ color: Color) -> some View {
         VStack(spacing: 2) {
-            Text(value).font(.title2.weight(.bold)).monospacedDigit().foregroundStyle(color == .yellow ? Color.orange : color)
+            Text(verbatim: value).font(.title2.weight(.bold)).monospacedDigit().foregroundStyle(color == .yellow ? Color.orange : color)
             Text(label).font(.system(size: 11)).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)

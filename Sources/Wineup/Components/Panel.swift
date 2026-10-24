@@ -17,7 +17,7 @@ enum SkinEnergy {
 /// Moldura de painel: barra de título, fundo e borda. Com skin, o fundo é a arte do painel
 /// (textura escurecida + camadas animadas) e a borda é a moldura de 9 fatias do skin.
 struct Panel<Content: View>: View {
-    let title: String
+    let title: LocalizedStringKey
     @ViewBuilder var content: Content
 
     @Environment(\.theme) private var theme
@@ -30,7 +30,7 @@ struct Panel<Content: View>: View {
     var body: some View {
         let inset = frame?.inset ?? 0
         VStack(spacing: 0) {
-            if !title.isEmpty {
+            if title != "" {
                 Text(title)
                     .font(theme.art == nil ? .system(size: 12, weight: .medium) : theme.titleFont(12))
                     .foregroundStyle(theme.art == nil ? theme.mutedText : theme.text.opacity(0.9))

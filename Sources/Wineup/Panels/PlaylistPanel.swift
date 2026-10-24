@@ -71,7 +71,7 @@ struct PlaylistPanel: View {
                     }
                 } label: {
                     HStack(spacing: 6) {
-                        Text(state.query.isEmpty ? browser.view.title : "Busca")
+                        Text(state.query.isEmpty ? browser.view.title : String(localized: "Busca"))
                             .font(theme.art == nil ? .system(size: 24, weight: .bold) : theme.titleFont(24, weight: .bold))
                             .foregroundStyle(theme.text)
                             .shadow(color: .black.opacity(theme.art == nil ? 0 : 0.6), radius: 2, y: 1)
@@ -98,26 +98,24 @@ struct PlaylistPanel: View {
     }
 
     private var subtitle: String {
-        if !state.query.isEmpty { return "Resultados para \u{201C}\(state.query)\u{201D}" }
-        if browser.view == .playlists { return "Suas playlists e tags de cor" }
-        if browser.view == .queue { return "Próximas músicas · arraste para reordenar" }
-        return "Em " + NavPlaces.displayPath(browser.folder)
+        if !state.query.isEmpty { return String(localized: "Resultados para \u{201C}\(state.query)\u{201D}") }
+        if browser.view == .playlists { return String(localized: "Suas playlists e tags de cor") }
+        if browser.view == .queue { return String(localized: "Próximas músicas · arraste para reordenar") }
+        return String(localized: "Em \(NavPlaces.displayPath(browser.folder))")
     }
 
     private var countText: String {
         if browser.showsGroups && state.query.isEmpty {
             let n = browser.groups.count
-            let noun: String
             switch browser.view {
-            case .albums: noun = n == 1 ? "álbum" : "álbuns"
-            case .artists: noun = n == 1 ? "artista" : "artistas"
-            case .genres: noun = n == 1 ? "gênero" : "gêneros"
-            default: noun = n == 1 ? "playlist" : "playlists"
+            case .albums: return n == 1 ? String(localized: "1 álbum") : String(localized: "\(n) álbuns")
+            case .artists: return n == 1 ? String(localized: "1 artista") : String(localized: "\(n) artistas")
+            case .genres: return n == 1 ? String(localized: "1 gênero") : String(localized: "\(n) gêneros")
+            default: return n == 1 ? String(localized: "1 playlist") : String(localized: "\(n) playlists")
             }
-            return "\(n) \(noun)"
         }
         let n = state.query.isEmpty ? state.visibleTracks.count : state.searchResults.count
-        return n == 1 ? "1 faixa" : "\(n) faixas"
+        return n == 1 ? String(localized: "1 faixa") : String(localized: "\(n) faixas")
     }
 
     /// Linha do grupo aberto (álbum, artista, gênero, playlist): voltar + nome.

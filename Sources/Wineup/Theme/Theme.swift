@@ -137,7 +137,7 @@ struct Theme: Identifiable, Equatable {
     static func == (a: Theme, b: Theme) -> Bool { a.id == b.id && a.art === b.art }
 
     /// Sem nenhum skin instalado (não deve acontecer): cores neutras, sem arte.
-    static let plain = Theme(manifest: SkinManifest(id: "none", name: "Sem skin"), art: nil)
+    static let plain = Theme(manifest: SkinManifest(id: "none", name: String(localized: "Sem skin")), art: nil)
     static let graphite = plain
 
     /// Temas de todos os skins, montados uma vez por versão da loja (e não a cada desenho da janela).

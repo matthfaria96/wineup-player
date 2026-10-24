@@ -39,7 +39,7 @@ struct MotionLibraryView: View {
                     section("Animações", "Desenhadas pelo app, respiram com a música.") {
                         LazyVGrid(columns: grid, spacing: 14) {
                             ForEach(Self.scenes) { m in
-                                Card(title: m.title, caption: "Animação", selected: selectedScene == m) {
+                                Card(title: m.title, caption: String(localized: "Animação"), selected: selectedScene == m) {
                                     VisualScene(mode: m, energy: { 0.25 }, seed: 7)
                                 } action: { choose("scene:\(m.rawValue)") }
                             }
@@ -89,7 +89,7 @@ struct MotionLibraryView: View {
         .padding(.horizontal, 20).padding(.vertical, 14)
     }
 
-    private func section<Content: View>(_ title: String, _ caption: String, @ViewBuilder content: () -> Content) -> some View {
+    private func section<Content: View>(_ title: LocalizedStringKey, _ caption: LocalizedStringKey, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline) {
                 Text(title).font(.headline)
@@ -101,7 +101,7 @@ struct MotionLibraryView: View {
 
     private func categoryCard(_ c: VideoCategory) -> some View {
         let n = c.clips.count
-        return Card(title: c.name, caption: n == 0 ? "Sem vídeos" : "\(n) vídeo\(n == 1 ? "" : "s")",
+        return Card(title: c.name, caption: n == 0 ? String(localized: "Sem vídeos") : String(localized: "\(n) vídeo\(n == 1 ? "" : "s")"),
                     selected: selectedCategory?.id == c.id) {
             if let first = c.clips.first { VideoThumbnail(url: first) }
             else { Image(systemName: c.symbol).font(.system(size: 26, weight: .light)).foregroundStyle(.white.opacity(0.6)) }

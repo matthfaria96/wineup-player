@@ -31,8 +31,8 @@ struct LibraryGroupsView: View {
 
     private var emptyText: String {
         browser.view == .playlists
-            ? "Nenhuma playlist ainda.\nCrie uma com + Nova ou marque faixas com uma cor."
-            : "Nenhuma música nesta pasta.\nEscolha outra pasta no seletor acima."
+            ? String(localized: "Nenhuma playlist ainda.\nCrie uma com + Nova ou marque faixas com uma cor.")
+            : String(localized: "Nenhuma música nesta pasta.\nEscolha outra pasta no seletor acima.")
     }
 
     private var playlistBar: some View {
@@ -107,14 +107,14 @@ private struct GroupRow: View {
 
 /// Caixa de texto simples (AppKit), sem depender de @State.
 enum TextPrompt {
-    static func ask(title: String, value: String) -> String? {
+    static func ask(title: String.LocalizationValue, value: String) -> String? {
         let alert = NSAlert()
-        alert.messageText = title
+        alert.messageText = String(localized: title)
         let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 260, height: 24))
         field.stringValue = value
         alert.accessoryView = field
-        alert.addButton(withTitle: "OK")
-        alert.addButton(withTitle: "Cancelar")
+        alert.addButton(withTitle: String(localized: "OK"))
+        alert.addButton(withTitle: String(localized: "Cancelar"))
         return alert.runModal() == .alertFirstButtonReturn ? field.stringValue : nil
     }
 }

@@ -16,7 +16,7 @@ struct EqualizerPanel: View {
     @State private var showPresets = false
     private let labels = ["60", "170", "310", "600", "1K", "2K", "5K", "8K", "12K", "16K"]
     /// O que cada faixa de frequência muda no som (dica ao passar o mouse).
-    private let bandHints = [
+    private let bandHints: [String.LocalizationValue] = [
         "Subgrave: o peso da batida e do bumbo.",
         "Grave: o corpo do baixo.",
         "Grave-médio: calor. Demais deixa o som embolado.",
@@ -57,7 +57,7 @@ struct EqualizerPanel: View {
             .frame(width: 74)
             .hint(state.eqBypass ? "Bypass ligado" : "Bypass",
                   "Desliga o equalizador para comparar com o som original, sem perder o seu ajuste.")
-            ChromeButton(isOn: state.soundCorrection, spoken: "Correção de Som",
+            ChromeButton(isOn: state.soundCorrection, spoken: String(localized: "Correção de Som"),
                          action: { state.soundCorrection.toggle() }) {
                 Image(systemName: "dial.medium")
             }
@@ -80,7 +80,7 @@ struct EqualizerPanel: View {
             .popover(isPresented: $showPresets, arrowEdge: .bottom) {
                 PresetList(state: state) { showPresets = false }
             }
-            .hint("Preset: \(state.preset)", presetHint)
+            .hintVerbatim(String(localized: "Preset: \(state.preset)"), presetHint)
             ChromeButton("Reset") { withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { state.apply(preset: "Flat"); state.preamp = 0 } }
                 .frame(width: 48)
                 .hint("Reset", "Volta todas as faixas e o Pre para 0 (Flat).")
@@ -90,8 +90,9 @@ struct EqualizerPanel: View {
     }
 
     private var presetHint: String {
-        let what = EqPreset.builtInDetails[state.preset] ?? (state.isUserPreset ? "Preset salvo por você." : "Ajuste feito à mão.")
-        return what + " Presets mudam o timbre ao seu gosto; não consertam a música."
+        let what = EqPreset.builtInDetails[state.preset]
+            ?? (state.isUserPreset ? String(localized: "Preset salvo por você.") : String(localized: "Ajuste feito à mão."))
+        return what + " " + String(localized: "Presets mudam o timbre ao seu gosto; não consertam a música.")
     }
 
     /// Presets e ReplayGain num menu compacto, para não apertar os sliders.
@@ -163,7 +164,7 @@ struct EqualizerPanel: View {
             ChromeSlider(value: value, range: -12...12, axis: .vertical, knobLength: 9, knobThickness: 18)
                 .frame(maxHeight: .infinity)
                 .accessibilityLabel(label == "Pre" ? "Pré-amplificação" : "Equalizador \(label) hertz")
-            Text(label)
+            Text(label == "Pre" ? String(localized: "Pre") : label)
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(theme.text)
                 .frame(height: 12)
@@ -214,7 +215,7 @@ private struct PresetList: View {
                                 .opacity(name == state.preset ? 1 : 0)
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(name).font(.system(size: 12, weight: .medium)).lineLimit(1)
-                                Text(EqPreset.builtInDetails[name] ?? (name == "Custom" ? "Ajuste feito à mão." : "Preset salvo por você."))
+                                Text(EqPreset.builtInDetails[name] ?? (name == "Custom" ? String(localized: "Ajuste feito à mão.") : String(localized: "Preset salvo por você.")))
                                     .font(.system(size: 10.5)).foregroundStyle(.secondary).lineLimit(2)
                             }
                             Spacer(minLength: 0)

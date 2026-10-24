@@ -18,8 +18,13 @@ struct HoverHint: ViewModifier {
 }
 
 extension View {
-    /// Explica o controle ao passar o mouse (título em negrito e uma frase).
-    func hint(_ title: String, _ detail: String) -> some View { modifier(HoverHint(title: title, detail: detail)) }
+    /// Explica o controle ao passar o mouse (título em negrito e uma frase), traduzido.
+    func hint(_ title: String.LocalizationValue, _ detail: String.LocalizationValue) -> some View {
+        modifier(HoverHint(title: String(localized: title), detail: String(localized: detail)))
+    }
+
+    /// Igual a `hint`, para textos que já vêm traduzidos (ou são do usuário, como nomes de presets).
+    func hintVerbatim(_ title: String, _ detail: String) -> some View { modifier(HoverHint(title: title, detail: detail)) }
 }
 
 @MainActor

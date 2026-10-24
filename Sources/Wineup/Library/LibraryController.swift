@@ -28,7 +28,7 @@ final class LibraryController {
 
     /// Primeira abertura (NAV-01), carga da biblioteca persistida e varredura das raízes.
     func start(onChange: @escaping () -> Void, onStatus: @escaping (String?) -> Void) async {
-        guard let database else { onStatus("Biblioteca indisponível"); return }
+        guard let database else { onStatus(String(localized: "Biblioteca indisponível")); return }
         guard !started else { return }
         started = true
         self.onChange = onChange
@@ -76,7 +76,7 @@ final class LibraryController {
             guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir), isDir.boolValue else { continue }
             if (try? store.addRoot(url)) != nil { added = true }
         }
-        if added { beginScan(rootIDs: nil); watchRoots() } else { onStatus?("Nenhuma pasta válida para adicionar.") }
+        if added { beginScan(rootIDs: nil); watchRoots() } else { onStatus?(String(localized: "Nenhuma pasta válida para adicionar.")) }
     }
 
     func search(_ text: String) async -> [LibraryTrack] {
@@ -110,11 +110,11 @@ final class LibraryController {
                 do {
                     for try await progress in scanner.scan(rootID: root.id) {
                         if progress.finished { changed = changed || progress.changed }
-                        if progress.toRead > 0 { self?.onStatus?("Varrendo biblioteca: \(progress.read)/\(progress.toRead)") }
+                        if progress.toRead > 0 { self?.onStatus?(String(localized: "Varrendo biblioteca: \(progress.read)/\(progress.toRead)")) }
                     }
                 } catch {
                     changed = true   // varredura parcial: relê a lista por segurança
-                    self?.onStatus?("Falha ao varrer uma pasta da biblioteca.")
+                    self?.onStatus?(String(localized: "Falha ao varrer uma pasta da biblioteca."))
                 }
             }
             guard !Task.isCancelled else { return }

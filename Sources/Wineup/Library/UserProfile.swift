@@ -23,15 +23,15 @@ enum ProfileManager {
 
     static func export(state: PlayerState) {
         let panel = NSSavePanel()
-        panel.nameFieldStringValue = "Meu perfil.wineupprofile"
-        panel.message = "Exportar perfil do Wineup (playlists, tags e preferências)"
+        panel.nameFieldStringValue = String(localized: "Meu perfil.wineupprofile")
+        panel.message = String(localized: "Exportar perfil do Wineup (playlists, tags e preferências)")
         guard panel.runModal() == .OK, let url = panel.url else { return }
         do {
             let data = try JSONEncoder.pretty.encode(build(state: state))
             try data.write(to: url, options: .atomic)
-            state.statusMessage = "Perfil exportado."
+            state.statusMessage = String(localized: "Perfil exportado.")
         } catch {
-            state.statusMessage = "Não foi possível exportar o perfil."
+            state.statusMessage = String(localized: "Não foi possível exportar o perfil.")
         }
     }
 
@@ -54,17 +54,17 @@ enum ProfileManager {
     static func importProfile(state: PlayerState) {
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = false
-        panel.message = "Escolha um perfil do Wineup (.wineupprofile)"
+        panel.message = String(localized: "Escolha um perfil do Wineup (.wineupprofile)")
         guard panel.runModal() == .OK, let url = panel.url,
               let data = try? Data(contentsOf: url),
               let profile = try? JSONDecoder.iso.decode(UserProfile.self, from: data) else {
             return
         }
         let preview = NSAlert()
-        preview.messageText = "Importar perfil?"
-        preview.informativeText = "\(profile.playlists.count) playlists, \(profile.marks.count) tags de cor e \(profile.preferences.count) preferências. Nada do que você já tem será apagado; playlists com o mesmo nome ganham um número."
-        preview.addButton(withTitle: "Importar")
-        preview.addButton(withTitle: "Cancelar")
+        preview.messageText = String(localized: "Importar perfil?")
+        preview.informativeText = String(localized: "\(profile.playlists.count) playlists, \(profile.marks.count) tags de cor e \(profile.preferences.count) preferências. Nada do que você já tem será apagado; playlists com o mesmo nome ganham um número.")
+        preview.addButton(withTitle: String(localized: "Importar"))
+        preview.addButton(withTitle: String(localized: "Cancelar"))
         guard preview.runModal() == .alertFirstButtonReturn else { return }
 
         let browser = state.browser
@@ -85,7 +85,7 @@ enum ProfileManager {
             else { UserDefaults.standard.set(value, forKey: key) }
         }
         browser.refresh()
-        state.statusMessage = missing == 0 ? "Perfil importado." : "Perfil importado; \(missing) faixas não encontradas nesta biblioteca."
+        state.statusMessage = missing == 0 ? String(localized: "Perfil importado.") : String(localized: "Perfil importado; \(missing) faixas não encontradas nesta biblioteca.")
     }
 }
 

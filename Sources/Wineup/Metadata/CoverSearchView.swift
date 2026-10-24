@@ -61,7 +61,7 @@ struct CoverSearchView: View {
                         } else if loading || searching {
                             ProgressView()
                         } else {
-                            Text(error ?? (results.isEmpty ? "Busque por artista e álbum." : "Sem imagem para este álbum."))
+                            Text(error ?? (results.isEmpty ? String(localized: "Busque por artista e álbum.") : String(localized: "Sem imagem para este álbum.")))
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -69,7 +69,7 @@ struct CoverSearchView: View {
                 }
             }
             HStack {
-                Text("Vai para \(model.selection.isEmpty ? "nenhuma música (selecione na lista)" : "\(model.selection.count) música(s) selecionada(s)")")
+                target
                     .font(.caption).foregroundStyle(.secondary)
                 Spacer()
                 Button("Cancelar") { dismiss() }.keyboardShortcut(.cancelAction)
@@ -105,6 +105,12 @@ struct CoverSearchView: View {
         }
     }
 
+    /// Frases inteiras (não um pedaço interpolado), para cada uma ser traduzida.
+    private var target: Text {
+        model.selection.isEmpty ? Text("Vai para nenhuma música (selecione na lista)")
+            : Text("Vai para \(model.selection.count) música(s) selecionada(s)")
+    }
+
     private var caption: String {
         guard let p = preview, let decoded else { return " " }
         return "\(decoded.sizeText ?? ""), \(p.data.count / 1024) KB, \(p.mimeType)"
@@ -119,7 +125,7 @@ struct CoverSearchView: View {
             do {
                 results = try await search.search(artist: artist, album: album, source: source)
                 choice = results.first?.id
-                if results.isEmpty { error = "Nenhum álbum encontrado." }
+                if results.isEmpty { error = String(localized: "Nenhum álbum encontrado.") }
             } catch {
                 self.error = MetadataManagerModel.describe(error)
             }

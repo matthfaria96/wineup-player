@@ -39,14 +39,15 @@ enum RowLook {
     static func tooltip(_ row: MetadataRow) -> String {
         var parts: [String] = []
         switch RowLook(row) {
-        case .searching: parts.append("Buscando dados…")
-        case .complete: parts.append(row.status == .saved ? "Salva e completa" : "Completa: título, artista, álbum, ano, faixa, gênero, capa e letra")
-        case .incomplete: parts.append("Falta: " + row.missingEssentials.joined(separator: ", "))
-        case .review: parts.append("Encontrada com confiança baixa: confira em Correspondência")
-        case .notFound: parts.append("Nada encontrado nas bases")
+        case .searching: parts.append(String(localized: "Buscando dados…"))
+        case .complete: parts.append(row.status == .saved ? String(localized: "Salva e completa")
+                                  : String(localized: "Completa: título, artista, álbum, ano, faixa, gênero, capa e letra"))
+        case .incomplete: parts.append(String(localized: "Falta: \(row.missingEssentials.joined(separator: ", "))"))
+        case .review: parts.append(String(localized: "Encontrada com confiança baixa: confira em Correspondência"))
+        case .notFound: parts.append(String(localized: "Nada encontrado nas bases"))
         case .failed: parts.append(row.status.label)
         }
-        if row.isDirty { parts.append("Encontrado, ainda não gravado: " + row.foundItems.joined(separator: ", ")) }
+        if row.isDirty { parts.append(String(localized: "Encontrado, ainda não gravado: \(row.foundItems.joined(separator: ", "))")) }
         return parts.joined(separator: "\n")
     }
 }
@@ -119,7 +120,7 @@ struct ConfidenceBadge: View {
                     .frame(width: 30 * c + 4, height: 5)
                 Text("\(Int((c * 100).rounded()))% de confiança").monospacedDigit().foregroundStyle(.secondary)
             }
-            .help(row.proposal?.match.map { "\($0.source.rawValue): \($0.title) · \($0.artist) · \($0.album ?? "sem álbum")" } ?? "")
+            .help(row.proposal?.match.map { "\($0.source.rawValue): \($0.title) · \($0.artist) · \($0.album ?? String(localized: "sem álbum"))" } ?? "")
         }
     }
 }
@@ -193,10 +194,10 @@ struct LyricsFlag: View {
 
     private func explanation(synced: Bool?, pending: Bool) -> String {
         let state = switch synced {
-        case true?: "Letra sincronizada: acompanha a música linha a linha (relógio verde)."
-        case false?: "Letra estática: o texto existe, mas sem marcas de tempo (ícone laranja)."
-        case nil: "Sem letra (traço vermelho). Busque em Corrigir tudo, ou na seção Letra ao lado."
+        case true?: String(localized: "Letra sincronizada: acompanha a música linha a linha (relógio verde).")
+        case false?: String(localized: "Letra estática: o texto existe, mas sem marcas de tempo (ícone laranja).")
+        case nil: String(localized: "Sem letra (traço vermelho). Busque em Corrigir tudo, ou na seção Letra ao lado.")
         }
-        return pending ? state + "\nEm azul: letra nova encontrada, gravada ao salvar." : state
+        return pending ? state + "\n" + String(localized: "Em azul: letra nova encontrada, gravada ao salvar.") : state
     }
 }

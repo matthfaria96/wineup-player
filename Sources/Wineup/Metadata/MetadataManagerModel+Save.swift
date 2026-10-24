@@ -20,10 +20,10 @@ extension MetadataManagerModel {
     // MARK: Gravação
 
     func save(onlySelection: Bool) {
-        guard let writer else { message = "Biblioteca indisponível: não é possível gravar."; return }
-        guard !isBusy else { message = "Espere a tarefa em andamento terminar (ou pare a busca) para salvar."; return }
+        guard let writer else { message = String(localized: "Biblioteca indisponível: não é possível gravar."); return }
+        guard !isBusy else { message = String(localized: "Espere a tarefa em andamento terminar (ou pare a busca) para salvar."); return }
         let targets = (onlySelection ? selectedRows : rows).filter(\.isDirty)
-        guard !targets.isEmpty else { message = "Nenhuma alteração para salvar."; return }
+        guard !targets.isEmpty else { message = String(localized: "Nenhuma alteração para salvar."); return }
         let mode = coverSaveMode
         let history = history
         let folderPath = folder?.path ?? ""
@@ -56,8 +56,9 @@ extension MetadataManagerModel {
                 }.value
                 batches = list
             }
-            message = "\(saved) músicas salvas" + (failed > 0 ? " · \(failed) com erro" : "")
-                + " · dá para desfazer em Histórico (⌘Z)"
+            message = String(localized: "\(saved) músicas salvas")
+                + (failed > 0 ? String(localized: " · \(failed) com erro") : "")
+                + String(localized: " · dá para desfazer em Histórico (⌘Z)")
             endWork(token)
         }
     }
@@ -102,7 +103,7 @@ extension MetadataManagerModel {
         updateRows(byID.keys) { row in
             guard let outcome = byID[row.id] else { return }
             guard let fresh = outcome.fresh else {
-                row.status = .failed(outcome.error ?? "Erro ao gravar")
+                row.status = .failed(outcome.error ?? String(localized: "Erro ao gravar"))
                 return
             }
             row = Self.savedRow(current: row, snapshot: outcome.snapshot, fresh: fresh)
@@ -173,7 +174,8 @@ extension MetadataManagerModel {
         })
         selection.subtract(removed)
         let names = failed.map { URL(fileURLWithPath: $0).lastPathComponent }.sorted()
-        message = "\(removed.count) arquivo(s) na Lixeira" + (names.isEmpty ? "" : " · não deu: \(names.joined(separator: ", "))")
+        message = String(localized: "\(removed.count) arquivo(s) na Lixeira")
+            + (names.isEmpty ? "" : String(localized: " · não deu: \(names.joined(separator: ", "))"))
     }
 
     /// Devolve os caminhos que não foram para a Lixeira.
@@ -215,7 +217,7 @@ extension MetadataManagerModel {
     /// Desfaz um lote inteiro e relê os arquivos afetados que estão na lista (tudo fora da thread principal).
     func undo(_ batch: SaveBatch) {
         guard let writer else { return }
-        guard !isBusy else { message = "Espere a tarefa em andamento terminar para desfazer."; return }
+        guard !isBusy else { message = String(localized: "Espere a tarefa em andamento terminar para desfazer."); return }
         let paths = Set(batch.items.map(\.path))
         let urls = rows.filter { paths.contains($0.url.path) }.map(\.url)
         let history = history
@@ -234,8 +236,9 @@ extension MetadataManagerModel {
                 if file.duplicateGroup != nil { file.issues.insert(.duplicate) }
                 row = MetadataRow(file: file, ignored: row.ignored)
             }
-            message = "\(result.restored) músicas voltaram ao que eram"
-                + (result.failed.isEmpty ? "" : " · não deu para desfazer: \(result.failed.joined(separator: ", ")) (alterado depois por outro programa?)")
+            message = String(localized: "\(result.restored) músicas voltaram ao que eram")
+                + (result.failed.isEmpty ? ""
+                   : String(localized: " · não deu para desfazer: \(result.failed.joined(separator: ", ")) (alterado depois por outro programa?)"))
             endWork(token)
         }
     }

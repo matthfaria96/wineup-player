@@ -30,7 +30,7 @@ struct PlayerPanel: View {
     private var header: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             VStack(alignment: .leading, spacing: 1) {
-                Text(state.currentTrack?.title ?? "Nada tocando")
+                Text(state.currentTrack?.title ?? String(localized: "Nada tocando"))
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(theme.text)
                 Text(state.currentTrack?.artist ?? " ")
@@ -93,7 +93,7 @@ struct PlayerPanel: View {
                 state.repeatMode = { switch state.repeatMode { case .off: .all; case .all: .one; case .one: .off } }()
             }
             .frame(width: 34)
-            .hint(["off": "Repetir: desligado", "all": "Repetir: todas", "one": "Repetir: uma"][state.repeatMode.rawValue] ?? "Repetir",
+            .hint(repeatTitle,
                   "Clique para alternar: não repetir, repetir a lista toda ou repetir só esta música.")
             ChromeButton(symbol: "folder") { state.presentOpenPanel() }.frame(width: 34)
                 .hint("Abrir (⌘O)", "Abre arquivos de música ou pastas inteiras para tocar.")
@@ -118,6 +118,14 @@ struct PlayerPanel: View {
             }
             .frame(height: 18)
             .hint("Lado do som", "L: a música inteira no fone/caixa da esquerda. •: normal (estéreo). R: inteira na direita.")
+        }
+    }
+
+    private var repeatTitle: String.LocalizationValue {
+        switch state.repeatMode {
+        case .off: "Repetir: desligado"
+        case .all: "Repetir: todas"
+        case .one: "Repetir: uma"
         }
     }
 

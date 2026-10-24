@@ -29,11 +29,11 @@ public enum DuplicateRanking {
     /// Explica por que a cópia recomendada é a melhor.
     public static func reason(best: FixerFile, other: FixerFile) -> String {
         let bExt = best.url.pathExtension.lowercased(), oExt = other.url.pathExtension.lowercased()
-        if lossless.contains(bExt) && !lossless.contains(oExt) { return "sem perda (\(bExt.uppercased()))" }
-        if (best.tech.bitrate ?? 0) > (other.tech.bitrate ?? 0) { return "maior qualidade (\(best.tech.bitrateText))" }
-        if best.hasCover && !other.hasCover { return "tem capa" }
-        if best.hasLyrics && !other.hasLyrics { return "tem letra" }
-        return "tags mais completas"
+        if lossless.contains(bExt) && !lossless.contains(oExt) { return String(localized: "sem perda (\(bExt.uppercased()))") }
+        if (best.tech.bitrate ?? 0) > (other.tech.bitrate ?? 0) { return String(localized: "maior qualidade (\(best.tech.bitrateText))") }
+        if best.hasCover && !other.hasCover { return String(localized: "tem capa") }
+        if best.hasLyrics && !other.hasLyrics { return String(localized: "tem letra") }
+        return String(localized: "tags mais completas")
     }
 }
 

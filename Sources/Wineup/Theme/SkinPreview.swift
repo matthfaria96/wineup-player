@@ -161,7 +161,7 @@ struct NewSkinFromImageView: View {
                 working = false
                 switch result {
                 case .success(let skin): onCreated(skin); dismiss()
-                case .failure: error = "Não foi possível ler essa imagem. Use JPG, PNG, HEIC ou similar."
+                case .failure: error = String(localized: "Não foi possível ler essa imagem. Use JPG, PNG, HEIC ou similar.")
                 }
             }
         }

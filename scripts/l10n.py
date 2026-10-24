@@ -21,6 +21,11 @@ SOURCE_LANGUAGE = "pt-BR"
 SPECIFIER = re.compile(r"%(?:\d+\$)?[-+ #0]*\d*(?:\.\d+)?(?:hh|h|ll|l|q|z|t|j)?[@dDiuUxXoOfFeEgGcCsSpaA%]")
 
 
+def specifiers(text):
+    """Marcadores de formato sem a posição (%1$@ conta como %@), para comparar original e tradução."""
+    return sorted(re.sub(r"\d+\$", "", m) for m in SPECIFIER.findall(text) if m != "%%")
+
+
 def languages():
     return sorted(p.stem for p in LOC.glob("*.json") if p.stem != "keys")
 
@@ -53,7 +58,7 @@ def check():
     for lang in languages():
         table = load(LOC / f"{lang}.json", {})
         missing = [k for k in keys if k not in table]
-        bad = [k for k, v in table.items() if k in keys and sorted(SPECIFIER.findall(k)) != sorted(SPECIFIER.findall(v))]
+        bad = [k for k, v in table.items() if k in keys and specifiers(k) != specifiers(v)]
         print(f"{lang}: {len(keys) - len(missing)}/{len(keys)} traduzidas, {len(bad)} com marcadores (%@, %lld) diferentes")
         for k in bad[:5]:
             print(f"   marcadores: {k!r} -> {table[k]!r}")

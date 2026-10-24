@@ -10,17 +10,17 @@ enum LayoutMode: String, CaseIterable, Identifiable {
 
     var name: String {
         switch self {
-        case .standard: "Padrão"
-        case .compact: "Compacto"
-        case .full: "Completo"
+        case .standard: String(localized: "Padrão")
+        case .compact: String(localized: "Compacto")
+        case .full: String(localized: "Completo")
         }
     }
 
     var detail: String {
         switch self {
-        case .standard: "Playlist à esquerda; player, equalizador e capa à direita"
-        case .compact: "Player, equalizador e playlist numa coluna"
-        case .full: "Todos os painéis, com letras"
+        case .standard: String(localized: "Playlist à esquerda; player, equalizador e capa à direita")
+        case .compact: String(localized: "Player, equalizador e playlist numa coluna")
+        case .full: String(localized: "Todos os painéis, com letras")
         }
     }
 

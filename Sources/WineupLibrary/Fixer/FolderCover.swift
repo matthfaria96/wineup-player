@@ -41,9 +41,9 @@ public enum OnlineServices {
 
         public var title: String {
             switch self {
-            case .metadata: "Dados e capas de álbuns (MusicBrainz e Cover Art Archive)"
-            case .albumHint: "Descobrir o álbum e capas extras (busca do iTunes)"
-            case .lyrics: "Letras"
+            case .metadata: String(localized: "Dados e capas de álbuns (MusicBrainz e Cover Art Archive)")
+            case .albumHint: String(localized: "Descobrir o álbum e capas extras (busca do iTunes)")
+            case .lyrics: String(localized: "Letras")
             }
         }
 

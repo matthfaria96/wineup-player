@@ -36,17 +36,17 @@ public struct EqPreset: Codable, Sendable, Equatable, Identifiable {
 
     /// O que cada preset faz, para o menu.
     public static let builtInDetails: [String: String] = [
-        "Flat": "Sem ajuste: o som original da música.",
-        "Rock": "Graves e agudos mais fortes, médios recuados.",
-        "Pop": "Vozes e médios na frente, brilho leve.",
-        "Jazz": "Graves macios e agudos abertos, médios suaves.",
-        "Clássica": "Quase neutro, com um pouco mais de ar e corpo.",
-        "Eletrônica": "Grave forte e agudos brilhantes, médio contido.",
-        "Acústico": "Realça violões e vozes, natural.",
-        "Volume baixo": "Compensa graves e agudos que somem com o volume baixo.",
-        "Vintage": "Quente e abafado, como vinil ou rádio antigo.",
-        "Bass Boost": "Só reforça os graves.",
-        "Vocal": "Destaca a voz e tira o embolado dos graves.",
+        "Flat": String(localized: "Sem ajuste: o som original da música."),
+        "Rock": String(localized: "Graves e agudos mais fortes, médios recuados."),
+        "Pop": String(localized: "Vozes e médios na frente, brilho leve."),
+        "Jazz": String(localized: "Graves macios e agudos abertos, médios suaves."),
+        "Clássica": String(localized: "Quase neutro, com um pouco mais de ar e corpo."),
+        "Eletrônica": String(localized: "Grave forte e agudos brilhantes, médio contido."),
+        "Acústico": String(localized: "Realça violões e vozes, natural."),
+        "Volume baixo": String(localized: "Compensa graves e agudos que somem com o volume baixo."),
+        "Vintage": String(localized: "Quente e abafado, como vinil ou rádio antigo."),
+        "Bass Boost": String(localized: "Só reforça os graves."),
+        "Vocal": String(localized: "Destaca a voz e tira o embolado dos graves."),
     ]
 
     public static func isBuiltInName(_ name: String) -> Bool {

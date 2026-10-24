@@ -7,15 +7,15 @@ public enum FixerIssue: String, Sendable, CaseIterable, Codable {
 
     public var label: String {
         switch self {
-        case .missingTitle: "Sem título"
-        case .missingArtist: "Sem artista"
-        case .missingAlbum: "Sem álbum"
-        case .missingYear: "Sem ano"
-        case .missingTrack: "Sem nº da faixa"
-        case .missingGenre: "Sem gênero"
-        case .missingCover: "Sem capa"
-        case .missingLyrics: "Sem letra"
-        case .duplicate: "Duplicada"
+        case .missingTitle: String(localized: "Sem título")
+        case .missingArtist: String(localized: "Sem artista")
+        case .missingAlbum: String(localized: "Sem álbum")
+        case .missingYear: String(localized: "Sem ano")
+        case .missingTrack: String(localized: "Sem nº da faixa")
+        case .missingGenre: String(localized: "Sem gênero")
+        case .missingCover: String(localized: "Sem capa")
+        case .missingLyrics: String(localized: "Sem letra")
+        case .duplicate: String(localized: "Duplicada")
         }
     }
 
@@ -75,7 +75,7 @@ public struct AudioTech: Sendable, Equatable {
         return r.truncatingRemainder(dividingBy: 1000) == 0 ? "\(Int(r / 1000)) kHz" : String(format: "%.1f kHz", r / 1000)
     }
     public var channelsText: String {
-        switch channels { case 1: "Mono"; case 2: "Estéreo"; case let n?: "\(n) canais"; default: "" }
+        switch channels { case 1: String(localized: "Mono"); case 2: String(localized: "Estéreo"); case let n?: String(localized: "\(n) canais"); default: "" }
     }
 }
 

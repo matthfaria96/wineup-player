@@ -21,10 +21,10 @@ extension PlayerState {
 
     /// Pede o nome e cria a playlist (opcionalmente já com uma faixa).
     func newPlaylist(with track: Track?) {
-        guard let name = TextPrompt.ask(title: "Nova playlist", value: "Nova playlist") else { return }
+        guard let name = TextPrompt.ask(title: "Nova playlist", value: String(localized: "Nova playlist")) else { return }
         browser.createPlaylist(named: name, paths: track?.storeKey.map { [$0] } ?? []) { [weak self] created, _ in
             guard let created else { return }
-            self?.statusMessage = "Playlist \u{201C}\(created.name)\u{201D} criada."
+            self?.statusMessage = String(localized: "Playlist \u{201C}\(created.name)\u{201D} criada.")
         }
     }
 
@@ -71,7 +71,7 @@ extension PlayerState {
         guard let current = queue.currentIndex else { play(track, from: visibleTracks); return }
         queue = queue.inserting([track], at: current + 1)
         reenqueue()
-        statusMessage = "\u{201C}\(track.title)\u{201D} toca a seguir."
+        statusMessage = String(localized: "\u{201C}\(track.title)\u{201D} toca a seguir.")
     }
 
     /// Abre todas as músicas da biblioteca na lista.
@@ -94,8 +94,8 @@ extension PlayerState {
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.directoryURL = NavPlaces.music
-        panel.prompt = "Usar esta pasta"
-        panel.message = "Escolha sua pasta de músicas. O Wineup abre nela e você navega a partir dela."
+        panel.prompt = String(localized: "Usar esta pasta")
+        panel.message = String(localized: "Escolha sua pasta de músicas. O Wineup abre nela e você navega a partir dela.")
         let url = panel.runModal() == .OK ? (panel.url ?? NavPlaces.music) : NavPlaces.music
         makeDefaultFolder(url)
     }
@@ -104,7 +104,7 @@ extension PlayerState {
     func makeDefaultFolder(_ url: URL) {
         browser.setDefaultFolder(url)
         if !browser.isIndexed(url) { Task { await library.addFolders([url]) } }
-        statusMessage = "Pasta padrão: \(NavPlaces.displayPath(url))"
+        statusMessage = String(localized: "Pasta padrão: \(NavPlaces.displayPath(url))")
     }
 }
 
@@ -117,7 +117,7 @@ extension PlayerState {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let entries = try? M3U.read(file) else {
                 DispatchQueue.main.async {
-                    self?.statusMessage = "Não foi possível ler a playlist \(file.lastPathComponent)."
+                    self?.statusMessage = String(localized: "Não foi possível ler a playlist \(file.lastPathComponent).")
                 }
                 return
             }
@@ -129,8 +129,8 @@ extension PlayerState {
                     self.showTracks(title: file.deletingPathExtension().lastPathComponent, items: items)
                     self.externalList = true
                     let missing = entries.count - present.count
-                    self.statusMessage = missing == 0 ? "Playlist aberta: \(items.count) faixas."
-                        : "Playlist aberta: \(items.count) faixas (\(missing) não encontradas)."
+                    self.statusMessage = missing == 0 ? String(localized: "Playlist aberta: \(items.count) faixas.")
+                        : String(localized: "Playlist aberta: \(items.count) faixas (\(missing) não encontradas).")
                 }
             }
         }
@@ -140,7 +140,7 @@ extension PlayerState {
     func importM3U() {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.init(filenameExtension: "m3u")!, .init(filenameExtension: "m3u8")!]
-        panel.message = "Escolha uma playlist M3U/M3U8 para importar"
+        panel.message = String(localized: "Escolha uma playlist M3U/M3U8 para importar")
         guard panel.runModal() == .OK, let file = panel.url, let entries = try? M3U.read(file) else { return }
         let paths = entries.map(\.url.path)
         let name = file.deletingPathExtension().lastPathComponent
@@ -148,7 +148,7 @@ extension PlayerState {
             guard let self else { return }
             self.openM3U(file)
             guard let created else { return }
-            self.statusMessage = "Playlist \u{201C}\(created.name)\u{201D} importada: \(added) de \(entries.count) faixas na biblioteca."
+            self.statusMessage = String(localized: "Playlist \u{201C}\(created.name)\u{201D} importada: \(added) de \(entries.count) faixas na biblioteca.")
         }
     }
 
@@ -156,13 +156,13 @@ extension PlayerState {
     func exportM3U() {
         let panel = NSSavePanel()
         panel.nameFieldStringValue = "\(listTitle).m3u8"
-        panel.message = "Exportar a lista atual como playlist M3U8"
+        panel.message = String(localized: "Exportar a lista atual como playlist M3U8")
         guard panel.runModal() == .OK, let url = panel.url else { return }
         do {
             try M3U.write(visibleTracks).write(to: url, atomically: true, encoding: .utf8)
-            statusMessage = "Playlist exportada: \(visibleTracks.count) faixas."
+            statusMessage = String(localized: "Playlist exportada: \(visibleTracks.count) faixas.")
         } catch {
-            statusMessage = "Não foi possível exportar a playlist."
+            statusMessage = String(localized: "Não foi possível exportar a playlist.")
         }
     }
 }

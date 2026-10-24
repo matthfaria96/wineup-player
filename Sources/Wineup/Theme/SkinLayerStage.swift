@@ -11,8 +11,10 @@ struct SkinLayerStage: View {
 
     /// Área cujas animações estão no palco: "window" ou um painel ("player", "equalizer"...).
     @State private var area = "window"
-    static let areas: [(String, String)] = [("window", "Janela"), ("player", "Player"), ("equalizer", "FX"),
-                                           ("playlist", "Lista"), ("artwork", "Capa"), ("lyrics", "Letras")]
+    static let areas: [(String, String)] = [
+        ("window", String(localized: "Janela")), ("player", String(localized: "Player")), ("equalizer", String(localized: "FX")),
+        ("playlist", String(localized: "Lista")), ("artwork", String(localized: "Capa")), ("lyrics", String(localized: "Letras")),
+    ]
 
     @State private var selected = 0
     @State private var selectedPoint: Int?
@@ -127,8 +129,9 @@ struct SkinLayerStage: View {
     static func summary(_ l: SkinManifest.Layer) -> String {
         if l.kind == .flow { return SkinEditorView.kindName(l.kind) }
         var parts = [SkinEditorView.kindName(l.kind)]
-        if l.kind == .stars, let n = l.count, n > 0 { parts.append("\(n) espalhadas") }
-        parts.append("\(l.points.count) posicionada\(l.points.count == 1 ? "" : "s")")
+        if l.kind == .stars, let n = l.count, n > 0 { parts.append(String(localized: "\(n) espalhadas")) }
+        let placed = l.points.count
+        parts.append(placed == 1 ? String(localized: "\(placed) posicionada") : String(localized: "\(placed) posicionadas"))
         return parts.joined(separator: " · ")
     }
 
@@ -143,10 +146,10 @@ struct SkinLayerStage: View {
     }
 
     private var hint: String {
-        guard let layer else { return "Adicione uma camada para começar." }
-        if layer.kind == .flow { return "O vento ocupa a área toda: ajuste força e velocidade." }
-        if layer.kind == .image { return "Clique para posicionar a imagem; arraste para mover." }
-        return "Clique no palco para adicionar · arraste para mover · ⌫ apaga o ponto escolhido."
+        guard let layer else { return String(localized: "Adicione uma camada para começar.") }
+        if layer.kind == .flow { return String(localized: "O vento ocupa a área toda: ajuste força e velocidade.") }
+        if layer.kind == .image { return String(localized: "Clique para posicionar a imagem; arraste para mover.") }
+        return String(localized: "Clique no palco para adicionar · arraste para mover · ⌫ apaga o ponto escolhido.")
     }
 
     // MARK: Palco

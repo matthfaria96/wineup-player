@@ -18,7 +18,18 @@ struct SkinEditorView: View {
     @State private var duplicateName: String?
     @State private var confirmRestore = false
 
-    enum Tab: String, CaseIterable { case art = "Arte", layers = "Animação", colors = "Cores", about = "Créditos" }
+    enum Tab: String, CaseIterable {
+        case art = "Arte", layers = "Animação", colors = "Cores", about = "Créditos"
+
+        var title: String {
+            switch self {
+            case .art: String(localized: "Arte")
+            case .layers: String(localized: "Animação")
+            case .colors: String(localized: "Cores")
+            case .about: String(localized: "Créditos")
+            }
+        }
+    }
 
     private var selected: Skin? { selectedID.flatMap { store.skin($0) } }
 
@@ -81,7 +92,7 @@ struct SkinEditorView: View {
             HStack(spacing: 4) {
                 Button { showNew = true } label: { Image(systemName: "plus") }
                     .help("Novo skin a partir de uma imagem")
-                Button { duplicateName = selected.map { "\($0.name) (cópia)" } } label: {
+                Button { duplicateName = selected.map { String(localized: "\($0.name) (cópia)") } } label: {
                     Image(systemName: "plus.square.on.square")
                 }
                 .help("Duplicar (pede o nome da cópia)")
@@ -143,7 +154,7 @@ struct SkinEditorView: View {
                         Text(skin.name).font(.system(size: 15, weight: .semibold)).lineLimit(1)
                         if store.isOfficial(skin.id) { officialBadge }
                     }
-                    Text(skin.manifest.author.isEmpty ? "Sem autor" : skin.manifest.author)
+                    Text(skin.manifest.author.isEmpty ? String(localized: "Sem autor") : skin.manifest.author)
                         .font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
                 }
                 Spacer()
@@ -167,7 +178,7 @@ struct SkinEditorView: View {
                     .disabled(skin.id == activeID)
             }
             .padding(.horizontal, 20).padding(.vertical, 12)
-            Picker("", selection: $tab) { ForEach(Tab.allCases, id: \.self) { Text($0.rawValue).tag($0) } }
+            Picker("", selection: $tab) { ForEach(Tab.allCases, id: \.self) { Text($0.title).tag($0) } }
                 .pickerStyle(.segmented).labelsHidden().fixedSize()
                 .padding(.bottom, 4)
             Form {
@@ -215,13 +226,13 @@ struct SkinEditorView: View {
             TextField("Autor", text: text(skin, \.author))
         }
         Section {
-            artRow(skin, "Fundo", file: skin.manifest.window.background?.image, dim: skin.manifest.window.background?.dim) { m, name, dim in
+            artRow(skin, String(localized: "Fundo"), file: skin.manifest.window.background?.image, dim: skin.manifest.window.background?.dim) { m, name, dim in
                 var bg = m.window.background ?? SkinManifest.Fill(image: name ?? "")
                 if let name { bg.image = name }
                 if let dim { bg.dim = dim }
                 m.window.background = bg
             }
-            artRow(skin, "Arte do skin", file: skin.manifest.artwork, dim: nil) { m, name, _ in
+            artRow(skin, String(localized: "Arte do skin"), file: skin.manifest.artwork, dim: nil) { m, name, _ in
                 if let name { m.artwork = name }
             }
         } header: { Text("Janela") } footer: {
@@ -243,7 +254,7 @@ struct SkinEditorView: View {
             Text("“Escurecer” cobre a imagem com preto para o texto continuar legível.")
         }
         Section("Controles") {
-            artRow(skin, "Moldura", file: skin.manifest.panels["default"]?.frame?.image, dim: nil) { m, name, _ in
+            artRow(skin, String(localized: "Moldura"), file: skin.manifest.panels["default"]?.frame?.image, dim: nil) { m, name, _ in
                 guard let name else { return }
                 for key in m.panels.keys {
                     var st = m.panels[key]!
@@ -251,16 +262,16 @@ struct SkinEditorView: View {
                     m.panels[key] = st
                 }
             }
-            artRow(skin, "Botão", file: skin.manifest.controls.button?.image, dim: nil) { m, name, _ in
+            artRow(skin, String(localized: "Botão"), file: skin.manifest.controls.button?.image, dim: nil) { m, name, _ in
                 if let name { m.controls.button = SkinManifest.NineSlice(image: name, slice: m.controls.button?.slice ?? 14, width: m.controls.button?.width ?? 7) }
             }
-            artRow(skin, "Botão ligado", file: skin.manifest.controls.buttonOn?.image, dim: nil) { m, name, _ in
+            artRow(skin, String(localized: "Botão ligado"), file: skin.manifest.controls.buttonOn?.image, dim: nil) { m, name, _ in
                 if let name { m.controls.buttonOn = SkinManifest.NineSlice(image: name, slice: m.controls.buttonOn?.slice ?? 14, width: m.controls.buttonOn?.width ?? 7) }
             }
-            artRow(skin, "Campo de busca", file: skin.manifest.controls.field?.image, dim: nil) { m, name, _ in
+            artRow(skin, String(localized: "Campo de busca"), file: skin.manifest.controls.field?.image, dim: nil) { m, name, _ in
                 if let name { m.controls.field = SkinManifest.NineSlice(image: name, slice: m.controls.field?.slice ?? 14, width: m.controls.field?.width ?? 7) }
             }
-            artRow(skin, "Puxador dos sliders", file: skin.manifest.controls.knob, dim: nil) { m, name, _ in
+            artRow(skin, String(localized: "Puxador dos sliders"), file: skin.manifest.controls.knob, dim: nil) { m, name, _ in
                 if let name { m.controls.knob = name }
             }
             LabeledContent("Brilho do visor") {
@@ -298,7 +309,7 @@ struct SkinEditorView: View {
                 .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.white.opacity(0.12)))
                 VStack(alignment: .leading, spacing: 1) {
                     Text(label)
-                    Text(file ?? "Padrão do app").font(.system(size: 10)).foregroundStyle(.secondary)
+                    Text(file ?? String(localized: "Padrão do app")).font(.system(size: 10)).foregroundStyle(.secondary)
                 }
             }
         }
@@ -319,12 +330,12 @@ struct SkinEditorView: View {
 
     @ViewBuilder private func colorsTab(_ skin: Skin) -> some View {
         let groups: [(String, [SkinManifest.ColorToken])] = [
-            ("Janela e painéis", [.windowTop, .windowBottom, .panelFill, .panelBorder]),
-            ("Texto", [.text, .mutedText]),
-            ("Destaques e lista", [.accent, .rowSelection, .currentRow]),
-            ("Botões e controles", [.buttonText, .buttonTextOn, .control, .display]),
-            ("Medidor de som", [.meterLow, .meterMid, .meterPeak]),
-            ("Letras e capa", [.lyricsActive, .lyricsIdle, .artworkTint]),
+            (String(localized: "Janela e painéis"), [.windowTop, .windowBottom, .panelFill, .panelBorder]),
+            (String(localized: "Texto"), [.text, .mutedText]),
+            (String(localized: "Destaques e lista"), [.accent, .rowSelection, .currentRow]),
+            (String(localized: "Botões e controles"), [.buttonText, .buttonTextOn, .control, .display]),
+            (String(localized: "Medidor de som"), [.meterLow, .meterMid, .meterPeak]),
+            (String(localized: "Letras e capa"), [.lyricsActive, .lyricsIdle, .artworkTint]),
         ]
         ForEach(groups, id: \.0) { title, tokens in
             Section(title) {
@@ -355,7 +366,7 @@ struct SkinEditorView: View {
             }
         }
         Section {
-            LabeledContent("Formato", value: "Pasta com skin.json, imagens e fontes")
+            LabeledContent("Formato", value: String(localized: "Pasta com skin.json, imagens e fontes"))
             LabeledContent("Arquivo", value: ".wineupskin (ZIP)")
         } footer: {
             Text("Tudo pode ser editado à mão: use ⋯ › Mostrar a pasta deste skin.")
@@ -420,7 +431,7 @@ struct SkinEditorView: View {
     }
 
     private func run(_ action: () throws -> Void) {
-        do { try action() } catch { self.error = "O skin não pôde ser lido ou gravado (\(error.localizedDescription))." }
+        do { try action() } catch { self.error = String(localized: "O skin não pôde ser lido ou gravado (\(error.localizedDescription)).") }
     }
 
     static func pickImage() -> URL? {
@@ -430,17 +441,17 @@ struct SkinEditorView: View {
     }
 
     static func panelName(_ key: String) -> String {
-        ["default": "todos (padrão)", "player": "Player", "equalizer": "FX", "playlist": "Lista",
-         "artwork": "Capa", "lyrics": "Letras"][key] ?? key
+        ["default": String(localized: "todos (padrão)"), "player": String(localized: "Player"), "equalizer": String(localized: "FX"), "playlist": String(localized: "Lista"),
+         "artwork": String(localized: "Capa"), "lyrics": String(localized: "Letras")][key] ?? key
     }
 
     static func kindName(_ k: SkinManifest.Layer.Kind) -> String {
         switch k {
-        case .stars: "Estrelas cintilando"
-        case .swirl: "Redemoinhos girando"
-        case .glow: "Halo que respira"
-        case .flow: "Pinceladas de vento"
-        case .image: "Imagem animada"
+        case .stars: String(localized: "Estrelas cintilando")
+        case .swirl: String(localized: "Redemoinhos girando")
+        case .glow: String(localized: "Halo que respira")
+        case .flow: String(localized: "Pinceladas de vento")
+        case .image: String(localized: "Imagem animada")
         }
     }
 }

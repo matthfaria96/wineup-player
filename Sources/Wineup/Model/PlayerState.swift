@@ -140,7 +140,7 @@ final class PlayerState: ObservableObject {
         set { if status.message != newValue { status.message = newValue } }
     }
     /// Nome do que está na lista agora (álbum, banda, pasta, estilo ou playlist).
-    @Published var listTitle = "Playlist"
+    @Published var listTitle = String(localized: "Playlist")
     @Published var listStyle: ListStyle = ListStyle(rawValue: UserDefaults.standard.string(forKey: DisplayKeys.listStyle) ?? "") ?? .compact {
         didSet { UserDefaults.standard.set(listStyle.rawValue, forKey: DisplayKeys.listStyle) }
     }
@@ -193,9 +193,9 @@ final class PlayerState: ObservableObject {
         mixer.onEqualizer = { [weak self] in self?.syncEqualizer() }
         audio.onTrackChanged = { [weak self] url, fromQueue in self?.nowPlayingChanged(url, fromQueue: fromQueue) }
         audio.onEndOfAudio = { [weak self] in self?.endOfAudio() }
-        audio.onError = { [weak self] message in self?.skipAfterFailure("Erro ao tocar: \(message)") }
+        audio.onError = { [weak self] message in self?.skipAfterFailure(String(localized: "Erro ao tocar: \(message)")) }
         audio.onDecodingFailed = { [weak self] url, message, ended in
-            self?.decodingFailed(url, message: "Erro ao tocar: \(message)", ended: ended)
+            self?.decodingFailed(url, message: String(localized: "Erro ao tocar: \(message)"), ended: ended)
         }
         audio.onConfigurationChange = { [weak self] rate in self?.outputSampleRate = rate }
         audio.setVolume(volume)
@@ -400,7 +400,7 @@ final class PlayerState: ObservableObject {
             DispatchQueue.main.async {
                 guard let self else { return }
                 guard !loaded.isEmpty else {
-                    self.statusMessage = "Nenhum áudio suportado encontrado."
+                    self.statusMessage = String(localized: "Nenhum áudio suportado encontrado.")
                     return
                 }
                 self.stop()
@@ -420,7 +420,7 @@ final class PlayerState: ObservableObject {
         panel.canChooseFiles = true
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = true
-        panel.message = "Escolha arquivos de áudio ou pastas de música"
+        panel.message = String(localized: "Escolha arquivos de áudio ou pastas de música")
         if panel.runModal() == .OK { load(urls: panel.urls) }
     }
 
@@ -464,7 +464,7 @@ final class PlayerState: ObservableObject {
                 NowPlaying.update(self)
             } catch {
                 isPlaying = false
-                skipAfterFailure("Não foi possível tocar \u{201C}\(track.title)\u{201D}: \(error.localizedDescription)")
+                skipAfterFailure(String(localized: "Não foi possível tocar \u{201C}\(track.title)\u{201D}: \(error.localizedDescription)"))
             }
         } else {
             isPlaying = true
@@ -567,9 +567,9 @@ final class PlayerState: ObservableObject {
     var isUserPreset: Bool { !EqPreset.isBuiltInName(preset) && presets.contains { $0.name == preset } }
 
     func savePreset(named name: String) {
-        guard let store = library.presetStore else { statusMessage = "Biblioteca indisponível para salvar presets."; return }
+        guard let store = library.presetStore else { statusMessage = String(localized: "Biblioteca indisponível para salvar presets."); return }
         guard let valid = EqPreset.validated(name: name, preamp: preamp, bands: bands) else {
-            statusMessage = "Nome de preset inválido (1 a \(EqPreset.maxNameLength) caracteres)."
+            statusMessage = String(localized: "Nome de preset inválido (1 a \(EqPreset.maxNameLength) caracteres).")
             return
         }
         do {
@@ -606,10 +606,10 @@ final class PlayerState: ObservableObject {
 
     private static func presetMessage(_ error: Error) -> String {
         switch error as? EqPresetStoreError {
-        case .duplicateName: return "Já existe um preset com esse nome."
-        case .reservedName: return "Esse nome é reservado a um preset embutido."
-        case .notFound: return "Preset não encontrado."
-        default: return "Não foi possível salvar o preset."
+        case .duplicateName: return String(localized: "Já existe um preset com esse nome.")
+        case .reservedName: return String(localized: "Esse nome é reservado a um preset embutido.")
+        case .notFound: return String(localized: "Preset não encontrado.")
+        default: return String(localized: "Não foi possível salvar o preset.")
         }
     }
 
@@ -755,7 +755,7 @@ final class PlayerState: ObservableObject {
                 NowPlaying.update(self)
                 self.timedLyrics = timed
                 let found = lines?.isEmpty == false
-                self.lyricLines = found ? lines! : ["Letra indisponível\nEsta faixa não tem letra salva."]
+                self.lyricLines = found ? lines! : [String(localized: "Letra indisponível\nEsta faixa não tem letra salva.")]
                 self.lyricsOrigin = found ? .local(synced: timed != nil) : .none
                 if !found, self.lyricsOnline {
                     switch OnlineConsent.answer {
@@ -771,7 +771,7 @@ final class PlayerState: ObservableObject {
     /// Sem letra local: procura no catálogo online e mostra (sem gravar nada; o painel oferece salvar o .lrc).
     private func fetchOnlineLyrics(for track: Track, url: URL) {
         lyricsOrigin = .searching
-        lyricLines = ["Procurando a letra…"]
+        lyricLines = [String(localized: "Procurando a letra…")]
         let duration = track.end.map { $0 - (track.start ?? 0) } ?? Double(track.duration)
         // Na thread principal: estas propriedades redesenham a tela e o menu (fora dela o app fechava).
         Task { @MainActor [weak self] in
@@ -797,7 +797,7 @@ final class PlayerState: ObservableObject {
         if let track = currentTrack, let url = track.url { fetchOnlineLyrics(for: track, url: url) }
     }
 
-    static let noLyricsMessage = "Letra indisponível\nEsta faixa não tem letra salva e não a encontramos no nosso catálogo online."
+    static let noLyricsMessage = String(localized: "Letra indisponível\nEsta faixa não tem letra salva e não a encontramos no nosso catálogo online.")
 
     /// Grava a letra encontrada online como .lrc ao lado da música.
     func saveOnlineLyrics() {
@@ -806,7 +806,7 @@ final class PlayerState: ObservableObject {
             _ = try LyricsFileWriter.write(text, for: url, replace: false)
             lyricsOrigin = .local(synced: lyrics.isSynced)
         } catch {
-            statusMessage = "Não foi possível salvar o .lrc"
+            statusMessage = String(localized: "Não foi possível salvar o .lrc")
         }
     }
 }
@@ -858,7 +858,7 @@ enum LyricsOrigin: Equatable {
 }
 
 extension PlayerState {
-    static let correctionLevels: [(name: String, lufs: Double)] = [("Baixo", -18), ("Padrão", -14), ("Alto", -11)]
+    static let correctionLevels: [(name: String, lufs: Double)] = [(String(localized: "Baixo"), -18), (String(localized: "Padrão"), -14), (String(localized: "Alto"), -11)]
 
     /// Mede o volume das músicas da lista em segundo plano (para a Correção de Som já valer na primeira vez).
     func measureLoudness(of tracks: [Track]) {
@@ -871,7 +871,7 @@ extension PlayerState {
             }.value
             if Task.isCancelled { return }
             guard !urls.isEmpty else {
-                await MainActor.run { self?.statusMessage = "Correção de Som: todas estas músicas já estão medidas." }
+                await MainActor.run { self?.statusMessage = String(localized: "Correção de Som: todas estas músicas já estão medidas.") }
                 return
             }
             await MainActor.run { self?.loudnessProgress = (0, urls.count) }
@@ -880,12 +880,12 @@ extension PlayerState {
                 _ = await Task.detached(priority: .utility) { LoudnessAnalyzer.shared.measure(url) }.value
                 await MainActor.run {
                     self?.loudnessProgress = (n + 1, urls.count)
-                    self?.statusMessage = "Correção de Som: medindo \(n + 1) de \(urls.count)…"
+                    self?.statusMessage = String(localized: "Correção de Som: medindo \(n + 1) de \(urls.count)…")
                 }
             }
             await MainActor.run {
                 self?.loudnessProgress = nil
-                self?.statusMessage = "Correção de Som: \(urls.count) músicas medidas."
+                self?.statusMessage = String(localized: "Correção de Som: \(urls.count) músicas medidas.")
             }
         }
     }

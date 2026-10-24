@@ -49,7 +49,7 @@ struct SkinButtonStyle: ButtonStyle {
 
 /// Menu com o rótulo dentro da arte de botão do skin (a lista que abre é a do sistema).
 struct SkinMenu<Items: View, Label: View>: View {
-    var help: String = ""
+    var help: LocalizedStringKey = ""
     /// Largura mínima do conteúdo (para alinhar com botões vizinhos do mesmo tamanho).
     var minWidth: CGFloat? = nil
     @ViewBuilder var items: Items

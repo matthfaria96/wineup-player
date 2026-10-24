@@ -64,24 +64,24 @@ extension ChromeButton where Label == Image {
     /// Nome lido pelo VoiceOver para os ícones usados nos controles.
     static func spokenName(_ symbol: String) -> String {
         switch symbol {
-        case "backward.fill": "Anterior"
-        case "forward.fill": "Próxima"
-        case "play.fill": "Tocar"
-        case "pause.fill": "Pausar"
-        case "stop.fill": "Parar"
-        case "shuffle": "Aleatório"
-        case "repeat": "Repetir"
-        case "repeat.1": "Repetir uma"
-        case "folder": "Abrir arquivos"
-        case "minus": "Diminuir"
-        case "plus": "Aumentar"
+        case "backward.fill": String(localized: "Anterior")
+        case "forward.fill": String(localized: "Próxima")
+        case "play.fill": String(localized: "Tocar")
+        case "pause.fill": String(localized: "Pausar")
+        case "stop.fill": String(localized: "Parar")
+        case "shuffle": String(localized: "Aleatório")
+        case "repeat": String(localized: "Repetir")
+        case "repeat.1": String(localized: "Repetir uma")
+        case "folder": String(localized: "Abrir arquivos")
+        case "minus": String(localized: "Diminuir")
+        case "plus": String(localized: "Aumentar")
         default: symbol
         }
     }
 }
 
 extension ChromeButton where Label == Text {
-    init(_ title: String, isOn: Bool = false, action: @escaping () -> Void) {
+    init(_ title: LocalizedStringKey, isOn: Bool = false, action: @escaping () -> Void) {
         self.init(isOn: isOn, action: action) { Text(title) }
     }
 }

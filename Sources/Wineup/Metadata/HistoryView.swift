@@ -17,7 +17,7 @@ struct HistoryView: View {
                     Image(systemName: batch.undone ? "arrow.uturn.backward.circle" : "checkmark.circle.fill")
                         .foregroundStyle(batch.undone ? Color.secondary : .green)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("\(batch.items.count) música\(batch.items.count == 1 ? "" : "s") · \(batch.date.formatted(date: .abbreviated, time: .shortened))")
+                        title(batch)
                             .font(.system(size: 12, weight: .medium))
                         Text(names(batch)).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(2)
                         Text(NavPlaces.displayPath(URL(fileURLWithPath: batch.folder)))
@@ -43,15 +43,21 @@ struct HistoryView: View {
         .onAppear { model.refreshHistory() }
         .confirmationDialog("Desfazer esta gravação?", isPresented: Binding(get: { confirm != nil }, set: { if !$0 { confirm = nil } }),
                             presenting: confirm) { batch in
-            Button("Desfazer \(batch.items.count) música\(batch.items.count == 1 ? "" : "s")") { model.undo(batch) }
+            Button(batch.items.count == 1 ? "Desfazer 1 música" : "Desfazer \(batch.items.count) músicas") { model.undo(batch) }
             Button("Cancelar", role: .cancel) {}
         } message: { batch in
             Text("As tags, capas e letras de \(names(batch)) voltam ao que eram antes desta gravação.")
         }
     }
 
+    /// Singular e plural como frases inteiras, para cada uma ser traduzida.
+    private func title(_ batch: SaveBatch) -> Text {
+        let date = batch.date.formatted(date: .abbreviated, time: .shortened)
+        return batch.items.count == 1 ? Text("1 música · \(date)") : Text("\(batch.items.count) músicas · \(date)")
+    }
+
     private func names(_ batch: SaveBatch) -> String {
         let all = batch.items.map { URL(fileURLWithPath: $0.path).deletingPathExtension().lastPathComponent }
-        return all.prefix(3).joined(separator: ", ") + (all.count > 3 ? " e mais \(all.count - 3)" : "")
+        return all.prefix(3).joined(separator: ", ") + (all.count > 3 ? String(localized: " e mais \(all.count - 3)") : "")
     }
 }

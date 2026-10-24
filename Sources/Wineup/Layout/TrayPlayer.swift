@@ -73,7 +73,7 @@ final class TrayController: NSObject {
     private func refresh() {
         guard let button = item?.button else { return }
         button.image = NSImage(systemSymbolName: status.playing ? "waveform" : "music.note",
-                               accessibilityDescription: status.playing ? "Tocando" : "Pausado")
+                               accessibilityDescription: status.playing ? String(localized: "Tocando") : String(localized: "Pausado"))
         button.title = status.title.map { " " + $0 } ?? ""
     }
 
@@ -165,7 +165,7 @@ struct TrayPlayerView: View {
             .clipShape(RoundedRectangle(cornerRadius: 6))
             .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
-                Text(state.currentTrack?.title ?? "Nada tocando").font(.system(size: 14, weight: .semibold)).lineLimit(2)
+                Text(state.currentTrack?.title ?? String(localized: "Nada tocando")).font(.system(size: 14, weight: .semibold)).lineLimit(2)
                 Text(state.currentTrack?.artist ?? "").font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(1)
                 Text([state.currentTrack?.album, state.currentTrack?.year].compactMap { $0 }.joined(separator: " · "))
                     .font(.system(size: 11)).foregroundStyle(.tertiary).lineLimit(1)
@@ -238,7 +238,7 @@ struct TrayPlayerView: View {
         }
     }
 
-    private func control(_ symbol: String, _ label: String, size: CGFloat, on: Bool = false,
+    private func control(_ symbol: String, _ label: LocalizedStringKey, size: CGFloat, on: Bool = false,
                          action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol).font(.system(size: size))

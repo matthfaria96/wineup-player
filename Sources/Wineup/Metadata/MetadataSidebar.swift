@@ -269,7 +269,7 @@ struct LyricsBox: View {
         }
     }
 
-    private func iconButton(_ symbol: String, _ help: String, prominent: Bool = false, action: @escaping () -> Void) -> some View {
+    private func iconButton(_ symbol: String, _ help: LocalizedStringKey, prominent: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol).frame(width: 16, height: 16)
                 .contentTransition(.symbolEffect(.replace))
@@ -291,7 +291,7 @@ struct LyricsBox: View {
             guard !Task.isCancelled else { return }
             withAnimation(.snappy) { options = found; optionsFor = current.id }
             searching = false
-            if found.isEmpty { model.message = "Não encontramos letra para esta faixa." }
+            if found.isEmpty { model.message = String(localized: "Não encontramos letra para esta faixa.") }
         }
     }
 
@@ -300,7 +300,7 @@ struct LyricsBox: View {
 
 /// Etiqueta pequena e colorida.
 private struct Tag: View {
-    let text: String
+    let text: LocalizedStringKey
     let color: Color
     var symbol: String?
 
@@ -491,12 +491,12 @@ struct SelectionHeader: View {
 
     private func status(_ row: MetadataRow) -> String {
         switch RowLook(row) {
-        case .searching: "Buscando…"
-        case .complete: "Completa"
-        case .incomplete: row.isDirty ? "Encontrado: \(row.foundItems.joined(separator: ", ")) · falta salvar"
-            : "Falta: " + row.missingEssentials.joined(separator: ", ")
-        case .review: "Encontrada com pouca confiança"
-        case .notFound: "Nada encontrado nas bases"
+        case .searching: String(localized: "Buscando…")
+        case .complete: String(localized: "Completa")
+        case .incomplete: row.isDirty ? String(localized: "Encontrado: \(row.foundItems.joined(separator: ", ")) · falta salvar")
+            : String(localized: "Falta: \(row.missingEssentials.joined(separator: ", "))")
+        case .review: String(localized: "Encontrada com pouca confiança")
+        case .notFound: String(localized: "Nada encontrado nas bases")
         case .failed: row.status.label
         }
     }

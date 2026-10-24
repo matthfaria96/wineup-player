@@ -53,7 +53,7 @@ struct SkinInstallView: View {
             if use { activeID = skin.id }
             onClose()
         } catch {
-            self.error = "Não foi possível instalar este skin."
+            self.error = String(localized: "Não foi possível instalar este skin.")
         }
     }
 }
@@ -68,7 +68,7 @@ enum SkinInstaller {
             let skin = try SkinStore.shared.inspect(archive)
             let tmp = skin.folder.deletingLastPathComponent()
             let window = NSWindow(contentRect: .zero, styleMask: [.titled, .closable], backing: .buffered, defer: false)
-            window.title = "Instalar skin"
+            window.title = String(localized: "Instalar skin")
             window.isReleasedWhenClosed = false
             let close = { [weak window] in
                 window?.close()
@@ -83,7 +83,7 @@ enum SkinInstaller {
             NSApp.activate(ignoringOtherApps: true)
         } catch {
             let alert = NSAlert()
-            alert.messageText = "Este arquivo não é um skin válido do Wineup."
+            alert.messageText = String(localized: "Este arquivo não é um skin válido do Wineup.")
             alert.informativeText = archive.lastPathComponent
             alert.runModal()
         }

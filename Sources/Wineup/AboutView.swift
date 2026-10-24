@@ -11,7 +11,7 @@ struct AboutView: View {
         let info = Bundle.main.infoDictionary
         let marketing = info?["CFBundleShortVersionString"] as? String ?? "0.1.0"
         let build = info?["CFBundleVersion"] as? String ?? "1"
-        return "Versão \(marketing) (\(build))"
+        return String(localized: "Versão \(marketing) (\(build))")
     }
 
     var body: some View {

@@ -79,7 +79,7 @@ struct LyricsSyncEditor: View {
     }
 
     private var appliedText: String {
-        applied == 0 ? "Original" : String(format: "%@%.2f s", applied > 0 ? "+" : "−", abs(applied)).replacingOccurrences(of: ".", with: ",")
+        applied == 0 ? String(localized: "Original") : String(format: "%@%.2f s", applied > 0 ? "+" : "−", abs(applied)).replacingOccurrences(of: ".", with: ",")
     }
 
     private var transport: some View {

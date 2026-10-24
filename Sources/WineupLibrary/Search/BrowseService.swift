@@ -19,9 +19,9 @@ public struct FolderSummary: Sendable, Equatable, Identifiable {
 
 /// Navegação por artista, álbum, gênero, pasta e todas as faixas. Somente leitura.
 public struct BrowseService: Sendable {
-    public static let uncategorizedGenre = "Sem categoria"
+    public static let uncategorizedGenre = String(localized: "Sem categoria")
     public static let singlesID: Int64 = -1
-    public static let singlesTitle = "Singles"
+    public static let singlesTitle = String(localized: "Singles")
 
     private let database: LibraryDatabase
     public init(database: LibraryDatabase) { self.database = database }

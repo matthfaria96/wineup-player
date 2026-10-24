@@ -33,7 +33,7 @@ struct ArtistHeader: View {
         var singles: [Track] = []
         var out: [(String, [Track], String?)] = []
         for (name, items) in byAlbum {
-            if name.isEmpty || name == "Unknown Album" || items.count == 1 { singles += items; continue }
+            if name.isEmpty || LibraryBrowser.isUnknownAlbum(name) || items.count == 1 { singles += items; continue }
             out.append((name, items, items.compactMap(\.year).min().map { String($0.prefix(4)) }))
         }
         out.sort { ($0.2 ?? "9999", $0.0) < ($1.2 ?? "9999", $1.0) }
@@ -70,9 +70,9 @@ struct ArtistHeader: View {
             }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
-                    card(name: nil, title: "Todas as músicas", subtitle: "\(tracks.count) faixas", cover: tracks.first?.url)
+                    card(name: nil, title: String(localized: "Todas as músicas"), subtitle: String(localized: "\(tracks.count) faixas"), cover: tracks.first?.url)
                     ForEach(releases, id: \.name) { r in
-                        card(name: r.name, title: r.name, subtitle: [r.year, "\(r.tracks.count) faixas"].compactMap { $0 }.joined(separator: " · "),
+                        card(name: r.name, title: r.name, subtitle: [r.year, String(localized: "\(r.tracks.count) faixas")].compactMap { $0 }.joined(separator: " · "),
                              cover: r.tracks.first?.url)
                     }
                 }

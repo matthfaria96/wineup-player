@@ -74,6 +74,6 @@ struct ChromeSlider: View {
     private var spokenValue: String {
         if range.lowerBound < 0 { return String(format: "%+.0f dB", value) }
         let span = range.upperBound - range.lowerBound
-        return "\(Int(((value - range.lowerBound) / max(span, 0.0001) * 100).rounded())) por cento"
+        return String(localized: "\(Int(((value - range.lowerBound) / max(span, 0.0001) * 100).rounded())) por cento")
     }
 }

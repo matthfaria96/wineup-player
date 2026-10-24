@@ -96,7 +96,7 @@ struct AlbumSearchView: View {
             do {
                 results = try await model.musicBrainz.searchReleases(artist: artist, album: album)
                 choice = results.first?.id
-                if results.isEmpty { error = "Nenhum álbum encontrado." }
+                if results.isEmpty { error = String(localized: "Nenhum álbum encontrado.") }
             } catch {
                 self.error = MetadataManagerModel.describe(error)
             }
@@ -192,7 +192,7 @@ struct AlbumApplyView: View {
         if let v = release.albumFields[field] { return v }
         guard let first = release.tracks.first else { return "" }
         let v = ReleaseDetail.trackFields(first)[field] ?? ""
-        return "\(v) … (por faixa)"
+        return String(localized: "\(v) … (por faixa)")
     }
 
     private var fieldList: some View {
@@ -227,7 +227,7 @@ struct AlbumApplyView: View {
                 Text(cover.map { c in
                     let size = decoded?.sizeText.map { "\($0), " } ?? ""
                     return "\(size)\(c.data.count / 1024) KB, \(c.mimeType)"
-                } ?? "Capa").font(.caption)
+                } ?? String(localized: "Capa")).font(.caption)
             }
             .disabled(cover == nil)
         }

@@ -8,9 +8,9 @@ public enum ArtistOrder: String, CaseIterable, Sendable, Identifiable {
 
     public var title: String {
         switch self {
-        case .byAlbum: "Por álbum"
-        case .chronological: "Cronológica"
-        case .alphabetical: "Alfabética"
+        case .byAlbum: String(localized: "Por álbum")
+        case .chronological: String(localized: "Cronológica")
+        case .alphabetical: String(localized: "Alfabética")
         }
     }
 }

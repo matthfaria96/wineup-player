@@ -63,7 +63,7 @@ public final class TagWriter: Sendable {
     private static func describe(_ pictures: [TagSnapshot.PictureInfo]) -> String? {
         guard let first = pictures.first else { return nil }
         let kb = max(1, first.byteCount / 1024)
-        return pictures.count == 1 ? "capa (\(kb) KB)" : "\(pictures.count) imagens"
+        return pictures.count == 1 ? String(localized: "capa (\(kb) KB)") : String(localized: "\(pictures.count) imagens")
     }
 
     /// Só campos cujo valor realmente muda; valor vazio equivale a ausente.

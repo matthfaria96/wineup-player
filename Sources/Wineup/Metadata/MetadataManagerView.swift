@@ -40,7 +40,7 @@ struct MetadataManagerView: View {
             .frame(minWidth: 560)
         }
         .toolbar { toolbar }
-        .navigationTitle(model.folder?.lastPathComponent ?? "Metadados")
+        .navigationTitle(model.folder?.lastPathComponent ?? String(localized: "Metadados"))
         .navigationSubtitle(model.folder.map { NavPlaces.displayPath($0) } ?? "")
         .sheet(isPresented: $showAlbumSearch) { AlbumSearchView(model: model) }
         .sheet(isPresented: $showCoverSearch) { CoverSearchView(model: model) }
@@ -256,17 +256,17 @@ struct MetadataSettings: View {
 
     private static func title(_ service: OnlineServices.Service) -> String {
         switch service {
-        case .metadata: "Dados e capas de álbuns"
-        case .albumHint: "Descobrir o álbum"
-        case .lyrics: "Letras"
+        case .metadata: String(localized: "Dados e capas de álbuns")
+        case .albumHint: String(localized: "Descobrir o álbum")
+        case .lyrics: String(localized: "Letras")
         }
     }
 
     private static func detail(_ service: OnlineServices.Service) -> String {
         switch service {
-        case .metadata: "MusicBrainz e Cover Art Archive"
-        case .albumHint: "Busca do iTunes, também para capas extras"
-        case .lyrics: "Catálogos de letras sincronizadas"
+        case .metadata: String(localized: "MusicBrainz e Cover Art Archive")
+        case .albumHint: String(localized: "Busca do iTunes, também para capas extras")
+        case .lyrics: String(localized: "Catálogos de letras sincronizadas")
         }
     }
 }

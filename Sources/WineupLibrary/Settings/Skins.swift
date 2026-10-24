@@ -165,25 +165,25 @@ public struct SkinManifest: Codable, Equatable, Sendable, Identifiable {
 
         public var label: String {
             switch self {
-            case .windowTop: "Fundo da janela (topo)"
-            case .windowBottom: "Fundo da janela (base)"
-            case .panelFill: "Fundo dos painéis"
-            case .panelBorder: "Borda dos painéis"
-            case .text: "Texto"
-            case .mutedText: "Texto secundário"
-            case .accent: "Destaque"
-            case .rowSelection: "Linha selecionada"
-            case .currentRow: "Música tocando"
-            case .lyricsActive: "Letra: linha atual"
-            case .lyricsIdle: "Letra: outras linhas"
-            case .control: "Controles"
-            case .artworkTint: "Fundo da capa"
-            case .display: "Visor (relógio)"
-            case .buttonText: "Texto dos botões"
-            case .buttonTextOn: "Texto dos botões ligados"
-            case .meterLow: "Medidor de som: normal"
-            case .meterMid: "Medidor de som: alto"
-            case .meterPeak: "Medidor de som: pico"
+            case .windowTop: String(localized: "Fundo da janela (topo)")
+            case .windowBottom: String(localized: "Fundo da janela (base)")
+            case .panelFill: String(localized: "Fundo dos painéis")
+            case .panelBorder: String(localized: "Borda dos painéis")
+            case .text: String(localized: "Texto")
+            case .mutedText: String(localized: "Texto secundário")
+            case .accent: String(localized: "Destaque")
+            case .rowSelection: String(localized: "Linha selecionada")
+            case .currentRow: String(localized: "Música tocando")
+            case .lyricsActive: String(localized: "Letra: linha atual")
+            case .lyricsIdle: String(localized: "Letra: outras linhas")
+            case .control: String(localized: "Controles")
+            case .artworkTint: String(localized: "Fundo da capa")
+            case .display: String(localized: "Visor (relógio)")
+            case .buttonText: String(localized: "Texto dos botões")
+            case .buttonTextOn: String(localized: "Texto dos botões ligados")
+            case .meterLow: String(localized: "Medidor de som: normal")
+            case .meterMid: String(localized: "Medidor de som: alto")
+            case .meterPeak: String(localized: "Medidor de som: pico")
             }
         }
     }

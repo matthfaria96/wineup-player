@@ -9,11 +9,11 @@ enum BrowseMode: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .albums: "Álbuns"
-        case .artists: "Bandas"
-        case .folders: "Pastas"
-        case .genres: "Estilos"
-        case .playlists: "Playlists"
+        case .albums: String(localized: "Álbuns")
+        case .artists: String(localized: "Bandas")
+        case .folders: String(localized: "Pastas")
+        case .genres: String(localized: "Estilos")
+        case .playlists: String(localized: "Playlists")
         }
     }
 
@@ -62,9 +62,9 @@ enum ListStyle: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .compact: "Compacta"
-        case .detailed: "Com detalhes"
-        case .grid: "Grade"
+        case .compact: String(localized: "Compacta")
+        case .detailed: String(localized: "Com detalhes")
+        case .grid: String(localized: "Grade")
         }
     }
 }
@@ -72,12 +72,12 @@ enum ListStyle: String, CaseIterable, Identifiable {
 extension MarkColor {
     var displayName: String {
         switch self {
-        case .green: "Verde"
-        case .blue: "Azul"
-        case .purple: "Roxa"
-        case .red: "Vermelha"
-        case .orange: "Laranja"
-        case .yellow: "Amarela"
+        case .green: String(localized: "Verde")
+        case .blue: String(localized: "Azul")
+        case .purple: String(localized: "Roxa")
+        case .red: String(localized: "Vermelha")
+        case .orange: String(localized: "Laranja")
+        case .yellow: String(localized: "Amarela")
         }
     }
 }

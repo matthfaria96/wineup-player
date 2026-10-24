@@ -87,7 +87,7 @@ public struct CollectionsStore: Sendable {
     @discardableResult
     public func createPlaylist(named name: String) throws -> UserPlaylist {
         try database.pool.write { db in
-            let base = name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Nova playlist" : name
+            let base = name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? String(localized: "Nova playlist") : name
             let existing = Set(try String.fetchAll(db, sql: "SELECT name FROM playlist").map { $0.lowercased() })
             var finalName = base
             var n = 2

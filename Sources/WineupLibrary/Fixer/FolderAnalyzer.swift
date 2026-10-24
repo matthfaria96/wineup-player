@@ -57,7 +57,7 @@ public enum FolderAnalyzer {
         case "mp3":
             let v = url.path.withCString { wid3_tag_version($0) }
             let v1 = url.path.withCString { wid3_has_id3v1($0) } == 1
-            let main = v > 0 ? "ID3v2.\(v)" : (v1 ? "" : "sem tag")
+            let main = v > 0 ? "ID3v2.\(v)" : (v1 ? "" : String(localized: "sem tag"))
             return [main, v1 ? "ID3v1" : ""].filter { !$0.isEmpty }.joined(separator: " + ")
         case "wav", "wave":
             let v = url.path.withCString { wid3_tag_version($0) }

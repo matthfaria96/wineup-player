@@ -11,13 +11,13 @@ enum VisualMode: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .cover: "Capa da música"
-        case .skinArt: "Arte do skin"
-        case .aurora: "Aurora na Noruega"
-        case .fjord: "Noite de verão na Suécia"
-        case .city: "Cidade à noite"
-        case .universe: "Galáxia"
-        case .videos: "Vídeos"
+        case .cover: String(localized: "Capa da música")
+        case .skinArt: String(localized: "Arte do skin")
+        case .aurora: String(localized: "Aurora na Noruega")
+        case .fjord: String(localized: "Noite de verão na Suécia")
+        case .city: String(localized: "Cidade à noite")
+        case .universe: String(localized: "Galáxia")
+        case .videos: String(localized: "Vídeos")
         }
     }
 

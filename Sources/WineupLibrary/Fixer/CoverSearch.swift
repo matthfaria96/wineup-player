@@ -52,7 +52,7 @@ public struct CoverSearch: Sendable {
             let id = (r["collectionId"] as? Int).map(String.init) ?? art
             return CoverCandidate(id: "it:\(id)", source: .iTunes, title: title, artist: r["artistName"] as? String ?? "",
                                   date: (r["releaseDate"] as? String).map { String($0.prefix(10)) },
-                                  detail: (r["trackCount"] as? Int).map { "\($0) faixas" }, thumbURL: thumb, fullURL: full)
+                                  detail: (r["trackCount"] as? Int).map { String(localized: "\($0) faixas") }, thumbURL: thumb, fullURL: full)
         }
     }
 

@@ -10,11 +10,11 @@ struct MetadataRow: Identifiable, Equatable {
         var label: String {
             switch self {
             case .idle: ""
-            case .searching: "Buscando…"
-            case .review: "Revisar"
-            case .ready: "Pronta para salvar"
-            case .notFound: "Não encontrada"
-            case .saved: "Salva"
+            case .searching: String(localized: "Buscando…")
+            case .review: String(localized: "Revisar")
+            case .ready: String(localized: "Pronta para salvar")
+            case .notFound: String(localized: "Não encontrada")
+            case .saved: String(localized: "Salva")
             case .failed(let m): m
             }
         }
@@ -123,10 +123,10 @@ struct MetadataRow: Identifiable, Equatable {
     /// Problema que o usuário mandou ignorar não conta como falta.
     var missingEssentials: [String] {
         let checks: [(String, Bool, FixerIssue)] = [
-            ("Título", value("title").isEmpty, .missingTitle), ("Artista", value("artist").isEmpty, .missingArtist),
-            ("Álbum", value("album").isEmpty, .missingAlbum), ("Ano", value("year").isEmpty, .missingYear),
-            ("Faixa", value("trackNumber").isEmpty, .missingTrack), ("Gênero", value("genre").isEmpty, .missingGenre),
-            ("Capa", !willHaveCover, .missingCover), ("Letra", !willHaveLyrics, .missingLyrics),
+            (String(localized: "Título"), value("title").isEmpty, .missingTitle), (String(localized: "Artista"), value("artist").isEmpty, .missingArtist),
+            (String(localized: "Álbum"), value("album").isEmpty, .missingAlbum), (String(localized: "Ano"), value("year").isEmpty, .missingYear),
+            (String(localized: "Faixa"), value("trackNumber").isEmpty, .missingTrack), (String(localized: "Gênero"), value("genre").isEmpty, .missingGenre),
+            (String(localized: "Capa"), !willHaveCover, .missingCover), (String(localized: "Letra"), !willHaveLyrics, .missingLyrics),
         ]
         return checks.filter { $0.1 && !ignored.contains($0.2) }.map(\.0)
     }
@@ -137,8 +137,8 @@ struct MetadataRow: Identifiable, Equatable {
     /// Itens que a busca trouxe e ainda não foram gravados (nomes visíveis).
     var foundItems: [String] {
         var out = edits.keys.sorted().map(MetadataFieldName.label)
-        if cover != nil { out.append("Capa") }
-        if lyrics?.text != nil { out.append("Letra") }
+        if cover != nil { out.append(String(localized: "Capa")) }
+        if lyrics?.text != nil { out.append(String(localized: "Letra")) }
         return out
     }
 
@@ -168,10 +168,10 @@ enum MetadataFilter: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .all: "Todas"
-        case .problems: "Com problemas"
-        case .changed: "Alteradas"
-        case .duplicates: "Duplicadas"
+        case .all: String(localized: "Todas")
+        case .problems: String(localized: "Com problemas")
+        case .changed: String(localized: "Alteradas")
+        case .duplicates: String(localized: "Duplicadas")
         }
     }
 
@@ -189,16 +189,16 @@ enum MetadataFilter: String, CaseIterable, Identifiable {
 enum MetadataFieldName {
     static func label(_ field: String) -> String {
         switch field {
-        case "title": "Título"
-        case "artist": "Artista"
-        case "album": "Álbum"
-        case "year": "Ano"
-        case "trackNumber": "Faixa"
-        case "genre": "Gênero"
-        case "comment": "Comentário"
-        case "albumArtist": "Artista do álbum"
-        case "composer": "Compositor"
-        case "discNumber": "Disco"
+        case "title": String(localized: "Título")
+        case "artist": String(localized: "Artista")
+        case "album": String(localized: "Álbum")
+        case "year": String(localized: "Ano")
+        case "trackNumber": String(localized: "Faixa")
+        case "genre": String(localized: "Gênero")
+        case "comment": String(localized: "Comentário")
+        case "albumArtist": String(localized: "Artista do álbum")
+        case "composer": String(localized: "Compositor")
+        case "discNumber": String(localized: "Disco")
         default: field
         }
     }

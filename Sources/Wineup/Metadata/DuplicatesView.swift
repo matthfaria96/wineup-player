@@ -76,7 +76,8 @@ struct DuplicatesView: View {
                     .help(file.hasLyrics ? "Tem letra" : "Sem letra")
             }
             .font(.system(size: 11)).monospacedDigit()
-            Text(isBest ? "Manter" : best.map { "melhor: a 1ª (\(DuplicateRanking.reason(best: $0, other: file)))" } ?? "")
+            Text(isBest ? String(localized: "Manter")
+                 : best.map { String(localized: "melhor: a 1ª (\(DuplicateRanking.reason(best: $0, other: file)))") } ?? "")
                 .font(.system(size: 10, weight: isBest ? .semibold : .regular))
                 .foregroundStyle(isBest ? Color.green : .secondary)
                 .frame(width: 190, alignment: .leading)

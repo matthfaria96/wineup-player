@@ -11,13 +11,13 @@ enum ViewMode: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .files: "Pastas"
-        case .songs: "Músicas"
-        case .albums: "Álbuns"
-        case .artists: "Artistas"
-        case .genres: "Gêneros"
-        case .playlists: "Playlists"
-        case .queue: "Fila"
+        case .files: String(localized: "Pastas")
+        case .songs: String(localized: "Músicas")
+        case .albums: String(localized: "Álbuns")
+        case .artists: String(localized: "Artistas")
+        case .genres: String(localized: "Gêneros")
+        case .playlists: String(localized: "Playlists")
+        case .queue: String(localized: "Fila")
         }
     }
 
@@ -232,7 +232,7 @@ final class LibraryBrowser: ObservableObject {
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.directoryURL = folder
-        panel.message = "Escolha uma pasta para ver"
+        panel.message = String(localized: "Escolha uma pasta para ver")
         if panel.runModal() == .OK, let url = panel.url { go(folder: url) }
     }
 
@@ -273,7 +273,7 @@ final class LibraryBrowser: ObservableObject {
             isLoading = false
             groups = []
             subfolders = []
-            onShowTracks?("Fila", queueProvider?() ?? [])
+            onShowTracks?(String(localized: "Fila"), queueProvider?() ?? [])
             return
         }
         let token = loadToken
@@ -302,7 +302,7 @@ final class LibraryBrowser: ObservableObject {
                     self.group = reopened
                     self.showGroupTracks(reopened)
                 } else if !view.isGrouping {
-                    self.onShowTracks?(view == .files ? Self.name(of: folder) : "Músicas", result.tracks)
+                    self.onShowTracks?(view == .files ? Self.name(of: folder) : String(localized: "Músicas"), result.tracks)
                 }
             }
         }
@@ -340,7 +340,7 @@ final class LibraryBrowser: ObservableObject {
         case .albums:
             built.groups = Self.albums(scope(folder, marks: marks))
         case .artists:
-            built.groups = Self.grouped(scope(folder, marks: marks), key: { $0.artist }, empty: "Artista desconhecido")
+            built.groups = Self.grouped(scope(folder, marks: marks), key: { $0.artist }, empty: String(localized: "Artista desconhecido"))
         case .genres:
             built.groups = Self.grouped(scope(folder, marks: marks), key: { $0.genre }, empty: BrowseService.uncategorizedGenre)
         case .playlists:
@@ -391,10 +391,19 @@ final class LibraryBrowser: ObservableObject {
     /// Só na thread principal (usa `self.marks`).
     func track(from item: LibraryTrack) -> Track { Self.track(from: item, marks: marks) }
 
+    /// O banco guarda "Unknown Artist"/"Unknown Album" (independe do idioma); a tela mostra no idioma do app.
+    static let unknownArtist = String(localized: "Artista desconhecido")
+    static let unknownAlbum = String(localized: "Álbum desconhecido")
+
+    static func isUnknownAlbum(_ name: String) -> Bool { name == "Unknown Album" || name == unknownAlbum }
+    static func isUnknownArtist(_ name: String) -> Bool { name == "Unknown Artist" || name == unknownArtist }
+
     static func track(from item: LibraryTrack, marks: [String: MarkColor]) -> Track {
         Track(id: TrackID(stableKey: item.mediaPath == nil ? item.url.standardizedFileURL.path : item.path),
-              artist: item.artist, title: item.title, duration: Int(item.duration ?? 0),
-              mark: marks[item.path], url: item.url, album: item.album, genre: item.genre,
+              artist: isUnknownArtist(item.artist) ? unknownArtist : item.artist,
+              title: item.title, duration: Int(item.duration ?? 0),
+              mark: marks[item.path], url: item.url,
+              album: isUnknownAlbum(item.album) ? unknownAlbum : item.album, genre: item.genre,
               start: item.start, end: item.end, libraryPath: item.mediaPath == nil ? nil : item.path)
     }
 
@@ -409,7 +418,7 @@ final class LibraryBrowser: ObservableObject {
     /// Álbuns da pasta; faixas sem álbum ou de álbum com uma faixa vão para "Singles".
     private static func albums(_ tracks: [Track]) -> [ViewGroup] {
         func albumKey(_ t: Track) -> String? {
-            guard let a = t.album?.trimmingCharacters(in: .whitespaces), !a.isEmpty, a != "Unknown Album" else { return nil }
+            guard let a = t.album?.trimmingCharacters(in: .whitespaces), !a.isEmpty, !isUnknownAlbum(a) else { return nil }
             return a
         }
         let byAlbum = Dictionary(grouping: tracks.filter { albumKey($0) != nil }) { albumKey($0)! }
@@ -419,13 +428,13 @@ final class LibraryBrowser: ObservableObject {
             if items.count == 1 { singles += items; continue }
             let artists = Set(items.map(\.artist))
             groups.append(ViewGroup(id: "album:" + name, title: name,
-                                    subtitle: artists.count == 1 ? items[0].artist : "Vários artistas",
+                                    subtitle: artists.count == 1 ? items[0].artist : String(localized: "Vários artistas"),
                                     count: items.count, tracks: items, coverURL: items.first?.url))
         }
         groups.sort { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
         if !singles.isEmpty {
             groups.insert(ViewGroup(id: "album:singles", title: BrowseService.singlesTitle,
-                                    subtitle: "Faixas sem álbum ou de álbum com uma música",
+                                    subtitle: String(localized: "Faixas sem álbum ou de álbum com uma música"),
                                     count: singles.count, tracks: singles, coverURL: singles.first?.url), at: 0)
         }
         return groups
@@ -434,7 +443,7 @@ final class LibraryBrowser: ObservableObject {
     private static func grouped(_ tracks: [Track], key: (Track) -> String?, empty: String) -> [ViewGroup] {
         let byKey = Dictionary(grouping: tracks) { t -> String in
             let k = key(t)?.trimmingCharacters(in: .whitespaces) ?? ""
-            return k.isEmpty || k == "Unknown Artist" ? empty : k
+            return k.isEmpty || isUnknownArtist(k) ? empty : k
         }
         return byKey.map { name, items in
             ViewGroup(id: "group:" + name, title: name, subtitle: "", count: items.count,
@@ -449,15 +458,15 @@ final class LibraryBrowser: ObservableObject {
 
     private func playlistGroups(_ lists: [UserPlaylist], showTags: Bool) -> [ViewGroup] {
         var groups = lists.map {
-            ViewGroup(id: "playlist:\($0.id)", title: $0.name, subtitle: "Sua playlist",
+            ViewGroup(id: "playlist:\($0.id)", title: $0.name, subtitle: String(localized: "Sua playlist"),
                       count: $0.paths.count, playlistID: $0.id)
         }
         if showTags {
             let counts = (try? collections?.markCounts()) ?? [:]
             let tags = MarkColor.allCases.compactMap { color -> ViewGroup? in
                 guard let n = counts[color.rawValue], n > 0 else { return nil }
-                return ViewGroup(id: "tag:" + color.rawValue, title: "Tag \(color.displayName)",
-                                 subtitle: "Faixas marcadas com essa cor", count: n, color: color)
+                return ViewGroup(id: "tag:" + color.rawValue, title: String(localized: "Tag \(color.displayName)"),
+                                 subtitle: String(localized: "Faixas marcadas com essa cor"), count: n, color: color)
             }
             groups = tags + groups
         }

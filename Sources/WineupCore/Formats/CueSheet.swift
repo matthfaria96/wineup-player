@@ -15,7 +15,7 @@ public struct CueSheet: Equatable, Sendable {
     public let entries: [Entry]
 
     public static func parse(_ text: String, baseDirectory: URL) -> CueSheet? {
-        var album: String?, albumPerformer = "Desconhecido"
+        var album: String?, albumPerformer = String(localized: "Desconhecido")
         var file: URL?
         var raw: [(number: Int, title: String?, performer: String?, start: Double?, file: URL)] = []
         for line in text.components(separatedBy: .newlines).map({ $0.trimmingCharacters(in: .whitespaces) }) {
@@ -37,7 +37,7 @@ public struct CueSheet: Equatable, Sendable {
         guard !valid.isEmpty else { return nil }
         let entries = valid.enumerated().map { i, t -> Entry in
             let next = i + 1 < valid.count && valid[i + 1].file == t.file ? valid[i + 1].start : nil
-            return Entry(number: t.number, title: t.title ?? "Faixa \(t.number)",
+            return Entry(number: t.number, title: t.title ?? String(localized: "Faixa \(t.number)"),
                          performer: t.performer ?? albumPerformer, start: t.start ?? 0, end: next, file: t.file)
         }
         return CueSheet(album: album, entries: entries)

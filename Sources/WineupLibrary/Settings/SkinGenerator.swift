@@ -12,10 +12,10 @@ public enum SkinGenerator {
         public var id: String { rawValue }
         public var title: String {
             switch self {
-            case .gold: "Dourado (museu)"
-            case .metal: "Metal escovado"
-            case .neon: "Neon"
-            case .minimal: "Minimalista"
+            case .gold: String(localized: "Dourado (museu)")
+            case .metal: String(localized: "Metal escovado")
+            case .neon: String(localized: "Neon")
+            case .minimal: String(localized: "Minimalista")
             }
         }
     }
@@ -123,7 +123,7 @@ public enum SkinGenerator {
 
         var m = SkinManifest(id: id, name: name)
         m.author = author
-        m.description = "Criado a partir de \(imageURL.lastPathComponent), estilo \(style.title.lowercased())."
+        m.description = String(localized: "Criado a partir de \(imageURL.lastPathComponent), estilo \(style.title.lowercased()).")
         m.colors = colors(pal, style: style)
         m.window.background = .init(image: "background.jpg", dim: 0.2)
         m.window.layers = [.init(kind: .flow, name: "brilho", colors: [pal.accent.hex, "#FFFFFF"], speed: 0.6, intensity: 0.25, count: 30)]

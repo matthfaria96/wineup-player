@@ -37,7 +37,7 @@ struct NavBar: View {
     private var rootName: String {
         let path = browser.folder.path
         if path.hasPrefix(browser.defaultFolder.path) { return LibraryBrowser.name(of: browser.defaultFolder) }
-        if path.hasPrefix(NavPlaces.downloads.path) { return "Downloads" }
+        if path.hasPrefix(NavPlaces.downloads.path) { return String(localized: "Downloads") }
         return LibraryBrowser.name(of: browser.folder)
     }
 

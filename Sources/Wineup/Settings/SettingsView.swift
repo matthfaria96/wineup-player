@@ -14,9 +14,9 @@ struct SettingsView: View {
 
         var title: String {
             switch self {
-            case .general: "Geral"
-            case .sound: "Som"
-            case .about: "Sobre"
+            case .general: String(localized: "Geral")
+            case .sound: String(localized: "Som")
+            case .about: String(localized: "Sobre")
             }
         }
     }

@@ -219,8 +219,8 @@ final class MetadataManagerModel: ObservableObject {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
-        panel.prompt = "Abrir"
-        panel.message = "Escolha a pasta com as músicas para verificar"
+        panel.prompt = String(localized: "Abrir")
+        panel.message = String(localized: "Escolha a pasta com as músicas para verificar")
         panel.directoryURL = folder
         if panel.runModal() == .OK, let url = panel.url { open(url) }
     }
@@ -249,18 +249,18 @@ final class MetadataManagerModel: ObservableObject {
             selection = []
             isLoading = false
             let problems = summary.withProblems
-            message = rows.isEmpty ? "Nenhuma música nesta pasta."
-                : "\(rows.count) músicas analisadas · \(problems) com algo a corrigir"
+            message = rows.isEmpty ? String(localized: "Nenhuma música nesta pasta.")
+                : String(localized: "\(rows.count) músicas analisadas · \(problems) com algo a corrigir")
         }
     }
 
     private func confirmDiscard() -> Bool {
         guard dirtyCount > 0 else { return true }
         let alert = NSAlert()
-        alert.messageText = "Descartar alterações não salvas?"
-        alert.informativeText = "\(dirtyCount) músicas têm alterações que ainda não foram gravadas."
-        alert.addButton(withTitle: "Descartar")
-        alert.addButton(withTitle: "Cancelar")
+        alert.messageText = String(localized: "Descartar alterações não salvas?")
+        alert.informativeText = String(localized: "\(dirtyCount) músicas têm alterações que ainda não foram gravadas.")
+        alert.addButton(withTitle: String(localized: "Descartar"))
+        alert.addButton(withTitle: String(localized: "Cancelar"))
         return alert.runModal() == .alertFirstButtonReturn
     }
 
@@ -308,14 +308,14 @@ final class MetadataManagerModel: ObservableObject {
     func chooseCoverFile() {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.jpeg, .png]
-        panel.message = "Escolha a imagem da capa (JPEG ou PNG)"
+        panel.message = String(localized: "Escolha a imagem da capa (JPEG ou PNG)")
         guard panel.runModal() == .OK, let url = panel.url else { return }
         setCoverData(try? Data(contentsOf: url))
     }
 
     func setCoverData(_ data: Data?) {
         guard let data, let mime = CoverArtClient.mimeType(of: data) else {
-            message = "A imagem precisa ser JPEG ou PNG."
+            message = String(localized: "A imagem precisa ser JPEG ou PNG.")
             return
         }
         setCover(CoverImage(data: data, mimeType: mime))
@@ -364,7 +364,7 @@ final class MetadataManagerModel: ObservableObject {
     /// Busca automática: aplica sozinha o que tiver confiança alta; o resto fica para revisão.
     func autoFix(onlySelection: Bool) {
         let targets = onlySelection ? selectedRows : rows.filter { !$0.openIssues.isEmpty }
-        guard !targets.isEmpty else { message = "Nada a corrigir."; return }
+        guard !targets.isEmpty else { message = String(localized: "Nada a corrigir."); return }
         run(targets.map(\.id)) { model, fixer, row in
             let file = row.file
             let policy = model.policy
@@ -412,7 +412,7 @@ final class MetadataManagerModel: ObservableObject {
     func lyricsOptions(for row: MetadataRow) async -> [LyricsCandidate] {
         guard allowOnline() else { return [] }
         do { return try await fixer.lyricsOptions(for: row.file, match: row.proposal?.match) } catch {
-            if !Task.isCancelled { message = "Não foi possível buscar letras: \(Self.describe(error))" }
+            if !Task.isCancelled { message = String(localized: "Não foi possível buscar letras: \(Self.describe(error))") }
             return []
         }
     }
@@ -420,7 +420,7 @@ final class MetadataManagerModel: ObservableObject {
     /// Toda busca online passa por aqui: na primeira vez, pede o consentimento.
     func allowOnline() -> Bool {
         if OnlineConsent.ensure() { return true }
-        message = "Consultas online desligadas. Para ligar, abra Opções."
+        message = String(localized: "Consultas online desligadas. Para ligar, abra Opções.")
         return false
     }
 
@@ -489,14 +489,15 @@ final class MetadataManagerModel: ObservableObject {
         let ready = dirtyCount
         let review = rows.reduce(0) { $0 + ($1.status == .review ? 1 : 0) }
         let lyrics = rows.reduce(0) { $0 + ($1.lyrics?.text != nil ? 1 : 0) }
-        message = "\(ready) prontas para salvar · \(lyrics) letras encontradas" + (review > 0 ? " · \(review) para revisar (confiança baixa)" : "")
+        message = String(localized: "\(ready) prontas para salvar · \(lyrics) letras encontradas")
+            + (review > 0 ? String(localized: " · \(review) para revisar (confiança baixa)") : "")
         // Resumo só para buscas em lote: numa música só, a própria linha e o painel já mostram o resultado
         // (e um resumo por cima da janela de resultados fazia ela fechar, reabrir e buscar de novo, sem fim).
         let searched = positions(of: Set(workIDs)).map { rows[$0] }
         if searched.count > 1 { report = SearchReport(searched) }
         else if let only = searched.first {
-            message = only.status == .notFound ? "Nada encontrado para \(only.fileName)."
-                : only.isDirty ? "Dados encontrados para \(only.fileName) — confira e salve." : message
+            message = only.status == .notFound ? String(localized: "Nada encontrado para \(only.fileName).")
+                : only.isDirty ? String(localized: "Dados encontrados para \(only.fileName) — confira e salve.") : message
         }
     }
 
@@ -528,7 +529,7 @@ final class MetadataManagerModel: ObservableObject {
     /// Só letras (catálogo online), para quem não tem letra ou só tem a estática.
     func fetchLyrics(onlySelection: Bool) {
         let targets = onlySelection ? selectedRows : rows.filter { $0.file.lyricsSynced != true }
-        guard !targets.isEmpty else { message = "Todas já têm letra sincronizada."; return }
+        guard !targets.isEmpty else { message = String(localized: "Todas já têm letra sincronizada."); return }
         let client = LyricsService.standard()
         run(targets.map(\.id)) { _, _, row in
             let q = MetadataFixer.query(for: row.file)
@@ -614,7 +615,7 @@ final class MetadataManagerModel: ObservableObject {
                 album: release.title, confidence: 1))
             row.refreshStatus()
         }
-        message = "\(count) músicas preenchidas com “\(release.title)” — confira e salve"
+        message = String(localized: "\(count) músicas preenchidas com “\(release.title)” — confira e salve")
     }
 
     // MARK: Capa na pasta e histórico (a gravação fica em MetadataManagerModel+Save)
@@ -624,9 +625,9 @@ final class MetadataManagerModel: ObservableObject {
         var id: String { rawValue }
         var title: String {
             switch self {
-            case .embed: "Embutir no arquivo de música"
-            case .folder: "Salvar como cover.jpg na pasta"
-            case .both: "Os dois"
+            case .embed: String(localized: "Embutir no arquivo de música")
+            case .folder: String(localized: "Salvar como cover.jpg na pasta")
+            case .both: String(localized: "Os dois")
             }
         }
     }
@@ -654,14 +655,14 @@ final class MetadataManagerModel: ObservableObject {
 
     nonisolated static func describe(_ error: Error) -> String {
         switch error {
-        case TagWriterError.unsupportedFormat: "Formato sem gravação de tags"
-        case TagWriterError.insufficientSpace: "Sem espaço em disco"
-        case TagWriterError.verificationFailed: "Gravação não conferiu; arquivo mantido"
-        case LyricsFileWriter.WriteError.alreadyExists: "Já existe um .lrc"
-        case FixerNetworkError.rateLimited: "Serviço ocupado, tente de novo"
-        case FixerNetworkError.notFound: "Não encontrada"
-        case is URLError: "Sem conexão"
-        default: "Erro ao gravar"
+        case TagWriterError.unsupportedFormat: String(localized: "Formato sem gravação de tags")
+        case TagWriterError.insufficientSpace: String(localized: "Sem espaço em disco")
+        case TagWriterError.verificationFailed: String(localized: "Gravação não conferiu; arquivo mantido")
+        case LyricsFileWriter.WriteError.alreadyExists: String(localized: "Já existe um .lrc")
+        case FixerNetworkError.rateLimited: String(localized: "Serviço ocupado, tente de novo")
+        case FixerNetworkError.notFound: String(localized: "Não encontrada")
+        case is URLError: String(localized: "Sem conexão")
+        default: String(localized: "Erro ao gravar")
         }
     }
 }
