@@ -14,10 +14,21 @@ struct ArtistHeader: View {
     @AppStorage("playback.dedupePlayAll") private var dedupe = true
     @Environment(\.theme) private var theme
 
+    /// Agrupados uma vez ao montar a view (antes, a cada leitura: várias vezes por desenho).
+    let releases: [(name: String, tracks: [Track], year: String?)]
+
+    init(state: PlayerState, artist: String, tracks: [Track], release: Binding<String?>) {
+        self.state = state
+        self.artist = artist
+        self.tracks = tracks
+        _release = release
+        releases = Self.releases(of: tracks)
+    }
+
     var order: ArtistOrder { ArtistOrder(rawValue: orderRaw) ?? .byAlbum }
 
     /// Lançamentos do artista: álbuns com mais de uma faixa; o resto vai para "Singles".
-    var releases: [(name: String, tracks: [Track], year: String?)] {
+    static func releases(of tracks: [Track]) -> [(name: String, tracks: [Track], year: String?)] {
         let byAlbum = Dictionary(grouping: tracks) { ($0.album ?? "").trimmingCharacters(in: .whitespaces) }
         var singles: [Track] = []
         var out: [(String, [Track], String?)] = []

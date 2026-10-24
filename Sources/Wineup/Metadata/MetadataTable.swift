@@ -102,12 +102,12 @@ struct MetadataTable: View {
                     Button(issue.label) { model.ignore(issue, ids: ids) }
                 }
             }
-            if model.rows.contains(where: { ids.contains($0.id) && !$0.ignored.isEmpty }) {
+            if model.positions(of: ids).contains(where: { !model.rows[$0].ignored.isEmpty }) {
                 Button("Voltar a mostrar problemas ignorados") { model.unignore(ids: ids) }
             }
             Divider()
             Button("Mostrar no Finder") {
-                NSWorkspace.shared.activateFileViewerSelecting(model.rows.filter { ids.contains($0.id) }.map(\.url))
+                NSWorkspace.shared.activateFileViewerSelecting(model.positions(of: ids).map { model.rows[$0].url })
             }
         } primaryAction: { ids in
             if ids.count == 1, let id = ids.first { onPickMatch(id) }

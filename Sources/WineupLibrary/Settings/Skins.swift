@@ -232,7 +232,9 @@ public struct Skin: Identifiable, Equatable, Sendable {
 public final class SkinStore: ObservableObject, @unchecked Sendable {
     public static let shared = SkinStore()
     public static let fileExtension = "wineupskin"
-    public static let defaultID = "noite-estrelada"
+    /// Ordem dos skins oficiais no app; o primeiro é o padrão.
+    public static let officialOrder = ["radio-retro", "classico", "pixelart-16bit", "scifi", "neon-gotico", "emoboy"]
+    public static let defaultID = officialOrder[0]
 
     public let builtInFolder: URL?
     /// Skins do usuário (criados, duplicados, importados).
@@ -240,6 +242,8 @@ public final class SkinStore: ObservableObject, @unchecked Sendable {
     /// Ajustes do usuário nos skins oficiais: pasta separada, para nunca se misturarem com os dele.
     public let officialEditsFolder: URL
     @Published public private(set) var skins: [Skin] = []
+    /// Sobe a cada recarga (salvar, importar, apagar...): chave barata para caches de arte e temas.
+    public private(set) var revision = 0
 
     public init(builtInFolder: URL? = Bundle.main.resourceURL?.appendingPathComponent("Skins"),
                 userFolder: URL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -263,10 +267,10 @@ public final class SkinStore: ObservableObject, @unchecked Sendable {
     }
 
     public func reload() {
-        // Oficiais em ordem alfabética, com a Noite Estrelada sempre por último.
-        let builtIns = Self.load(in: builtInFolder, builtIn: true).sorted { a, b in
-            (a.id == Self.defaultID ? 1 : 0) < (b.id == Self.defaultID ? 1 : 0)
-        }
+        revision += 1
+        // Oficiais na ordem escolhida (Musical, Retro, PixelArt, Sci-Fi, Neon Gótico, Emoboy); outros no fim.
+        let rank = { (id: String) in Self.officialOrder.firstIndex(of: id) ?? Self.officialOrder.count }
+        let builtIns = Self.load(in: builtInFolder, builtIn: true).sorted { rank($0.id) < rank($1.id) }
         let edits = Self.load(in: officialEditsFolder, builtIn: true)
         let officialIDs = Set(builtIns.map(\.id))
         skins = builtIns.map { b in edits.first { $0.id == b.id } ?? b }

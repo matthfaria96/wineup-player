@@ -22,8 +22,9 @@ extension PlayerState {
     /// Pede o nome e cria a playlist (opcionalmente já com uma faixa).
     func newPlaylist(with track: Track?) {
         guard let name = TextPrompt.ask(title: "Nova playlist", value: "Nova playlist") else { return }
-        if let created = browser.createPlaylist(named: name, paths: track?.storeKey.map { [$0] } ?? []) {
-            statusMessage = "Playlist \u{201C}\(created.name)\u{201D} criada."
+        browser.createPlaylist(named: name, paths: track?.storeKey.map { [$0] } ?? []) { [weak self] created, _ in
+            guard let created else { return }
+            self?.statusMessage = "Playlist \u{201C}\(created.name)\u{201D} criada."
         }
     }
 
@@ -82,8 +83,9 @@ extension PlayerState {
 extension PlayerState {
     /// Toca um grupo inteiro (álbum, artista, gênero, playlist ou tag).
     func playGroup(_ group: ViewGroup) {
-        let items = browser.tracks(for: group)
-        if let first = items.first { play(first, from: items) }
+        browser.tracks(for: group) { [weak self] items in
+            if let first = items.first { self?.play(first, from: items) }
+        }
     }
 
     /// Pergunta a pasta padrão de músicas (primeira abertura). Cancelar usa ~/Music.
@@ -110,18 +112,27 @@ extension PlayerState {
 
 extension PlayerState {
     /// Abre uma playlist M3U/M3U8 na lista (faixas que existem no disco).
+    /// Leitura, verificação dos arquivos e consulta ao banco (uma só) ficam fora da thread principal.
     func openM3U(_ file: URL) {
-        do {
-            let entries = try M3U.read(file)
-            let present = entries.filter { FileManager.default.fileExists(atPath: $0.url.path) }
-            let items = present.map { browser.track(atPath: $0.url.path) }
-            showTracks(title: file.deletingPathExtension().lastPathComponent, items: items)
-            externalList = true
-            let missing = entries.count - present.count
-            statusMessage = missing == 0 ? "Playlist aberta: \(items.count) faixas."
-                : "Playlist aberta: \(items.count) faixas (\(missing) não encontradas)."
-        } catch {
-            statusMessage = "Não foi possível ler a playlist \(file.lastPathComponent)."
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let entries = try? M3U.read(file) else {
+                DispatchQueue.main.async {
+                    self?.statusMessage = "Não foi possível ler a playlist \(file.lastPathComponent)."
+                }
+                return
+            }
+            let present = entries.map(\.url.path).filter { FileManager.default.fileExists(atPath: $0) }
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.browser.tracks(atPaths: present) { [weak self] items in
+                    guard let self else { return }
+                    self.showTracks(title: file.deletingPathExtension().lastPathComponent, items: items)
+                    self.externalList = true
+                    let missing = entries.count - present.count
+                    self.statusMessage = missing == 0 ? "Playlist aberta: \(items.count) faixas."
+                        : "Playlist aberta: \(items.count) faixas (\(missing) não encontradas)."
+                }
+            }
         }
     }
 
@@ -133,11 +144,12 @@ extension PlayerState {
         guard panel.runModal() == .OK, let file = panel.url, let entries = try? M3U.read(file) else { return }
         let paths = entries.map(\.url.path)
         let name = file.deletingPathExtension().lastPathComponent
-        if let created = browser.createPlaylist(named: name, paths: paths) {
-            let added = browser.allPlaylists().first { $0.id == created.id }?.paths.count ?? 0
-            statusMessage = "Playlist \u{201C}\(created.name)\u{201D} importada: \(added) de \(entries.count) faixas na biblioteca."
+        browser.createPlaylist(named: name, paths: paths) { [weak self] created, added in
+            guard let self else { return }
+            self.openM3U(file)
+            guard let created else { return }
+            self.statusMessage = "Playlist \u{201C}\(created.name)\u{201D} importada: \(added) de \(entries.count) faixas na biblioteca."
         }
-        openM3U(file)
     }
 
     /// Exporta a lista atual como .m3u8 (UTF-8).

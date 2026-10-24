@@ -31,7 +31,8 @@ final class SkinArt {
     let manifest: SkinManifest
     let folder: URL
     private var images: [String: NSImage] = [:]
-    private static var cache: [String: SkinArt] = [:]
+    private var slices: [String: NSImage] = [:]
+    private static var cache: [String: (revision: Int, art: SkinArt)] = [:]
     private static var registeredFonts = Set<String>()
 
     private init(_ skin: Skin) {
@@ -45,12 +46,13 @@ final class SkinArt {
         }
     }
 
-    /// Mesmo skin com o mesmo conteúdo = mesma instância (as imagens não são relidas a cada desenho).
+    /// Mesmo skin (pasta) na mesma versão da loja = mesma instância (as imagens não são relidas a cada desenho).
+    /// Uma entrada por pasta: ao salvar/recarregar, a arte antiga é trocada (o cache não cresce).
     static func of(_ skin: Skin) -> SkinArt {
-        let key = skin.folder.path + "|" + ((try? SkinStore.encode(skin.manifest)).map { String($0.hashValue) } ?? "")
-        if let hit = cache[key] { return hit }
+        let revision = SkinStore.shared.revision
+        if let hit = cache[skin.folder.path], hit.revision == revision, hit.art.manifest == skin.manifest { return hit.art }
         let art = SkinArt(skin)
-        cache[key] = art
+        cache[skin.folder.path] = (revision, art)
         return art
     }
 
@@ -64,10 +66,15 @@ final class SkinArt {
 
     /// Imagem de 9 fatias no tamanho de desenho: a borda fica com `width` pontos.
     func nineSlice(_ s: SkinManifest.NineSlice?) -> (image: NSImage, inset: CGFloat)? {
-        guard let s, let base = image(s.image), let rep = base.representations.first else { return nil }
+        guard let s else { return nil }
+        let key = "\(s.image)|\(s.slice)|\(s.width)"
+        if let hit = slices[key] { return (hit, CGFloat(s.width)) }
+        guard let base = image(s.image), let rep = base.representations.first else { return nil }
         let scale = s.width / s.slice
+        // Cópia redimensionada uma vez só (antes era feita a cada desenho).
         let sized = base.copy() as! NSImage
         sized.size = NSSize(width: Double(rep.pixelsWide) * scale, height: Double(rep.pixelsHigh) * scale)
+        slices[key] = sized
         return (sized, CGFloat(s.width))
     }
 
@@ -133,17 +140,24 @@ struct Theme: Identifiable, Equatable {
     static let plain = Theme(manifest: SkinManifest(id: "none", name: "Sem skin"), art: nil)
     static let graphite = plain
 
-    static var all: [Theme] { SkinStore.shared.skins.map(Theme.init) }
+    /// Temas de todos os skins, montados uma vez por versão da loja (e não a cada desenho da janela).
+    static var all: [Theme] {
+        let store = SkinStore.shared
+        if let cached = allCache, cached.revision == store.revision { return cached.themes }
+        let themes = store.skins.map(Theme.init)
+        allCache = (store.revision, themes)
+        return themes
+    }
+
+    private static var allCache: (revision: Int, themes: [Theme])?
 
     /// Id para o visual padrão do app, sem skin.
     static let noneID = "none"
 
     static func named(_ id: String) -> Theme {
         if id == noneID { return plain }
-        if let s = SkinStore.shared.skin(id) ?? SkinStore.shared.skin(SkinStore.defaultID) ?? SkinStore.shared.skins.first {
-            return Theme(s)
-        }
-        return plain
+        let themes = all
+        return themes.first { $0.id == id } ?? themes.first { $0.id == SkinStore.defaultID } ?? themes.first ?? plain
     }
 
     /// Fonte dos títulos do skin (ou a do sistema).

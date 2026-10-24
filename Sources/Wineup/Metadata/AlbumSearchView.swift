@@ -128,6 +128,8 @@ struct AlbumApplyView: View {
     /// os arquivos que ficam sem par. Arrastar uma linha reordena só os arquivos (como no Mp3tag).
     @State private var slots: [MetadataRow.ID?] = []
     @State private var cover: CoverImage?
+    /// A capa reduzida para a caixa de 200 pt e o tamanho original, decodificados fora da thread principal.
+    @State private var decoded: DecodedCover?
     @State private var useCover = true
     @State private var loadingCover = true
 
@@ -177,6 +179,13 @@ struct AlbumApplyView: View {
             cover = try? await model.coverArt.frontCover(releaseID: release.id, releaseGroupID: release.releaseGroupID)
             loadingCover = false
         }
+        .task(id: cover) {
+            decoded = nil
+            guard let data = cover?.data else { return }
+            let result = await CoverDecode.decode(data, maxPixels: 400)
+            guard !Task.isCancelled else { return }
+            decoded = result
+        }
     }
 
     private func sample(_ field: String) -> String {
@@ -205,7 +214,7 @@ struct AlbumApplyView: View {
         VStack(spacing: 6) {
             ZStack {
                 RoundedRectangle(cornerRadius: 6).fill(Color.black.opacity(0.3))
-                if let image = cover.flatMap({ NSImage(data: $0.data) }) {
+                if let image = decoded?.image {
                     Image(nsImage: image).resizable().scaledToFit()
                 } else if loadingCover {
                     ProgressView()
@@ -216,7 +225,7 @@ struct AlbumApplyView: View {
             .frame(width: 200, height: 200)
             Toggle(isOn: $useCover) {
                 Text(cover.map { c in
-                    let size = NSImage(data: c.data).map { "\(Int($0.size.width))×\(Int($0.size.height)), " } ?? ""
+                    let size = decoded?.sizeText.map { "\($0), " } ?? ""
                     return "\(size)\(c.data.count / 1024) KB, \(c.mimeType)"
                 } ?? "Capa").font(.caption)
             }

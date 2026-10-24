@@ -23,8 +23,8 @@ cp Resources/THIRD_PARTY_NOTICES.md "$APP/Contents/Resources/"
 cp -R Resources/Videos "$APP/Contents/Resources/Videos"
 # Skins embutidos (arte, fontes OFL e skin.json).
 cp -R Resources/Skins "$APP/Contents/Resources/Skins"
-# App em português: menus e janelas do sistema (Ajustes…, Ocultar, Sair) seguem o idioma.
-mkdir -p "$APP/Contents/Resources/pt-BR.lproj"
+# Traduções (Localization/*.json): menus e janelas do sistema também seguem o idioma escolhido.
+python3 scripts/l10n.py build "$APP/Contents/Resources"
 
 # Frameworks dinâmicos (inclui os LGPL, que precisam continuar substituíveis).
 mkdir -p "$APP/Contents/Frameworks"
@@ -39,8 +39,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key><string>Wineup Player</string>
-    <key>CFBundleDevelopmentRegion</key><string>pt-BR</string>
-    <key>CFBundleLocalizations</key><array><string>pt-BR</string></array>
+    <key>CFBundleDevelopmentRegion</key><string>en</string>
+    <key>CFBundleLocalizations</key><array><string>en</string><string>pt-BR</string><string>es</string><string>de</string><string>fr</string><string>it</string><string>ru</string><string>uk</string><string>pl</string><string>cs</string><string>hu</string><string>nl</string><string>sv</string><string>tr</string><string>ja</string><string>ko</string><string>zh-Hans</string></array>
     <key>CFBundleDisplayName</key><string>Wineup Player</string>
     <key>CFBundleExecutable</key><string>Wineup</string>
     <key>CFBundleIdentifier</key><string>app.wineup.player</string>

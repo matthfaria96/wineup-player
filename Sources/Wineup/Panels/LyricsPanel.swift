@@ -3,16 +3,19 @@ import SwiftUI
 
 struct LyricsPanel: View {
     @ObservedObject var state: PlayerState
-    @ObservedObject private var clock: PlaybackClock
+    /// Só a troca de linha redesenha a letra (não cada passo do relógio).
+    @ObservedObject private var position: LyricsPosition
 
     init(state: PlayerState) {
         self.state = state
-        self.clock = state.clock
+        position = state.lyricsPosition
     }
 
     @Environment(\.theme) private var theme
 
     var body: some View {
+        // Uma conta por desenho (antes era uma por linha da letra).
+        let activeIndex = position.index
         Panel(title: "Letras") {
             VStack(spacing: 6) {
                 ScrollViewReader { proxy in
@@ -59,7 +62,7 @@ struct LyricsPanel: View {
                                 .padding(.top, 30)
                             } else {
                             ForEach(Array(state.lyricLines.enumerated()), id: \.offset) { index, line in
-                                let active = index == state.activeLyricIndex
+                                let active = index == activeIndex
                                 // Linha longa encolhe até 65% antes de quebrar; quando quebra, quebra entre palavras
                                 // e fica centralizada como um bloco (sem palavras soltas em cada linha).
                                 Text(line.isEmpty ? "♪" : line)
@@ -82,7 +85,7 @@ struct LyricsPanel: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 20)
                     }
-                    .onChange(of: state.activeLyricIndex) { _, index in
+                    .onChange(of: activeIndex) { _, index in
                         withAnimation { proxy.scrollTo(index, anchor: .center) }
                     }
                 }

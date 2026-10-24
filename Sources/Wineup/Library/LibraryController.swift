@@ -10,9 +10,13 @@ final class LibraryController {
     nonisolated var presetStore: EqPresetStore? { database.map(EqPresetStore.init(db:)) }
     private var scanTask: Task<Void, Never>?
     /// Vigia as raízes: mudanças no disco disparam varredura incremental automática.
-    private lazy var watcher = FolderWatcher { [weak self] in self?.folderChanged() }
-    private var pendingRescan = false
-    private var onTracks: (([LibraryTrack]) -> Void)?
+    private lazy var watcher = FolderWatcher { [weak self] paths in self?.folderChanged(paths) }
+    /// Raízes a varrer quando a varredura atual terminar (nil = todas).
+    private var pendingRoots: Set<UUID>?
+    private var hasPending = false
+    /// `start` roda uma vez só (reabrir a janela não carrega nem varre tudo de novo).
+    private var started = false
+    private var onChange: (() -> Void)?
     private var onStatus: ((String?) -> Void)?
 
     nonisolated init(databasePath: String? = nil) {
@@ -23,9 +27,11 @@ final class LibraryController {
     }
 
     /// Primeira abertura (NAV-01), carga da biblioteca persistida e varredura das raízes.
-    func start(onTracks: @escaping ([LibraryTrack]) -> Void, onStatus: @escaping (String?) -> Void) async {
+    func start(onChange: @escaping () -> Void, onStatus: @escaping (String?) -> Void) async {
         guard let database else { onStatus("Biblioteca indisponível"); return }
-        self.onTracks = onTracks
+        guard !started else { return }
+        started = true
+        self.onChange = onChange
         self.onStatus = onStatus
         if ProcessInfo.processInfo.environment["WINEUP_DEFAULT_FOLDER"] == nil {
             _ = try? LibraryBootstrap.ensureDefaultRoot(database: database)
@@ -44,9 +50,21 @@ final class LibraryController {
         watcher.watch(paths)
     }
 
-    /// Algo mudou numa pasta vigiada: varre de novo (ou marca para varrer ao fim da atual).
-    private func folderChanged() {
-        if scanTask != nil { pendingRescan = true } else { beginScan(rootIDs: nil) }
+    /// Algo mudou numa pasta vigiada: varre de novo só as raízes afetadas (ou marca para o fim da atual).
+    private func folderChanged(_ paths: [String]) {
+        guard let database else { return }
+        let roots = (try? LibraryRootStore(db: database).roots()) ?? []
+        let affected = Set(roots.filter { root in
+            let prefix = root.url.path.hasSuffix("/") ? root.url.path : root.url.path + "/"
+            return paths.isEmpty || paths.contains { $0 == root.url.path || $0.hasPrefix(prefix) }
+        }.map(\.id))
+        guard !affected.isEmpty else { return }
+        if scanTask != nil {
+            if hasPending { pendingRoots = pendingRoots.map { $0.union(affected) } } else { pendingRoots = affected }
+            hasPending = true
+        } else {
+            beginScan(rootIDs: Array(affected))
+        }
     }
 
     func addFolders(_ urls: [URL]) async {
@@ -74,10 +92,10 @@ final class LibraryController {
         scanTask = nil
     }
 
+    /// Avisa que a biblioteca mudou (a lista é relida pelo navegador; não carrega todas as faixas aqui).
     private func reload() async {
-        guard let database else { return }
-        let tracks = (try? await BrowseService(database: database).allTracks(limit: 5000, offset: 0)) ?? []
-        onTracks?(tracks)
+        guard database != nil else { return }
+        onChange?()
     }
 
     private func beginScan(rootIDs: [UUID]?) {
@@ -86,23 +104,29 @@ final class LibraryController {
         scanTask = Task { [weak self] in
             let roots = (try? LibraryRootStore(db: database).roots()) ?? []
             let scanner = WineupLibrary.Scanner(database: database)
+            var changed = false
             for root in roots where rootIDs?.contains(root.id) ?? true {
                 if Task.isCancelled { return }
                 do {
-                    for try await progress in scanner.scan(rootID: root.id) where progress.toRead > 0 {
-                        self?.onStatus?("Varrendo biblioteca: \(progress.read)/\(progress.toRead)")
+                    for try await progress in scanner.scan(rootID: root.id) {
+                        if progress.finished { changed = changed || progress.changed }
+                        if progress.toRead > 0 { self?.onStatus?("Varrendo biblioteca: \(progress.read)/\(progress.toRead)") }
                     }
                 } catch {
+                    changed = true   // varredura parcial: relê a lista por segurança
                     self?.onStatus?("Falha ao varrer uma pasta da biblioteca.")
                 }
             }
             guard !Task.isCancelled else { return }
-            await self?.reload()
+            // Nada mudou no disco: a lista fica como está (sem recarregar nem perder a seleção).
+            if changed { await self?.reload() }
             self?.onStatus?(nil)
             self?.scanTask = nil
-            if self?.pendingRescan == true {
-                self?.pendingRescan = false
-                self?.beginScan(rootIDs: nil)
+            if let self, self.hasPending {
+                let pending = self.pendingRoots
+                self.hasPending = false
+                self.pendingRoots = nil
+                self.beginScan(rootIDs: pending.map(Array.init))
             }
         }
     }

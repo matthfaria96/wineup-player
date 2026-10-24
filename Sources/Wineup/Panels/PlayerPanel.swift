@@ -6,22 +6,15 @@ import SwiftUI
 
 struct PlayerPanel: View {
     @ObservedObject var state: PlayerState
-    @ObservedObject private var clock: PlaybackClock
-
-    init(state: PlayerState) {
-        self.state = state
-        self.clock = state.clock
-    }
 
     @Environment(\.theme) private var theme
-    private let ticker = Timer.publish(every: 0.25, on: .main, in: .common).autoconnect()
 
     var body: some View {
         Panel(title: "Player") {
             VStack(alignment: .leading, spacing: 8) {
                 header
                 readout
-                WaveformView(url: state.currentTrack?.url, progress: state.progress, onSeek: state.seek(to:))
+                ClockedWaveform(state: state, clock: state.clock)
                     .frame(height: 26)
                     .opacity(state.currentTrack == nil ? 0.2 : 1)
                     .allowsHitTesting(state.currentTrack != nil)
@@ -32,8 +25,6 @@ struct PlayerPanel: View {
             .padding(.horizontal, 12)
             .padding(.bottom, 10)
         }
-        .onReceive(ticker) { _ in state.tick(0.25) }
-
     }
 
     private var header: some View {
@@ -70,7 +61,7 @@ struct PlayerPanel: View {
             HStack(alignment: .center, spacing: 10) {
                 LiveMeter(meter: state.meterModel, tap: state.meter)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                SevenSegmentText(text: Self.lcdTime(state.remainingSeconds), digitHeight: LevelMeter.totalHeight)
+                RemainingTime(state: state, clock: state.clock)
                     .fixedSize()
                     .layoutPriority(1)
             }
@@ -112,7 +103,7 @@ struct PlayerPanel: View {
     private var mixRow: some View {
         HStack(spacing: 8) {
             Image(systemName: "speaker.wave.2.fill").font(.system(size: 10)).foregroundStyle(theme.mutedText)
-            ChromeSlider(value: $state.volume, knobThickness: 12).frame(height: 16)
+            VolumeSlider(mixer: state.mixer).frame(height: 16)
                 .accessibilityLabel("Volume")
                 .hint("Volume (↑ ↓)", "Volume do Wineup. Não muda o volume do Mac.")
             // Velocidade: botão com o valor; o menu (como o do YouTube) tem slider, − / + e atalhos.
@@ -146,5 +137,34 @@ private struct LiveMeter: View {
             .hint("Medidor de volume", "Canal esquerdo em cima e direito embaixo. Acende conforme a música: amarelo nos trechos fortes, vermelho nos picos.")
             .onAppear { meter.attach(tap: tap) }
             .onDisappear { meter.detach() }
+    }
+}
+
+/// Forma de onda: só ela redesenha a cada passo do relógio (e não o painel inteiro).
+private struct ClockedWaveform: View {
+    let state: PlayerState
+    @ObservedObject var clock: PlaybackClock
+
+    var body: some View {
+        WaveformView(url: state.currentTrack?.url, progress: clock.progress, onSeek: state.seek(to:))
+    }
+}
+
+/// Tempo restante no visor, isolado pelo mesmo motivo.
+private struct RemainingTime: View {
+    let state: PlayerState
+    @ObservedObject var clock: PlaybackClock
+
+    var body: some View {
+        SevenSegmentText(text: PlayerPanel.lcdTime(state.remainingSeconds), digitHeight: LevelMeter.totalHeight)
+    }
+}
+
+/// Volume: o arrasto redesenha só o slider.
+private struct VolumeSlider: View {
+    @ObservedObject var mixer: MixerModel
+
+    var body: some View {
+        ChromeSlider(value: $mixer.volume, knobThickness: 12)
     }
 }

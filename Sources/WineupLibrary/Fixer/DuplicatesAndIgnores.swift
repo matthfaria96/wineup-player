@@ -53,9 +53,14 @@ public final class IgnoredIssuesStore: @unchecked Sendable {
     }
 
     public func set(_ issues: Set<FixerIssue>, for path: String) throws {
+        try set([path: issues])
+    }
+
+    /// Vários arquivos de uma vez: uma leitura e uma gravação do JSON (conjunto vazio tira o arquivo).
+    public func set(_ changes: [String: Set<FixerIssue>]) throws {
+        guard !changes.isEmpty else { return }
         try lock.withLock {
-            var map = load()
-            map[path] = issues.isEmpty ? nil : issues
+            let map = load().merging(changes) { _, new in new }.filter { !$0.value.isEmpty }
             try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
             let raw = map.mapValues { $0.map(\.rawValue).sorted() }
             try JSONEncoder().encode(raw).write(to: url, options: .atomic)

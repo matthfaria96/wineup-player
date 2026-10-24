@@ -167,16 +167,17 @@ public struct CollectionsStore: Sendable {
     // MARK: Faixas de uma pasta (recursivo)
 
     /// Faixas presentes cujo caminho está dentro de `folder` (inclui subpastas).
+    /// Faixa de caminhos [prefixo/, prefixo0): usa o índice de `path` (LIKE não usa).
     public func tracks(under folder: String) throws -> [LibraryTrack] {
         let prefix = folder.hasSuffix("/") ? folder : folder + "/"
-        let escaped = prefix.replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "%", with: "\\%").replacingOccurrences(of: "_", with: "\\_")
+        // "0" vem logo depois de "/" na ordem binária: tudo que começa com o prefixo fica antes dele.
+        let upper = String(prefix.dropLast()) + "0"
         return try database.pool.read { db in
             try Row.fetchAll(db, sql: LibraryTrack.baseSelect + """
 
-                WHERE af.status = 'present' AND af.hidden = 0 AND af.path LIKE ? ESCAPE '\\'
+                WHERE af.status = 'present' AND af.hidden = 0 AND af.path >= ? AND af.path < ?
                 ORDER BY ar.name COLLATE NOCASE, rel.title COLLATE NOCASE, rt.disc_number, rt.track_number, rec.title
-                """, arguments: [escaped + "%"]).map(LibraryTrack.make)
+                """, arguments: [prefix, upper]).map(LibraryTrack.make)
         }
     }
 
@@ -185,6 +186,26 @@ public struct CollectionsStore: Sendable {
         try database.pool.read { db in
             try Row.fetchOne(db, sql: LibraryTrack.baseSelect + "\nWHERE af.path = ?", arguments: [path])
                 .map(LibraryTrack.make)
+        }
+    }
+
+    /// Várias faixas pelo caminho exato, numa leitura só (consultas IN em lotes). Caminho → faixa.
+    public func tracks(atPaths paths: [String]) throws -> [String: LibraryTrack] {
+        let unique = Array(Set(paths))
+        guard !unique.isEmpty else { return [:] }
+        return try database.pool.read { db in
+            var found: [String: LibraryTrack] = [:]
+            for start in stride(from: 0, to: unique.count, by: 500) {
+                let chunk = Array(unique[start..<min(start + 500, unique.count)])
+                let marks = Array(repeating: "?", count: chunk.count).joined(separator: ",")
+                let rows = try Row.fetchAll(db, sql: LibraryTrack.baseSelect + "\nWHERE af.path IN (\(marks))",
+                                            arguments: StatementArguments(chunk))
+                for row in rows {
+                    let track = LibraryTrack.make(row)
+                    if found[track.path] == nil { found[track.path] = track }
+                }
+            }
+            return found
         }
     }
 

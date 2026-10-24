@@ -208,7 +208,7 @@ struct TrayPlayerView: View {
     private var volume: some View {
         HStack(spacing: 8) {
             Image(systemName: "speaker.fill").font(.system(size: 10)).foregroundStyle(.secondary)
-            Slider(value: $state.volume, in: 0...1).controlSize(.mini).accessibilityLabel("Volume")
+            TrayVolumeSlider(mixer: state.mixer)
             Image(systemName: "speaker.wave.3.fill").font(.system(size: 10)).foregroundStyle(.secondary)
         }
     }
@@ -267,5 +267,14 @@ extension PlayerState {
         guard queue.items.indices.contains(index) else { return }
         queue = queue.selecting(index: index)
         startCurrentPublic()
+    }
+}
+
+/// Volume do painel da barra de menus (observa só o mixer).
+private struct TrayVolumeSlider: View {
+    @ObservedObject var mixer: MixerModel
+
+    var body: some View {
+        Slider(value: $mixer.volume, in: 0...1).controlSize(.mini).accessibilityLabel("Volume")
     }
 }

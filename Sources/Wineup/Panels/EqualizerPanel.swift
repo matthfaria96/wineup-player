@@ -3,9 +3,17 @@ import WineupCore
 
 struct EqualizerPanel: View {
     @ObservedObject var state: PlayerState
+    /// Pre e faixas: arrastar redesenha só este painel.
+    @ObservedObject private var mixer: MixerModel
+
+    init(state: PlayerState) {
+        self.state = state
+        mixer = state.mixer
+    }
 
     @Environment(\.theme) private var theme
     @StateObject private var dialogs = PresetDialogs()
+    @State private var showPresets = false
     private let labels = ["60", "170", "310", "600", "1K", "2K", "5K", "8K", "12K", "16K"]
     /// O que cada faixa de frequência muda no som (dica ao passar o mouse).
     private let bandHints = [
@@ -56,16 +64,22 @@ struct EqualizerPanel: View {
             .frame(width: 30)
             .hint(state.soundCorrection ? "Correção de Som: ligada" : "Correção de Som: desligada",
                   "Deixa todas as músicas no mesmo volume: abaixa as altas e sobe as baixas. Não altera os arquivos. Nível e medição no menu ⋯ ao lado.")
-            SkinMenu {
-                Picker("Preset", selection: Binding(get: { state.preset }, set: { p in withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { state.apply(preset: p) } })) {
-                    ForEach((state.presets.map(\.name) + ["Custom"]), id: \.self) { Text($0).tag($0) }
+            // Botão + lista própria (e não um Menu do sistema): o nome longo vira "…" e o botão
+            // nunca cresce nem empurra os outros controles do FX.
+            Button { showPresets.toggle() } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "chevron.down").font(.system(size: 8, weight: .bold)).opacity(0.8)
+                    Text(state.preset).lineLimit(1).truncationMode(.tail)
+                    Spacer(minLength: 0)
                 }
-                .pickerStyle(.inline)
-                .labelsHidden()
-            } label: {
-                Text(state.preset).lineLimit(1).truncationMode(.tail).frame(maxWidth: 62, alignment: .leading)
+                .frame(minWidth: 0, maxWidth: .infinity)
             }
-            .frame(maxWidth: .infinity)
+            .buttonStyle(SkinButtonStyle(compact: true))
+            .frame(minWidth: 0, maxWidth: .infinity)
+            .layoutPriority(-1)
+            .popover(isPresented: $showPresets, arrowEdge: .bottom) {
+                PresetList(state: state) { showPresets = false }
+            }
             .hint("Preset: \(state.preset)", presetHint)
             ChromeButton("Reset") { withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { state.apply(preset: "Flat"); state.preamp = 0 } }
                 .frame(width: 48)
@@ -126,7 +140,7 @@ struct EqualizerPanel: View {
 
     private var sliders: some View {
         HStack(spacing: 0) {
-            column(value: $state.preamp, label: "Pre")
+            column(value: $mixer.preamp, label: "Pre")
                 .hint("Pre (pré-amplificação)", "Volume geral antes do equalizador. Abaixe se o som distorcer com muitos reforços.")
             ForEach(Array(labels.enumerated()), id: \.offset) { index, label in
                 column(value: bandBinding(index), label: label)
@@ -159,10 +173,11 @@ struct EqualizerPanel: View {
 
     private func bandBinding(_ index: Int) -> Binding<Double> {
         Binding(
-            get: { state.bands.indices.contains(index) ? state.bands[index] : 0 },
+            get: { mixer.bands.indices.contains(index) ? mixer.bands[index] : 0 },
             set: { newValue in
-                state.bands = state.bands.enumerated().map { $0.offset == index ? newValue : $0.element }
-                state.preset = "Custom"
+                mixer.bands = mixer.bands.enumerated().map { $0.offset == index ? newValue : $0.element }
+                // Só publica a troca de preset uma vez (não a cada passo do arrasto).
+                if state.preset != "Custom" { state.preset = "Custom" }
             }
         )
     }
@@ -174,4 +189,45 @@ final class PresetDialogs: ObservableObject {
     @Published var showSave = false
     @Published var showRename = false
     @Published var showDelete = false
+}
+
+/// Lista dos presets com a explicação de cada um; o escolhido tem a marca.
+private struct PresetList: View {
+    @ObservedObject var state: PlayerState
+    let close: () -> Void
+
+    private var names: [String] {
+        let all = state.presets.map(\.name)
+        return all.contains(state.preset) ? all : all + [state.preset]
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 1) {
+                ForEach(names, id: \.self) { name in
+                    Button {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { state.apply(preset: name) }
+                        close()
+                    } label: {
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Image(systemName: "checkmark").font(.system(size: 10, weight: .bold))
+                                .opacity(name == state.preset ? 1 : 0)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(name).font(.system(size: 12, weight: .medium)).lineLimit(1)
+                                Text(EqPreset.builtInDetails[name] ?? (name == "Custom" ? "Ajuste feito à mão." : "Preset salvo por você."))
+                                    .font(.system(size: 10.5)).foregroundStyle(.secondary).lineLimit(2)
+                            }
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.horizontal, 8).padding(.vertical, 5)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .background(RoundedRectangle(cornerRadius: 5).fill(name == state.preset ? Color.accentColor.opacity(0.15) : .clear))
+                }
+            }
+            .padding(6)
+        }
+        .frame(width: 260, height: 360)
+    }
 }

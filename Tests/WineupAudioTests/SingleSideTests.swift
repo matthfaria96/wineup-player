@@ -12,7 +12,7 @@ import Testing
         let out = try OfflineRender.render(.leftOnlySine(freq: 1000, amplitude: 0.5),
                                            configure: { chainRef = $0 },
                                            engineHook: { engine in
-                                               chainRef?.setSide(side, engine: engine, sink: engine.mainMixerNode, format: stereo)
+                                               chainRef?.setSide(side, engine: engine, format: stereo)
                                            })
         return (OfflineRender.rmsDB(out[0]), OfflineRender.rmsDB(out[1]))
     }

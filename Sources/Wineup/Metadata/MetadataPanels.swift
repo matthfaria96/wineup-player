@@ -39,7 +39,8 @@ struct WorkQueuePanel: View {
     let onHide: () -> Void
 
     var body: some View {
-        let rows = model.workIDs.compactMap { id in model.rows.first { $0.id == id } }
+        // Busca pelo índice do modelo (sem varrer a lista inteira por id).
+        let rows = model.workRows
         let done = rows.filter { RowLook($0) != .searching && ($0.status != .idle || $0.isDirty) }.count
         VStack(spacing: 0) {
             Divider()

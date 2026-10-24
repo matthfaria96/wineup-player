@@ -23,7 +23,8 @@ public enum FolderAnalyzer {
         let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init) ?? 0
         var file = FixerFile(url: url, size: size, isWritable: TagBackends.backend(for: url) != nil)
         if let audio = try? AudioFile(readingPropertiesAndMetadataFrom: url) {
-            let snap = TagSnapshot.read(file: audio)
+            // Só o tamanho das capas importa aqui: sem o SHA-256 de cada imagem.
+            let snap = TagSnapshot.read(file: audio, hashPictures: false)
             file.tech = tech(audio, url: url)
             file.fields = snap.fields
             file.pictureCount = snap.pictures.count
@@ -77,11 +78,28 @@ public enum FolderAnalyzer {
         return (pics.first { $0.type == .frontCover } ?? pics.first)?.imageData
     }
 
-    public static func analyze(_ urls: [URL]) async -> [FixerFile] {
+    /// Leituras simultâneas no máximo: o TagLib bloqueia a thread, e uma tarefa por arquivo esgota o pool.
+    public static let maxConcurrentReads = 6
+
+    public static func analyze(_ urls: [URL], concurrency: Int = maxConcurrentReads) async -> [FixerFile] {
+        let width = max(1, concurrency)
         let files = await withTaskGroup(of: (Int, FixerFile).self) { group in
-            for (i, url) in urls.enumerated() { group.addTask { (i, read(url)) } }
             var out = [FixerFile?](repeating: nil, count: urls.count)
-            for await (i, f) in group { out[i] = f }
+            var next = 0
+            // Começa com `width` leituras e põe a próxima a cada uma que termina.
+            while next < min(width, urls.count) {
+                let (i, url) = (next, urls[next])
+                group.addTask { (i, read(url)) }
+                next += 1
+            }
+            for await (i, f) in group {
+                out[i] = f
+                if next < urls.count {
+                    let (j, url) = (next, urls[next])
+                    group.addTask { (j, read(url)) }
+                    next += 1
+                }
+            }
             return out.compactMap { $0 }
         }
         return markDuplicates(files)

@@ -48,7 +48,7 @@ struct MetadataManagerView: View {
         .sheet(isPresented: $showDuplicates) { DuplicatesView(model: model) }
         .sheet(item: $model.report) { SearchReportView(report: $0, model: model) }
         // A busca começa: o painel de cards sobe sozinho; ao terminar, fica até o usuário fechar.
-        .onChange(of: model.isBusy) { _, busy in if busy { showQueue = true } }
+        .onChange(of: model.searchRuns) { showQueue = true }
         .confirmationDialog("Desfazer a última gravação?", isPresented: $confirmUndo) {
             Button("Desfazer") { if let last = model.lastUndoable { model.undo(last) } }
             Button("Cancelar", role: .cancel) {}
@@ -63,6 +63,8 @@ struct MetadataManagerView: View {
             model.openIfNeeded(state.browser.folder)
             model.refreshHistory()
         }
+        // Janela fechada: a busca para (o resultado não teria onde aparecer); uma gravação termina o bloco.
+        .onDisappear { model.windowClosed() }
         .frame(minWidth: 900, minHeight: 520)
     }
 
@@ -113,7 +115,7 @@ struct MetadataManagerView: View {
             .disabled(model.lastUndoable == nil || model.isBusy)
             Button { showDuplicates = true } label: { Label("Duplicadas", systemImage: "square.on.square") }
                 .help("Comparar duplicadas e mandar as cópias piores para a Lixeira")
-                .disabled(!model.rows.contains { $0.file.duplicateGroup != nil })
+                .disabled(!model.hasDuplicates)
             Button { showHistory = true } label: { Label("Histórico", systemImage: "clock.arrow.circlepath") }
                 .help("Histórico de gravações, com desfazer por lote")
             Button { showSettings.toggle() } label: { Label("Opções", systemImage: "gearshape") }

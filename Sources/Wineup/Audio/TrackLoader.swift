@@ -86,13 +86,16 @@ enum TrackLoader {
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceThumbnailMaxPixelSize: maxPixel,
             kCGImageSourceCreateThumbnailWithTransform: true,
+            // Decodifica aqui (fora da thread principal), não no primeiro desenho.
+            kCGImageSourceShouldCacheImmediately: true,
         ]
         guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
         return NSImage(cgImage: image, size: NSSize(width: image.width, height: image.height))
     }
 
+    /// Capa do Now Playing: reduzida a no máximo 1024 px e já decodificada (capas de 3000 px+ pesavam no desenho).
     static func cover(for url: URL) -> NSImage? {
-        coverData(for: url).flatMap(NSImage.init(data:))
+        thumbnail(for: url, maxPixel: 1024)
     }
 
     /// Texto da letra: .lrc ao lado do arquivo (mesmo nome) ou letra embutida.

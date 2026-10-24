@@ -24,17 +24,38 @@ public struct AcoustIDClient: Sendable {
         return dirs.map { "\($0)/fpcalc" }.first { FileManager.default.isExecutableFile(atPath: $0) }
     }
 
-    public static func fingerprint(_ url: URL, fpcalc: String) throws -> Fingerprint? {
+    /// Roda o fpcalc sem prender uma thread do pool de tarefas esperando o processo terminar:
+    /// a saída é lida numa fila do GCD e o fim chega pelo `terminationHandler`.
+    public static func fingerprint(_ url: URL, fpcalc: String) async throws -> Fingerprint? {
         let p = Process()
         p.executableURL = URL(fileURLWithPath: fpcalc)
         p.arguments = ["-json", url.path]
         let out = Pipe()
         p.standardOutput = out
         p.standardError = FileHandle.nullDevice
-        try p.run()
-        let data = out.fileHandleForReading.readDataToEndOfFile()
-        p.waitUntilExit()
-        guard p.terminationStatus == 0,
+        let result = ProcessResult()
+        let done = DispatchGroup()
+        let (data, status): (Data, Int32) = try await withCheckedThrowingContinuation { continuation in
+            done.enter()
+            p.terminationHandler = { process in result.setStatus(process.terminationStatus); done.leave() }
+            do { try p.run() } catch {
+                p.terminationHandler = nil
+                continuation.resume(throwing: error)
+                return
+            }
+            done.enter()
+            // Lê até o fim enquanto o processo escreve (o cano tem limite: sem isto o fpcalc pode travar).
+            DispatchQueue.global(qos: .utility).async {
+                result.setData(out.fileHandleForReading.readDataToEndOfFile())
+                done.leave()
+            }
+            done.notify(queue: .global(qos: .utility)) { continuation.resume(returning: result.value) }
+        }
+        return try parseFingerprint(data, status: status)
+    }
+
+    static func parseFingerprint(_ data: Data, status: Int32) throws -> Fingerprint? {
+        guard status == 0,
               let o = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let fp = o["fingerprint"] as? String else { return nil }
         let d = (o["duration"] as? Double) ?? (o["duration"] as? Int).map(Double.init) ?? 0
@@ -63,4 +84,15 @@ public struct AcoustIDClient: Sendable {
         }
         return out.sorted { $0.1 > $1.1 }.map { (recordingID: $0.0, score: $0.1) }
     }
+}
+
+/// Saída e código de término do fpcalc (preenchidos em filas diferentes).
+private final class ProcessResult: @unchecked Sendable {
+    private let lock = NSLock()
+    private var data = Data()
+    private var status: Int32 = -1
+
+    func setData(_ d: Data) { lock.withLock { data = d } }
+    func setStatus(_ s: Int32) { lock.withLock { status = s } }
+    var value: (Data, Int32) { lock.withLock { (data, status) } }
 }

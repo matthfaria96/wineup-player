@@ -9,7 +9,7 @@ struct MotionLibraryView: View {
     @Binding var modeRaw: String
     @Binding var videoCategory: String
     @ObservedObject private var store = VideoCategoryStore.shared
-    @AppStorage(MotionChoice.key) private var motion = ""
+    @AppStorage(MotionChoice.key) private var motion = MotionChoice.firstUse
     @Environment(\.dismiss) private var dismiss
     @State private var naming = false
     @State private var newName = ""

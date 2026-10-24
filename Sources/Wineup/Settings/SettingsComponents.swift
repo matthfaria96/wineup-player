@@ -32,8 +32,8 @@ struct SettingsPage<Content: View>: View {
 
 /// Grupo de linhas com título e rodapé opcional.
 struct SettingsSection<Content: View>: View {
-    let title: String
-    var footer: String?
+    let title: LocalizedStringKey
+    var footer: LocalizedStringKey?
     @ViewBuilder var content: Content
 
     var body: some View {
@@ -59,8 +59,8 @@ struct SettingsSection<Content: View>: View {
 
 /// Uma linha: o que é (com uma frase de explicação) à esquerda, o controle à direita.
 struct SettingsRow<Control: View>: View {
-    let title: String
-    var detail: String?
+    let title: LocalizedStringKey
+    var detail: LocalizedStringKey?
     var symbol: String?
     @ViewBuilder var control: Control
 

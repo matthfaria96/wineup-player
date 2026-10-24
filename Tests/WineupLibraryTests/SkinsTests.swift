@@ -19,7 +19,7 @@ struct SkinsTests {
     @Test func everyBuiltInSkinIsCompleteAndReadable() throws {
         let (s, user) = store()
         defer { try? FileManager.default.removeItem(at: user.deletingLastPathComponent()) }
-        #expect(s.skins.map(\.id) == ["emoboy", "radio-retro", "neon-gotico", "pixelart-16bit", "classico", "scifi", "noite-estrelada"])
+        #expect(s.skins.map(\.id) == ["radio-retro", "classico", "pixelart-16bit", "scifi", "neon-gotico", "emoboy"])
         for skin in s.skins {
             #expect(skin.builtIn)
             for file in skin.manifest.referencedFiles {
@@ -34,11 +34,8 @@ struct SkinsTests {
             #expect(m.panelStyle("player")?.frame != nil && !m.fonts.isEmpty && m.titleFont != nil, "\(skin.id)")
         }
         let skin = try #require(s.skin(SkinStore.defaultID))
-        let window = skin.manifest.window
-        #expect(window.layers.map(\.kind) == [.flow, .swirl, .glow, .stars])
-        #expect(window.layers.last?.points.count == 11)
+        #expect(skin.name == "Musical")
         #expect(skin.manifest.panelStyle("player")?.frame?.image == "frame.png")
-        #expect(skin.manifest.credits.first?.license == "Domínio público")
     }
 
     @Test func minimalManifestUsesDefaults() throws {
@@ -141,8 +138,8 @@ struct SkinInspectTests {
         try s.export(SkinStore.defaultID, to: zip)
         let preview = try s.inspect(zip)
         defer { try? FileManager.default.removeItem(at: preview.folder.deletingLastPathComponent()) }
-        #expect(preview.name == "Noite Estrelada" && FileManager.default.fileExists(atPath: preview.file("frame.png").path))
-        #expect(s.skins.count == 7 && s.isInstalled(preview.id))
+        #expect(preview.name == "Musical" && FileManager.default.fileExists(atPath: preview.file("frame.png").path))
+        #expect(s.skins.count == 6 && s.isInstalled(preview.id))
     }
 }
 

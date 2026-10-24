@@ -101,14 +101,15 @@ struct MetadataSidebar: View {
     }
 
     private var actions: some View {
-        HStack {
+        let dirty = model.selectedRows.contains(where: \.isDirty)
+        return HStack {
             Button("Desfazer") { model.revertSelection() }
-                .disabled(!model.selectedRows.contains(where: \.isDirty))
+                .disabled(!dirty)
             Spacer()
             Button("Salvar seleção") { model.save(onlySelection: true) }
                 .keyboardShortcut("s")
                 .buttonStyle(.borderedProminent)
-                .disabled(!model.selectedRows.contains(where: \.isDirty) || model.isBusy)
+                .disabled(!dirty || model.isBusy)
         }
         .padding(.top, 4)
     }
@@ -120,24 +121,33 @@ struct LyricsBox: View {
     @ObservedObject var model: MetadataManagerModel
     let row: MetadataRow
     @State private var options: [LyricsCandidate] = []
+    /// Música para a qual as opções foram buscadas (clicar numa opção só vale para ela).
+    @State private var optionsFor: MetadataRow.ID?
     @State private var searching = false
+    @State private var searchTask: Task<Void, Never>?
     @State private var lrcText: String?
+    /// Música do .lrc carregado: o texto de outra música nunca aparece nesta.
+    @State private var lrcFor: MetadataRow.ID?
     @State private var editing = false
     @State private var draft = ""
     @State private var confirmSearch = false
+    @State private var parsed = LyricsInfoMemo()
 
     /// Letra mostrada: a nova (ainda não gravada), senão a do .lrc, senão a embutida no arquivo.
     private var shown: (text: String, origin: String)? {
         if let text = row.lyrics?.text { return (text, "Nova") }
-        if let lrcText, !lrcText.isEmpty { return (lrcText, ".lrc") }
+        if lrcFor == row.id, let lrcText, !lrcText.isEmpty { return (lrcText, ".lrc") }
         let embedded = row.file.value("lyrics")
         return embedded.isEmpty ? nil : (embedded, "Embutida")
     }
 
     var body: some View {
+        // Uma análise da letra por desenho (e só quando o texto muda: o memo guarda a última).
+        let shown = shown
+        let info = shown.map { parsed.info(for: $0.text) }
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center, spacing: 6) {
-                tags
+                tags(shown, info)
                 Spacer(minLength: 4)
                 if editing {
                     iconButton("xmark", "Cancelar a edição") { withAnimation(.snappy) { editing = false } }
@@ -161,11 +171,11 @@ struct LyricsBox: View {
                     }
                 }
             }
-            if !options.isEmpty { results.transition(.move(edge: .top).combined(with: .opacity)) }
+            if !options.isEmpty, optionsFor == row.id { results.transition(.move(edge: .top).combined(with: .opacity)) }
             if editing {
                 editor.transition(.opacity)
-            } else if let shown {
-                LyricsText(info: LyricsInfo(shown.text)).transition(.opacity)
+            } else if let info {
+                LyricsText(info: info).transition(.opacity)
             } else {
                 VStack(spacing: 6) {
                     Image(systemName: "quote.bubble").font(.system(size: 24)).foregroundStyle(.tertiary)
@@ -180,23 +190,32 @@ struct LyricsBox: View {
             Button("Buscar") { search() }
             Button("Cancelar", role: .cancel) {}
         } message: {
-            Text(LyricsInfo(shown?.text ?? "").isSynced
+            Text(info?.isSynced == true
                  ? "Esta música já tem letra sincronizada. A busca só mostra opções; nada muda até você escolher uma e salvar."
                  : "A busca só mostra opções; nada muda até você escolher uma e salvar.")
         }
         .task(id: "\(row.id)|\(row.file.hasSidecarLyrics)|\(row.status == .saved)") {
+            // Outra música (ou o arquivo mudou): a busca de letras da anterior não vale mais.
+            searchTask?.cancel()
+            searchTask = nil
+            searching = false
             options = []
+            optionsFor = nil
             editing = false
+            let id = row.id
             let url = row.file.lyricsURL
             let has = row.file.hasSidecarLyrics
-            lrcText = has ? await Task.detached { try? String(contentsOf: url, encoding: .utf8) }.value : nil
+            let text = has ? await Task.detached { try? String(contentsOf: url, encoding: .utf8) }.value : nil
+            guard !Task.isCancelled else { return }
+            lrcText = text
+            lrcFor = id
         }
+        .onDisappear { searchTask?.cancel(); searching = false }
     }
 
     /// Etiquetas: de onde vem a letra, o tipo e se será gravada.
-    @ViewBuilder private var tags: some View {
-        if let shown {
-            let info = LyricsInfo(shown.text)
+    @ViewBuilder private func tags(_ shown: (text: String, origin: String)?, _ info: LyricsInfo?) -> some View {
+        if let shown, let info {
             HStack(spacing: 4) {
                 Tag(text: shown.origin == "Nova" ? "Nova · falta salvar" : shown.origin == ".lrc" ? "Arquivo .lrc" : "Embutida no arquivo",
                     color: shown.origin == "Nova" ? .accentColor : .secondary)
@@ -228,7 +247,7 @@ struct LyricsBox: View {
             }
             ForEach(options) { option in
                 Button {
-                    model.setLyrics(option, for: row.id)
+                    if let id = optionsFor, id == row.id { model.setLyrics(option, for: id) }
                     withAnimation(.snappy) { options = [] }
                 } label: {
                     HStack(spacing: 6) {
@@ -263,10 +282,14 @@ struct LyricsBox: View {
     }
 
     private func search() {
+        searchTask?.cancel()
+        let current = row
         searching = true
-        Task {
-            let found = Array(await model.lyricsOptions(for: row).prefix(8))
-            withAnimation(.snappy) { options = found }
+        searchTask = Task {
+            let found = Array(await model.lyricsOptions(for: current).prefix(8))
+            // Trocou de música no meio: as opções seriam aplicadas à música errada.
+            guard !Task.isCancelled else { return }
+            withAnimation(.snappy) { options = found; optionsFor = current.id }
             searching = false
             if found.isEmpty { model.message = "Não encontramos letra para esta faixa." }
         }
@@ -326,9 +349,9 @@ private struct LyricsText: View {
 struct CollectionSummary: View {
     @ObservedObject var model: MetadataManagerModel
 
-    private func count(_ issue: FixerIssue) -> Int { model.rows.filter { $0.openIssues.contains(issue) }.count }
-
     var body: some View {
+        // Uma passada pelas linhas, guardada no modelo até a lista mudar.
+        let counts = model.summary
         VStack(alignment: .leading, spacing: 10) {
             Text("Análise da pasta").font(.system(size: 13, weight: .semibold))
             if model.rows.isEmpty {
@@ -337,7 +360,7 @@ struct CollectionSummary: View {
             } else {
                 Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 5) {
                     ForEach(FixerIssue.allCases, id: \.self) { issue in
-                        let n = count(issue)
+                        let n = counts.count(issue)
                         GridRow {
                             Text(issue.label)
                             Text("\(n)").monospacedDigit().foregroundStyle(n == 0 ? Color.secondary : .orange)
@@ -355,7 +378,7 @@ struct CollectionSummary: View {
                     .fixedSize(horizontal: false, vertical: true)
                 HStack {
                     Button("Ver só as com problemas") { model.filter = .problems }
-                    if count(.duplicate) > 0 { Button("Duplicadas") { model.filter = .duplicates } }
+                    if counts.count(.duplicate) > 0 { Button("Duplicadas") { model.filter = .duplicates } }
                 }
                 .controlSize(.small)
             }
@@ -370,9 +393,16 @@ struct SelectionHeader: View {
     @ObservedObject var model: MetadataManagerModel
     let tab: MetadataSidebar.Tab
     @State private var embedded: NSImage?
+    /// Capa nova (pendente) já reduzida fora da thread principal.
+    @State private var pendingImage: NSImage?
     @State private var targeted = false
+    /// Lado da miniatura em pixels (84 pt em tela Retina).
+    private static let coverPixels = 168
 
-    private var single: MetadataRow? { model.selectedRows.count == 1 ? model.selectedRows.first : nil }
+    private var single: MetadataRow? {
+        let selected = model.selectedRows
+        return selected.count == 1 ? selected.first : nil
+    }
     private var pending: CoverImage? {
         let covers = model.selectedRows.map(\.cover)
         guard let first = covers.first, covers.allSatisfy({ $0 == first }) else { return nil }
@@ -380,9 +410,11 @@ struct SelectionHeader: View {
     }
 
     var body: some View {
+        let single = single
+        let pending = pending
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 12) {
-                cover
+                cover(pending: pending)
                 VStack(alignment: .leading, spacing: 3) {
                     if let row = single {
                         Text(row.value("title").isEmpty ? row.fileName : row.value("title"))
@@ -425,11 +457,12 @@ struct SelectionHeader: View {
         .padding(10)
         .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.04)))
         .animation(.snappy, value: single?.status)
-        .task(id: model.selection) { await loadEmbedded() }
+        .task(id: model.selection) { await loadEmbedded(single) }
+        .task(id: pending) { await loadPending(pending) }
     }
 
-    private var cover: some View {
-        let image = pending.flatMap { NSImage(data: $0.data) } ?? embedded
+    private func cover(pending: CoverImage?) -> some View {
+        let image = pending == nil ? embedded : (pendingImage ?? embedded)
         return ZStack {
             RoundedRectangle(cornerRadius: 8).fill(Color.secondary.opacity(0.15))
             if let image {
@@ -468,12 +501,25 @@ struct SelectionHeader: View {
         }
     }
 
-    private func loadEmbedded() async {
+    /// Lê e reduz a capa embutida fora da thread principal; descarta se a seleção mudou no meio.
+    private func loadEmbedded(_ row: MetadataRow?) async {
         embedded = nil
-        guard let row = single, row.file.hasCover else { return }
+        guard let row, row.file.hasCover else { return }
         let url = row.url
-        let data = await Task.detached { FolderAnalyzer.embeddedCover(url) }.value
-        withAnimation(.snappy) { embedded = data.flatMap(NSImage.init(data:)) }
+        let pixels = Self.coverPixels
+        let image = await Task.detached(priority: .userInitiated) {
+            FolderAnalyzer.embeddedCover(url).flatMap { ThumbnailCache.downsample($0, to: pixels) }
+        }.value
+        guard !Task.isCancelled else { return }
+        withAnimation(.snappy) { embedded = image }
+    }
+
+    private func loadPending(_ cover: CoverImage?) async {
+        pendingImage = nil
+        guard let cover else { return }
+        let decoded = await CoverDecode.decode(cover.data, maxPixels: Self.coverPixels)
+        guard !Task.isCancelled else { return }
+        pendingImage = decoded?.image
     }
 
     private func load(_ providers: [NSItemProvider]) {
@@ -488,5 +534,18 @@ struct SelectionHeader: View {
                 Task { @MainActor in model.setCoverData(data) }
             }
         }
+    }
+}
+
+/// Guarda a última letra analisada: o mesmo texto não é analisado de novo a cada desenho.
+@MainActor
+final class LyricsInfoMemo {
+    private var last: (text: String, info: LyricsInfo)?
+
+    func info(for text: String) -> LyricsInfo {
+        if let last, last.text == text { return last.info }
+        let info = LyricsInfo(text)
+        last = (text, info)
+        return info
     }
 }

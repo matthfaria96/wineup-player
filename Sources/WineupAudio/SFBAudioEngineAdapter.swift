@@ -17,6 +17,28 @@ public final class SFBAudioEngineAdapter: NSObject, AudioEngine, AudioPlayer.Del
         var correction = false
         var target = SoundCorrection.defaultTarget
         var current: URL?
+        /// Última faixa pedida em play() e a pré-enfileirada (gapless).
+        var requested: URL?
+        var next: URL?
+        /// Decoder entregue a play(): a troca para ele não é um avanço gapless.
+        var startToken: ObjectIdentifier?
+        /// Conta os play(): avisos de fim/falha atrasados de uma reprodução anterior são descartados.
+        var generation = 0
+        /// Medição de volume: só a atual e a próxima, sem repetir a que já está sendo medida.
+        var pendingMeasure: [URL] = []
+        var measuring: URL?
+        var measureWorker = false
+
+        /// Ainda vale medir: Correção de Som ligada e a faixa é a atual, a pedida ou a próxima.
+        func wantsMeasure(_ url: URL) -> Bool {
+            correction && (url == current || url == requested || url == next)
+        }
+    }
+
+    /// Onde começar a tocar: segundos do arquivo ou fração (0...1).
+    public enum StartPoint: Sendable, Equatable {
+        case time(Double)
+        case fraction(Double)
     }
 
     private let player = AudioPlayer()
@@ -28,6 +50,11 @@ public final class SFBAudioEngineAdapter: NSObject, AudioEngine, AudioPlayer.Del
     public let meter = LevelTap()
 
     public var onNowPlayingChanged: ((URL?) -> Void)?
+    /// Como onNowPlayingChanged, dizendo se a troca veio da fila (gapless) ou de play().
+    public var onTrackChanged: ((URL?, _ fromQueue: Bool) -> Void)?
+    /// Arquivo que não abriu ou falhou no meio da decodificação. `ended`: nada mais tocando nem na fila.
+    /// Sem ele, a falha vai para onError.
+    public var onDecodingFailed: ((URL?, _ message: String, _ ended: Bool) -> Void)?
     public var onEndOfAudio: (() -> Void)?
     public var onError: ((String) -> Void)?
     public var onConfigurationChange: ((Double) -> Void)?
@@ -39,7 +66,15 @@ public final class SFBAudioEngineAdapter: NSObject, AudioEngine, AudioPlayer.Del
 
     public var soundCorrection: Bool {
         get { state.withLock { $0.correction } }
-        set { state.withLock { $0.correction = newValue }; refreshGain() }
+        set {
+            state.withLock { $0.correction = newValue }
+            refreshGain()
+            guard newValue else { return }
+            // Ligou: mede a atual primeiro, depois a próxima.
+            let (current, next) = state.withLock { ($0.current ?? $0.requested, $0.next) }
+            if let current { requestMeasure(current, urgent: true) }
+            if let next { requestMeasure(next, urgent: false) }
+        }
     }
 
     public var correctionTarget: Double {
@@ -72,24 +107,43 @@ public final class SFBAudioEngineAdapter: NSObject, AudioEngine, AudioPlayer.Del
         // Medidor no fim da cadeia (com EQ e Correção de Som), antes do volume do app: as barras mostram a
         // música, e não somem quando o volume do Wineup está baixo.
         meter.install(on: chain.limiter)
+        // Carrega as medidas guardadas fora da thread principal.
+        analysis.async { LoudnessAnalyzer.shared.prewarm() }
     }
 
     // MARK: AudioEngine
 
-    public func play(_ url: URL) throws {
-        let decoder = try makeDecoder(url)
+    public func play(_ url: URL) throws { try play(url, from: nil) }
+
+    /// Toca já a partir de `start`: o decoder é aberto e posicionado antes de entrar no player
+    /// (um seek logo depois de play() era descartado, porque o decoder ainda não estava ativo).
+    public func play(_ url: URL, from start: StartPoint?) throws {
+        let decoder = try makeDecoder(url, start: start)
+        let token = ObjectIdentifier(decoder)
+        state.withLock {
+            $0.requested = url
+            $0.next = nil
+            $0.startToken = token
+            $0.generation += 1
+        }
+        requestMeasure(url, urgent: true)
         player.clearQueue()
         try player.play(decoder)
     }
 
     public func enqueue(_ url: URL) throws {
-        let decoder = try makeDecoder(url)
+        let decoder = try makeDecoder(url, start: nil)
+        state.withLock { $0.next = url }
+        requestMeasure(url, urgent: false)
         player.clearQueue()
         try player.enqueue(decoder)
     }
 
     /// Esvazia a próxima faixa pré-enfileirada.
-    public func clearQueue() { player.clearQueue() }
+    public func clearQueue() {
+        state.withLock { $0.next = nil }
+        player.clearQueue()
+    }
 
     public func pause() { _ = player.pause() }
     public func resume() { _ = player.resume() }
@@ -118,12 +172,13 @@ public final class SFBAudioEngineAdapter: NSObject, AudioEngine, AudioPlayer.Del
     /// L (-1), normal (0) ou R (1): em L/R a música inteira fica num lado só.
     public func setSide(_ side: Int) {
         let chain = chain
+        // Sob o mutex do engine do SFB; religa só downmix -> balanço.
         try? withEngine { engine in
-            var format = chain.timePitch.inputFormat(forBus: 0)
+            var format = chain.downmix.inputFormat(forBus: 0)
             if format.channelCount == 0 || format.sampleRate == 0 {
                 format = engine.mainMixerNode.outputFormat(forBus: 0)
             }
-            chain.setSide(side, engine: engine, sink: engine.mainMixerNode, format: format)
+            chain.setSide(side, engine: engine, format: format)
         }
     }
     public func setReplayGain(linear: Double) { chain.setGain(linear: Float(linear)) }
@@ -158,14 +213,32 @@ public final class SFBAudioEngineAdapter: NSObject, AudioEngine, AudioPlayer.Del
 
     // MARK: Decoders / ReplayGain
 
-    private func makeDecoder(_ url: URL) throws -> AudioDecoder {
+    private func makeDecoder(_ url: URL, start: StartPoint?) throws -> AudioDecoder {
         let decoder = try AudioDecoder(url: url)
+        if let start { try position(decoder, at: start) }
         let id = ObjectIdentifier(decoder)
         state.withLock { $0.tokens[id] = url }
         utility.async { [weak self] in _ = self?.replayGain(for: url) }
-        // Mede o volume já ao entrar na fila (a próxima faixa fica pronta antes de tocar).
-        analysis.async { [weak self] in self?.measured(url) }
         return decoder
+    }
+
+    /// Abre o decoder e o leva ao ponto inicial. Se o formato não permitir seek, começa do início.
+    private func position(_ decoder: AudioDecoder, at start: StartPoint) throws {
+        try decoder.open()
+        guard decoder.supportsSeeking else { return }
+        let length = decoder.length
+        let frame: AVAudioFramePosition
+        switch start {
+        case .time(let seconds):
+            guard seconds.isFinite, seconds > 0 else { return }
+            frame = AVAudioFramePosition(seconds * decoder.processingFormat.sampleRate)
+        case .fraction(let fraction):
+            guard fraction.isFinite, fraction > 0, length > 0 else { return }
+            frame = AVAudioFramePosition(Double(length) * min(fraction, 1))
+        }
+        let target = length > 0 ? min(frame, length - 1) : frame
+        guard target > 0 else { return }
+        try? decoder.seek(to: target)
     }
 
     private func replayGain(for url: URL) -> ReplayGainInfo {
@@ -177,14 +250,53 @@ public final class SFBAudioEngineAdapter: NSObject, AudioEngine, AudioPlayer.Del
 
     // MARK: Correção de Som
 
-    /// Medida pronta: se for a faixa tocando, aplica o ganho na hora.
-    private func measured(_ url: URL) {
-        guard LoudnessAnalyzer.shared.measure(url) != nil else { return }
-        if state.withLock({ $0.current == url && $0.correction }) { refreshGain() }
+    /// Pede a medição de volume (só com a Correção de Som ligada). `urgent` passa na frente (faixa que vai tocar).
+    /// Faixas que já não são a atual nem a próxima saem da fila; a que está sendo medida não entra de novo.
+    private func requestMeasure(_ url: URL, urgent: Bool) {
+        let start = state.withLock { s -> Bool in
+            guard s.wantsMeasure(url), s.measuring != url else { return false }
+            var pending = s.pendingMeasure.filter { $0 != url && s.wantsMeasure($0) }
+            if urgent { pending.insert(url, at: 0) } else { pending.append(url) }
+            s.pendingMeasure = pending
+            guard !s.measureWorker else { return false }
+            s.measureWorker = true
+            return true
+        }
+        if start { analysis.async { [weak self] in self?.measureLoop() } }
     }
 
-    /// Ganho da faixa atual: Correção de Som (medida, ou estimada pelas tags) ou ReplayGain das tags.
+    /// Mede uma faixa por vez até a fila esvaziar. Cancela a leitura se a faixa sair de cena.
+    private func measureLoop() {
+        while let url = nextToMeasure() {
+            let info = LoudnessAnalyzer.shared.measure(url) { [weak self] in
+                !(self?.state.withLock { $0.wantsMeasure(url) } ?? false)
+            }
+            state.withLock { $0.measuring = nil }
+            // Medida pronta: se for a faixa tocando, aplica o ganho.
+            if info != nil, state.withLock({ $0.current == url && $0.correction }) { refreshGain() }
+        }
+    }
+
+    private func nextToMeasure() -> URL? {
+        state.withLock { s in
+            s.pendingMeasure = s.pendingMeasure.filter { s.wantsMeasure($0) }
+            guard !s.pendingMeasure.isEmpty else {
+                s.measureWorker = false
+                return nil
+            }
+            let url = s.pendingMeasure.removeFirst()
+            s.measuring = url
+            return url
+        }
+    }
+
+    /// Ganho da faixa atual, fora da thread principal (ler tags e o cache de medidas toca no disco).
     private func refreshGain() {
+        utility.async { [weak self] in self?.applyGain() }
+    }
+
+    /// Correção de Som (medida, ou estimada pelas tags) ou ReplayGain das tags.
+    private func applyGain() {
         let (url, mode, clip, correction, target) = state.withLock {
             ($0.current, $0.mode, $0.preventClipping, $0.correction, $0.target)
         }
@@ -197,28 +309,68 @@ public final class SFBAudioEngineAdapter: NSObject, AudioEngine, AudioPlayer.Del
         } else {
             linear = ReplayGainMath.linearGain(mode: mode, info: tags, preventClipping: clip)
         }
+        // A faixa pode ter mudado durante a leitura: o pedido seguinte cuida da nova.
+        guard state.withLock({ $0.current == url }) else { return }
         chain.setGain(linear: Float(linear))
     }
 
     // MARK: AudioPlayer.Delegate
 
     public func audioPlayer(_ audioPlayer: AudioPlayer, nowPlayingChanged nowPlaying: PCMDecoding?) {
-        let url: URL? = nowPlaying.flatMap { decoder in
-            let id = ObjectIdentifier(decoder as AnyObject)
-            return state.withLock { $0.tokens[id] }
+        let id = nowPlaying.map { ObjectIdentifier($0 as AnyObject) }
+        let (url, fromQueue) = state.withLock { s -> (URL?, Bool) in
+            guard let id, let url = s.tokens[id] else { return (nil, false) }
+            s.current = url
+            return (url, id != s.startToken)
         }
-        if let url {
-            state.withLock { $0.current = url }
-            refreshGain()
-        } else {
-            // Nada tocando nem na fila: libera os tokens de decoders.
-            state.withLock { $0.tokens.removeAll() }
+        if url != nil { refreshGain() }
+        DispatchQueue.main.async { [weak self] in
+            self?.onNowPlayingChanged?(url)
+            self?.onTrackChanged?(url, fromQueue)
         }
-        DispatchQueue.main.async { [weak self] in self?.onNowPlayingChanged?(url) }
+    }
+
+    /// Decoder terminou: libera só o token dele (limpar todos apagava o de uma faixa recém-pedida).
+    public func audioPlayer(_ audioPlayer: AudioPlayer, renderingComplete decoder: PCMDecoding) {
+        releaseToken(of: decoder)
+    }
+
+    public func audioPlayer(_ audioPlayer: AudioPlayer, decoderCanceled decoder: PCMDecoding,
+                            framesRendered: AVAudioFramePosition) {
+        releaseToken(of: decoder)
+    }
+
+    /// Arquivo que não abriu ou falhou no meio: o SFB avisa aqui, não em encounteredError.
+    public func audioPlayer(_ audioPlayer: AudioPlayer, decodingAborted decoder: PCMDecoding, error: Error,
+                            framesRendered: AVAudioFramePosition) {
+        let url = releaseToken(of: decoder)
+        let message = error.localizedDescription
+        let generation = state.withLock { $0.generation }
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.state.withLock({ $0.generation }) == generation else { return }
+            // O SFB já tirou o decoder; sem nada tocando, a reprodução acabou (e o engine parou).
+            let ended = self.player.nowPlaying == nil || !self.player.isPlaying
+            if let handler = self.onDecodingFailed {
+                handler(url, message, ended)
+            } else {
+                self.onError?(message)
+            }
+        }
+    }
+
+    @discardableResult
+    private func releaseToken(of decoder: PCMDecoding) -> URL? {
+        let id = ObjectIdentifier(decoder as AnyObject)
+        return state.withLock { $0.tokens.removeValue(forKey: id) }
     }
 
     public func audioPlayerEndOfAudio(_ audioPlayer: AudioPlayer) {
-        DispatchQueue.main.async { [weak self] in self?.onEndOfAudio?() }
+        let generation = state.withLock { $0.generation }
+        DispatchQueue.main.async { [weak self] in
+            // Um play() feito depois deste fim não pode ser parado por ele.
+            guard let self, self.state.withLock({ $0.generation }) == generation else { return }
+            self.onEndOfAudio?()
+        }
     }
 
     public func audioPlayer(_ audioPlayer: AudioPlayer, encounteredError error: Error) {
@@ -233,8 +385,7 @@ public final class SFBAudioEngineAdapter: NSObject, AudioEngine, AudioPlayer.Del
     }
 
     public func audioPlayer(_ audioPlayer: AudioPlayer, audioEngineConfigurationChange userInfo: [AnyHashable: Any]?) {
-        // O SFB já reconecta e reinicia o engine; só reinstalamos o tap e informamos a taxa.
-        meter.install(on: chain.limiter)
+        // O SFB só religa mixer -> saída e reinicia o engine; o tap no limitador continua instalado.
         let rate = audioPlayer.outputNode.outputFormat(forBus: 0).sampleRate
         DispatchQueue.main.async { [weak self] in self?.onConfigurationChange?(rate) }
     }

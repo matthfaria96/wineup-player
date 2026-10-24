@@ -102,8 +102,14 @@ final class LibraryBrowser: ObservableObject {
     @Published private(set) var backStack: [NavEntry] = []
     @Published private(set) var forwardStack: [NavEntry] = []
 
-    /// Caminho → cor marcada pelo usuário.
+    /// Caminho → cor marcada pelo usuário. Só muda na thread principal; as cargas recebem uma cópia.
     private(set) var marks: [String: MarkColor] = [:]
+    /// As cores precisam ser relidas do banco (a próxima carga as lê fora da thread principal).
+    private var marksStale = true
+    /// Sobe a cada marcação local: uma carga que leu as cores antes dela não as sobrescreve.
+    private var marksVersion = 0
+    /// Gravações no banco em ordem, fora da thread principal.
+    private let dbQueue = DispatchQueue(label: "wineup.browser.db", qos: .userInitiated)
     /// Entrega a lista de faixas a mostrar (título, faixas).
     var onShowTracks: ((String, [Track]) -> Void)?
     /// Recarga automática (varredura/vigia): não deve substituir uma lista aberta à mão.
@@ -124,7 +130,6 @@ final class LibraryBrowser: ObservableObject {
         folder = NavPlaces.defaultFolder ?? NavPlaces.music
         view = ViewMode(rawValue: defaults.string(forKey: DisplayKeys.viewMode) ?? "") ?? .songs
         showColorTags = defaults.object(forKey: DisplayKeys.showColorTags) as? Bool ?? true
-        refreshMarks()
     }
 
     var isAvailable: Bool { database != nil }
@@ -273,12 +278,19 @@ final class LibraryBrowser: ObservableObject {
         }
         let token = loadToken
         let folder = folder, view = view, showTags = showColorTags
+        // Cópia das cores feita aqui (thread principal); nil = reler do banco na carga.
+        let marksSnapshot: [String: MarkColor]? = marksStale ? nil : marks
+        let version = marksVersion
         isLoading = true
         let started = ProcessInfo.processInfo.systemUptime
         Task.detached(priority: .userInitiated) { [weak self] in
             guard let self else { return }
-            let result = self.build(folder: folder, view: view, showTags: showTags)
+            let result = self.build(folder: folder, view: view, showTags: showTags, marks: marksSnapshot)
             await MainActor.run {
+                if let fresh = result.freshMarks, version == self.marksVersion {
+                    self.marks = fresh
+                    self.marksStale = false
+                }
                 guard token == self.loadToken else { return }
                 PerfLog.record("load \(view.rawValue)", since: started,
                                detail: "\(result.tracks.count) faixas, \(result.groups.count) grupos")
@@ -301,24 +313,36 @@ final class LibraryBrowser: ObservableObject {
         var groups: [ViewGroup] = []
         var subfolders: [URL] = []
         var playlists: [UserPlaylist] = []
+        /// Cores relidas do banco nesta carga (quando estavam desatualizadas).
+        var freshMarks: [String: MarkColor]?
     }
 
-    private func build(folder: URL, view: ViewMode, showTags: Bool) -> Built {
+    /// Roda fora da thread principal: só usa a cópia `marks` (nunca `self.marks`).
+    private func build(folder: URL, view: ViewMode, showTags: Bool, marks snapshot: [String: MarkColor]?) -> Built {
         var built = Built()
+        let marks: [String: MarkColor]
+        if let snapshot {
+            marks = snapshot
+        } else {
+            // Na fila do banco: lê depois das marcações ainda sendo gravadas.
+            let store = collections
+            marks = dbQueue.sync { ((try? store?.marks()) ?? [:]).compactMapValues(MarkColor.init(rawValue:)) }
+            built.freshMarks = marks
+        }
         built.playlists = (try? collections?.playlists()) ?? []
         switch view {
         case .files:
-            let listing = Self.listFolder(folder)
+            let listing = listFolder(folder, marks: marks)
             built.subfolders = listing.folders
-            built.tracks = listing.tracks.map(withMark)
+            built.tracks = listing.tracks
         case .songs:
-            built.tracks = scope(folder)
+            built.tracks = scope(folder, marks: marks)
         case .albums:
-            built.groups = Self.albums(scope(folder))
+            built.groups = Self.albums(scope(folder, marks: marks))
         case .artists:
-            built.groups = Self.grouped(scope(folder), key: { $0.artist }, empty: "Artista desconhecido")
+            built.groups = Self.grouped(scope(folder, marks: marks), key: { $0.artist }, empty: "Artista desconhecido")
         case .genres:
-            built.groups = Self.grouped(scope(folder), key: { $0.genre }, empty: BrowseService.uncategorizedGenre)
+            built.groups = Self.grouped(scope(folder, marks: marks), key: { $0.genre }, empty: BrowseService.uncategorizedGenre)
         case .playlists:
             built.groups = playlistGroups(built.playlists, showTags: showTags)
         case .queue:
@@ -327,11 +351,18 @@ final class LibraryBrowser: ObservableObject {
         return built
     }
 
-    private func showGroupTracks(_ g: ViewGroup) { onShowTracks?(g.title, tracks(for: g)) }
+    private func showGroupTracks(_ g: ViewGroup) {
+        let token = loadToken
+        tracks(for: g) { [weak self] items in
+            // Outra navegação começou enquanto o banco respondia: não substitui a lista nova.
+            guard let self, token == self.loadToken else { return }
+            self.onShowTracks?(g.title, items)
+        }
+    }
 
     /// Todas as faixas dentro da pasta (com subpastas): do banco quando a pasta está
     /// indexada; senão, lidas do disco.
-    private func scope(_ folder: URL) -> [Track] {
+    private func scope(_ folder: URL, marks: [String: MarkColor]) -> [Track] {
         let key = folder.standardizedFileURL.path
         cacheLock.lock()
         let cached = scopeCache[key]
@@ -341,9 +372,9 @@ final class LibraryBrowser: ObservableObject {
         let indexed = roots.contains { key == $0 || key.hasPrefix($0.hasSuffix("/") ? $0 : $0 + "/") }
         let tracks: [Track]
         if indexed, let collections {
-            tracks = ((try? collections.tracks(under: key)) ?? []).map(track(from:))
+            tracks = ((try? collections.tracks(under: key)) ?? []).map { Self.track(from: $0, marks: marks) }
         } else {
-            tracks = TrackLoader.audioURLs(in: [folder]).prefix(3000).map { withMark(TrackLoader.track(url: $0)) }
+            tracks = TrackLoader.audioURLs(in: [folder]).prefix(3000).map { Self.withMark(TrackLoader.track(url: $0), marks: marks) }
         }
         cacheLock.lock()
         scopeCache[key] = tracks
@@ -357,14 +388,17 @@ final class LibraryBrowser: ObservableObject {
         cacheLock.unlock()
     }
 
-    func track(from item: LibraryTrack) -> Track {
+    /// Só na thread principal (usa `self.marks`).
+    func track(from item: LibraryTrack) -> Track { Self.track(from: item, marks: marks) }
+
+    static func track(from item: LibraryTrack, marks: [String: MarkColor]) -> Track {
         Track(id: TrackID(stableKey: item.mediaPath == nil ? item.url.standardizedFileURL.path : item.path),
               artist: item.artist, title: item.title, duration: Int(item.duration ?? 0),
               mark: marks[item.path], url: item.url, album: item.album, genre: item.genre,
               start: item.start, end: item.end, libraryPath: item.mediaPath == nil ? nil : item.path)
     }
 
-    private func withMark(_ t: Track) -> Track {
+    private static func withMark(_ t: Track, marks: [String: MarkColor]) -> Track {
         var copy = t
         copy.mark = t.storeKey.flatMap { marks[$0] }
         return copy
@@ -434,7 +468,8 @@ final class LibraryBrowser: ObservableObject {
 
     static func name(of url: URL) -> String { url.lastPathComponent.isEmpty ? "/" : url.lastPathComponent }
 
-    private static func listFolder(_ url: URL) -> (folders: [URL], tracks: [Track]) {
+    /// Conteúdo da pasta. Arquivos já indexados vêm do banco (sem reler as tags do disco).
+    private func listFolder(_ url: URL, marks: [String: MarkColor]) -> (folders: [URL], tracks: [Track]) {
         let items = (try? FileManager.default.contentsOfDirectory(
             at: url, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles])) ?? []
         let allowed = TrackLoader.supportedExtensions
@@ -445,12 +480,20 @@ final class LibraryBrowser: ObservableObject {
         // Folhas CUE: viram faixas virtuais e escondem o arquivo único que elas dividem.
         let cueTracks = items.filter { $0.pathExtension.lowercased() == "cue" }
             .sorted { $0.path < $1.path }
-            .flatMap(cueTracksFor)
+            .flatMap(Self.cueTracksFor)
         let covered = Set(cueTracks.compactMap { $0.url?.standardizedFileURL.path })
         let files = items.filter { allowed.contains($0.pathExtension.lowercased()) && !covered.contains($0.standardizedFileURL.path) }
             .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
             .prefix(2000)
-        return (folders, cueTracks + files.map(TrackLoader.track(url:)))
+        let key = url.standardizedFileURL.path
+        let roots = (try? collections?.rootPaths()) ?? []
+        let indexed = roots.contains { key == $0 || key.hasPrefix($0.hasSuffix("/") ? $0 : $0 + "/") }
+        let known = indexed ? ((try? collections?.tracks(atPaths: files.map { $0.path })) ?? [:]) : [:]
+        let fileTracks = files.map { file -> Track in
+            if let item = known[file.path] { return Self.track(from: item, marks: marks) }
+            return Self.withMark(TrackLoader.track(url: file), marks: marks)
+        }
+        return (folders, cueTracks.map { Self.withMark($0, marks: marks) } + fileTracks)
     }
 
 
@@ -476,63 +519,109 @@ final class LibraryBrowser: ObservableObject {
 
     // MARK: Marcações e playlists
 
-    func refreshMarks() {
-        let raw = (try? collections?.marks()) ?? [:]
-        marks = raw.compactMapValues(MarkColor.init(rawValue:))
-    }
+    /// As cores serão relidas do banco na próxima carga (fora da thread principal).
+    func refreshMarks() { marksStale = true }
 
     func mark(for url: URL?) -> MarkColor? { url.flatMap { marks[$0.path] } }
 
-    func setMark(_ color: MarkColor?, path: String) {
-        _ = try? collections?.setMark(path: path, color: color?.rawValue)
-        refreshMarks()
-        clearCache()
-        if view == .playlists { load(reopening: group?.id) }
+    /// Roda `work` na fila do banco e entrega o resultado na thread principal.
+    private func inBackground<T>(_ work: @escaping (CollectionsStore) -> T?, then done: @escaping (T?) -> Void) {
+        guard let collections else { done(nil); return }
+        dbQueue.async {
+            let result = work(collections)
+            DispatchQueue.main.async { done(result) }
+        }
     }
 
-    @discardableResult
-    func createPlaylist(named name: String, paths: [String] = []) -> UserPlaylist? {
-        guard let collections, let created = try? collections.createPlaylist(named: name) else { return nil }
-        if !paths.isEmpty { _ = try? collections.append(paths: paths, toPlaylist: created.id) }
-        playlists = (try? collections.playlists()) ?? playlists
-        if view == .playlists { load(reopening: group?.id) }
-        return created
+    /// Marca na hora (na tela) e grava no banco em segundo plano.
+    func setMark(_ color: MarkColor?, path: String) {
+        var updated = marks
+        updated[path] = color
+        marks = updated
+        marksVersion += 1
+        inBackground({ try? $0.setMark(path: path, color: color?.rawValue) }) { [weak self] _ in
+            guard let self else { return }
+            self.clearCache()
+            if self.view == .playlists { self.load(reopening: self.group?.id) }
+        }
+    }
+
+    /// Cria a playlist (e põe as faixas) fora da thread principal; `done` recebe a playlist e quantas faixas entraram.
+    func createPlaylist(named name: String, paths: [String] = [],
+                        done: ((UserPlaylist?, Int) -> Void)? = nil) {
+        inBackground({ store -> (UserPlaylist, Int, [UserPlaylist])? in
+            guard let created = try? store.createPlaylist(named: name) else { return nil }
+            let added = paths.isEmpty ? 0 : ((try? store.append(paths: paths, toPlaylist: created.id)) ?? 0)
+            return (created, added, (try? store.playlists()) ?? [])
+        }) { [weak self] result in
+            guard let self else { return }
+            if let result {
+                self.playlists = result.2
+                if self.view == .playlists { self.load(reopening: self.group?.id) }
+            }
+            done?(result?.0, result?.1 ?? 0)
+        }
     }
 
     func renamePlaylist(id: Int64, to name: String) {
-        try? collections?.renamePlaylist(id: id, to: name)
-        load(reopening: group?.id)
+        inBackground({ try? $0.renamePlaylist(id: id, to: name) }) { [weak self] _ in
+            guard let self else { return }
+            self.load(reopening: self.group?.id)
+        }
     }
 
     func deletePlaylist(id: Int64) {
-        try? collections?.deletePlaylist(id: id)
         if group?.playlistID == id { group = nil }
-        load()
+        inBackground({ try? $0.deletePlaylist(id: id) }) { [weak self] _ in self?.load() }
     }
 
     func add(paths: [String], toPlaylist id: Int64) {
-        _ = try? collections?.append(paths: paths, toPlaylist: id)
-        if view == .playlists { load(reopening: group?.id) }
+        inBackground({ try? $0.append(paths: paths, toPlaylist: id) }) { [weak self] _ in
+            guard let self, self.view == .playlists else { return }
+            self.load(reopening: self.group?.id)
+        }
     }
 
     var openPlaylistID: Int64? { group?.playlistID }
 
     func remove(path: String, fromPlaylist id: Int64) {
-        try? collections?.remove(path: path, fromPlaylist: id)
-        load(reopening: group?.id)
+        inBackground({ try? $0.remove(path: path, fromPlaylist: id) }) { [weak self] _ in
+            guard let self else { return }
+            self.load(reopening: self.group?.id)
+        }
     }
 
     /// Faixa por caminho: do banco (se indexada) ou lida do arquivo.
     func track(atPath path: String) -> Track {
         if let item = try? collections?.track(atPath: path) { return track(from: item) }
-        return withMark(TrackLoader.track(url: URL(fileURLWithPath: path)))
+        return Self.withMark(TrackLoader.track(url: URL(fileURLWithPath: path)), marks: marks)
     }
 
-    /// Faixas de um grupo (playlists e tags vêm do banco).
-    func tracks(for g: ViewGroup) -> [Track] {
-        if let id = g.playlistID { return ((try? collections?.tracks(inPlaylist: id)) ?? []).map(track(from:)) }
-        if let color = g.color { return ((try? collections?.tracks(markedWith: color.rawValue)) ?? []).map(track(from:)) }
-        return g.tracks
+    /// Várias faixas por caminho, numa leitura só e fora da thread principal (M3U).
+    func tracks(atPaths paths: [String], done: @escaping ([Track]) -> Void) {
+        let marks = marks
+        let collections = collections
+        DispatchQueue.global(qos: .userInitiated).async {
+            let known = (try? collections?.tracks(atPaths: paths)) ?? [:]
+            let items = paths.map { path in
+                known[path].map { Self.track(from: $0, marks: marks) }
+                    ?? Self.withMark(TrackLoader.track(url: URL(fileURLWithPath: path)), marks: marks)
+            }
+            DispatchQueue.main.async { done(items) }
+        }
+    }
+
+    /// Faixas de um grupo (playlists e tags vêm do banco, lidas fora da thread principal).
+    func tracks(for g: ViewGroup, done: @escaping ([Track]) -> Void) {
+        guard g.playlistID != nil || g.color != nil, let collections else { done(g.tracks); return }
+        let marks = marks
+        dbQueue.async {
+            let items: [LibraryTrack]
+            if let id = g.playlistID { items = (try? collections.tracks(inPlaylist: id)) ?? [] }
+            else { items = (try? collections.tracks(markedWith: g.color!.rawValue)) ?? [] }
+            let tracks = items.map { Self.track(from: $0, marks: marks) }
+            DispatchQueue.main.async { done(tracks) }
+        }
     }
 
     /// A pasta já está dentro de uma raiz da biblioteca?

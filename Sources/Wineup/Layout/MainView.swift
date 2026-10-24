@@ -3,15 +3,16 @@ import AppKit
 import SwiftUI
 
 struct MainView: View {
-    @ObservedObject var state: PlayerState
+    /// Não observa o PlayerState: busca, painéis e botões observam só o que desenham.
+    let state: PlayerState
     @Binding var layoutRaw: String
     @Binding var themeID: String
     @StateObject private var model = MainViewModel()
     @Environment(\.openWindow) private var openWindow
-    /// Foco da busca: clicar na caixa (ou ⌘F) põe o cursor no campo.
-    @FocusState private var searchFocused: Bool
     /// Editar um tema no editor redesenha a janela na hora.
     @ObservedObject private var skins = SkinStore.shared
+    /// Janela coberta ou minimizada: as animações do skin e das cenas param.
+    @ObservedObject private var visibility = WindowVisibility.shared
 
     var body: some View {
         let theme = Theme.named(themeID)
@@ -24,6 +25,7 @@ struct MainView: View {
         }
         .ignoresSafeArea(.container, edges: .top)
         .environment(\.theme, theme)
+        .environment(\.animationsPaused, !visibility.mainVisible)
         .background {
             ZStack {
                 LinearGradient(colors: [theme.windowTop, theme.windowBottom], startPoint: .top, endPoint: .bottom)
@@ -47,6 +49,7 @@ struct MainView: View {
         .background(WindowAccessor(onWindow: { window in
             let first = model.window == nil
             model.window = window
+            WindowVisibility.shared.track(window)
             // Ao abrir, ninguém fica com o foco (a busca não captura o teclado).
             if first { DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { window.makeFirstResponder(nil) } }
         }))
@@ -83,17 +86,7 @@ struct MainView: View {
     /// A faixa decorada do topo: começa depois dos botões da janela.
     private func headerBar(theme: Theme, compact: Bool) -> some View {
         HStack(spacing: 8) {
-            HStack(spacing: 3) {
-                Button { state.browser.goBack() } label: { Image(systemName: "chevron.left").frame(width: 14) }
-                    .disabled(state.browser.backStack.isEmpty)
-                    .accessibilityLabel("Voltar")
-                    .hint("Voltar (⌘[)", "Volta para a pasta ou tela anterior da lista.")
-                Button { state.browser.goForward() } label: { Image(systemName: "chevron.right").frame(width: 14) }
-                    .disabled(state.browser.forwardStack.isEmpty)
-                    .accessibilityLabel("Avançar")
-                    .hint("Avançar (⌘])", "Vai de novo para onde você estava antes de voltar.")
-            }
-            .buttonStyle(SkinButtonStyle(compact: true))
+            HistoryButtons(browser: state.browser)
             Button { openWindow(id: "metadata") } label: {
                 if compact { Image(systemName: "tag") }
                 else { Label("Metadados", systemImage: "tag").labelStyle(.titleAndIcon) }
@@ -101,30 +94,7 @@ struct MainView: View {
             .buttonStyle(SkinButtonStyle())
             .hint("Metadados", "Abre o gerenciador de tags: título, artista, álbum, capas e letras das músicas. Busca dados online e salva nos arquivos.")
             Spacer(minLength: 8)
-            HStack(spacing: 6) {
-                Image(systemName: "magnifyingglass").foregroundStyle(theme.mutedText)
-                TextField(compact ? "Buscar" : "Buscar em sua biblioteca…", text: $state.query)
-                    .textFieldStyle(.plain)
-                    .foregroundStyle(theme.text)
-                    .focused($searchFocused)
-                    .onExitCommand { state.query = ""; searchFocused = false }
-                if !state.query.isEmpty {
-                    Image(systemName: "xmark.circle.fill").foregroundStyle(theme.mutedText)
-                        .onTapGesture { state.query = "" }
-                }
-            }
-            .font(.system(size: 12))
-            .padding(.horizontal, 10)
-            .frame(maxWidth: compact ? 150 : 340)
-            .frame(height: 24)
-            .skinField()
-            .contentShape(Rectangle())
-            .onTapGesture { searchFocused = true }
-            .hint("Buscar (⌘F)", "Procura músicas por título, artista ou álbum em toda a sua biblioteca. Esc limpa.")
-            .background {
-                // ⌘F: vai para a busca.
-                Button("") { searchFocused = true }.keyboardShortcut("f", modifiers: .command).opacity(0).allowsHitTesting(false)
-            }
+            SearchBox(search: state.search, compact: compact)
             Spacer(minLength: 8)
             Button { TrayMode.enter(state: state, openWindow: openWindow) } label: {
                 Image(systemName: "menubar.arrow.up.rectangle").frame(width: Self.iconButtonWidth - 12)
@@ -195,6 +165,61 @@ extension MainView {
             frame.origin.y = top - frame.height
             window.setFrame(frame, display: true, animate: true)
         }
+    }
+}
+
+/// Caixa de busca: observa só a busca (digitar não redesenha a janela inteira).
+private struct SearchBox: View {
+    @ObservedObject var search: SearchModel
+    let compact: Bool
+    @Environment(\.theme) private var theme
+    /// Foco da busca: clicar na caixa (ou ⌘F) põe o cursor no campo.
+    @FocusState private var searchFocused: Bool
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass").foregroundStyle(theme.mutedText)
+            TextField(compact ? "Buscar" : "Buscar em sua biblioteca…", text: $search.query)
+                .textFieldStyle(.plain)
+                .foregroundStyle(theme.text)
+                .focused($searchFocused)
+                .onExitCommand { search.query = ""; searchFocused = false }
+            if !search.query.isEmpty {
+                Image(systemName: "xmark.circle.fill").foregroundStyle(theme.mutedText)
+                    .onTapGesture { search.query = "" }
+            }
+        }
+        .font(.system(size: 12))
+        .padding(.horizontal, 10)
+        .frame(maxWidth: compact ? 150 : 340)
+        .frame(height: 24)
+        .skinField()
+        .contentShape(Rectangle())
+        .onTapGesture { searchFocused = true }
+        .hint("Buscar (⌘F)", "Procura músicas por título, artista ou álbum em toda a sua biblioteca. Esc limpa.")
+        .background {
+            // ⌘F: vai para a busca.
+            Button("") { searchFocused = true }.keyboardShortcut("f", modifiers: .command).opacity(0).allowsHitTesting(false)
+        }
+    }
+}
+
+/// Voltar/Avançar: observam o navegador (a MainView não observa, e os botões ficavam desatualizados).
+private struct HistoryButtons: View {
+    @ObservedObject var browser: LibraryBrowser
+
+    var body: some View {
+        HStack(spacing: 3) {
+            Button { browser.goBack() } label: { Image(systemName: "chevron.left").frame(width: 14) }
+                .disabled(browser.backStack.isEmpty)
+                .accessibilityLabel("Voltar")
+                .hint("Voltar (⌘[)", "Volta para a pasta ou tela anterior da lista.")
+            Button { browser.goForward() } label: { Image(systemName: "chevron.right").frame(width: 14) }
+                .disabled(browser.forwardStack.isEmpty)
+                .accessibilityLabel("Avançar")
+                .hint("Avançar (⌘])", "Vai de novo para onde você estava antes de voltar.")
+        }
+        .buttonStyle(SkinButtonStyle(compact: true))
     }
 }
 

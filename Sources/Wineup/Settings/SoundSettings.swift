@@ -4,6 +4,13 @@ import WineupCore
 /// Aba Som: Correção de Som, equalizador e ReplayGain (os mesmos controles do painel FX).
 struct SoundSettings: View {
     @ObservedObject var state: PlayerState
+    /// O progresso da medição é publicado à parte do PlayerState.
+    @ObservedObject private var status: StatusModel
+
+    init(state: PlayerState) {
+        self.state = state
+        status = state.status
+    }
 
     var body: some View {
         SettingsPage {
@@ -32,7 +39,7 @@ struct SoundSettings: View {
 
             SettingsSection(title: "Equalizador",
                             footer: "O equalizador é o da própria Apple (Core Audio). Presets mudam o timbre ao seu gosto; não consertam a música.") {
-                SettingsRow(title: "Preset", detail: EqPreset.builtInDetails[state.preset] ?? "Ajuste feito à mão ou salvo por você.",
+                SettingsRow(title: "Preset", detail: EqPreset.builtInDetails[state.preset].map { LocalizedStringKey($0) } ?? "Ajuste feito à mão ou salvo por você.",
                             symbol: "slider.vertical.3") {
                     Picker("Preset", selection: Binding(get: { state.preset }, set: { state.apply(preset: $0) })) {
                         ForEach(state.presets.map(\.name) + (state.presets.contains { $0.name == state.preset } ? [] : [state.preset]),
@@ -67,7 +74,7 @@ struct SoundSettings: View {
         }
     }
 
-    private var measureDetail: String {
+    private var measureDetail: LocalizedStringKey {
         if let progress = state.loudnessProgress { return "Medindo \(progress.done) de \(progress.total)…" }
         return "Mede o volume das músicas da lista atual de uma vez."
     }

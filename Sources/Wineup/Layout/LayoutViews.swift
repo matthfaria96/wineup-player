@@ -82,7 +82,8 @@ extension LayoutMode {
 
 /// Desenha o layout a partir das colunas e permite arrastar painéis pelo título para trocá-los.
 struct ArrangedLayout: View {
-    @ObservedObject var state: PlayerState
+    /// Não observa o PlayerState: cada painel observa só o que desenha.
+    let state: PlayerState
     let mode: LayoutMode
     @Binding var columns: [PanelColumn]
     @StateObject private var drop = DropHighlight()

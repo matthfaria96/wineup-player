@@ -20,7 +20,9 @@ public struct TagSnapshot: Sendable, Equatable, Codable {
     }
 
     /// A partir de um arquivo já aberto (o gerenciador lê tags e propriedades numa abertura só).
-    public static func read(file: AudioFile) -> TagSnapshot {
+    /// `hashPictures: false` pula o SHA-256 das capas (fica vazio) quando só o tamanho interessa;
+    /// comparar antes/depois e desfazer precisam do hash.
+    public static func read(file: AudioFile, hashPictures: Bool = true) -> TagSnapshot {
         let m = file.metadata
         var f: [String: String] = [:]
         // Vazio equivale a ausente: o SFB devolve "" para campos que o TagLib cria vazios.
@@ -39,7 +41,7 @@ public struct TagSnapshot: Sendable, Equatable, Codable {
             if let key = k as? String { extra[key] = "\(v)" }
         }
         let pics = m.attachedPictures.map { p -> PictureInfo in
-            let digest = SHA256.hash(data: p.imageData).map { String(format: "%02x", $0) }.joined()
+            let digest = hashPictures ? SHA256.hash(data: p.imageData).map { String(format: "%02x", $0) }.joined() : ""
             return PictureInfo(type: Int(p.type.rawValue), byteCount: p.imageData.count, sha256: digest)
         }.sorted { ($0.type, $0.sha256) < ($1.type, $1.sha256) }
         return TagSnapshot(fields: f, additional: extra, pictures: pics, duration: file.properties.duration)

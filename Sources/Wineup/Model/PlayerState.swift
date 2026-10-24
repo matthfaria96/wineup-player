@@ -6,12 +6,18 @@ import WineupLibrary
 
 /// Estado do player. Faixas com `url` tocam de verdade; as de exemplo (sem url) só animam a interface.
 final class PlayerState: ObservableObject {
-    @Published var tracks: [Track] = [] { didSet { refreshVisible() } }
+    @Published var tracks: [Track] = [] {
+        didSet {
+            refreshVisible()
+            refreshCurrentPosition()
+            if !search.query.isEmpty { refreshSearchResults() }
+        }
+    }
     /// Lista exibida (com o filtro de cor aplicado), guardada pronta.
     private(set) var visibleTracks: [Track] = []
     /// Letra sincronizada da faixa atual (.lrc ao lado do arquivo ou embutida com marcas de tempo).
-    var timedLyrics: TimedLyrics?
-    @Published var currentID: TrackID?
+    var timedLyrics: TimedLyrics? { didSet { updateLyricIndex() } }
+    @Published var currentID: TrackID? { didSet { if currentID != oldValue { refreshCurrentPosition() } } }
     /// Seleção à parte: mudar a faixa selecionada redesenha só as linhas, não o painel.
     let selection = SelectionModel()
     var selectedID: TrackID? {
@@ -23,12 +29,19 @@ final class PlayerState: ObservableObject {
             DispatchQueue.main.async { PerfLog.record("select", since: started) }
         }
     }
-    @Published var isPlaying = false
+    @Published var isPlaying = false { didSet { if isPlaying != oldValue { updateTicker() } } }
+    /// Relógio da posição: roda enquanto toca, mesmo com a janela fechada (modo barra de menus).
+    private var ticker: Timer?
+    private static let tickInterval = 0.25
     /// Relógio separado: só o Player e as Letras redesenham a cada atualização de posição.
     let clock = PlaybackClock()
     var progress: Double {
         get { clock.progress }
-        set { if clock.progress != newValue { clock.progress = newValue } }
+        set {
+            guard clock.progress != newValue else { return }
+            clock.progress = newValue
+            updateLyricIndex()
+        }
     }
     /// Lado do som: -1 = música inteira na esquerda, 0 = normal, 1 = inteira na direita.
     @Published var side = UserDefaults.standard.integer(forKey: "side") {
@@ -89,18 +102,30 @@ final class PlayerState: ObservableObject {
             audio.correctionTarget = correctionTarget
         }
     }
-    @Published var loudnessProgress: (done: Int, total: Int)?
+    /// Mensagens e progresso ficam num objeto à parte: mudar o aviso não redesenha a janela inteira.
+    let status = StatusModel()
+    var loudnessProgress: (done: Int, total: Int)? {
+        get { status.loudnessProgress }
+        set { status.loudnessProgress = newValue }
+    }
     private var loudnessTask: Task<Void, Never>?
     @Published var outputSampleRate: Double?
     @Published var eqBypass = false { didSet { syncEqualizer() } }
     @Published var preset = "Flat"
     @Published var presets: [EqPreset] = EqPreset.builtIns
-    @Published var query = "" { didSet { scheduleLibrarySearch() } }
-    @Published var libraryResults: [Track] = []
+    /// Busca à parte: cada tecla redesenha só a caixa de busca e a lista.
+    let search = SearchModel()
+    var query: String {
+        get { search.query }
+        set { search.query = newValue }
+    }
+    var libraryResults: [Track] = [] { didSet { refreshSearchResults() } }
     @Published var markFilter: MarkColor? { didSet { refreshVisible() } }
     @Published var lyricsScale = 1.0
     @Published var cover: NSImage?
-    @Published var lyricLines: [String] = []
+    @Published var lyricLines: [String] = [] { didSet { updateLyricIndex() } }
+    /// Linha ativa da letra, publicada à parte e só quando muda.
+    let lyricsPosition = LyricsPosition()
     /// De onde veio a letra exibida: arquivo local ou catálogo online (ainda não salva).
     @Published var lyricsOrigin: LyricsOrigin = .none
     /// Buscar online quando a faixa não tem letra local (envia título, artista, álbum e duração).
@@ -110,22 +135,34 @@ final class PlayerState: ObservableObject {
             if let track = currentTrack { refreshDetails(for: track) }
         }
     }
-    @Published var statusMessage: String?
+    var statusMessage: String? {
+        get { status.message }
+        set { if status.message != newValue { status.message = newValue } }
+    }
     /// Nome do que está na lista agora (álbum, banda, pasta, estilo ou playlist).
     @Published var listTitle = "Playlist"
     @Published var listStyle: ListStyle = ListStyle(rawValue: UserDefaults.standard.string(forKey: DisplayKeys.listStyle) ?? "") ?? .compact {
         didSet { UserDefaults.standard.set(listStyle.rawValue, forKey: DisplayKeys.listStyle) }
     }
 
-    @Published var volume = PlayerState.saved("volume", 0.8) {
-        didSet { audio.setVolume(volume); UserDefaults.standard.set(volume, forKey: "volume") }
+    /// Volume e EQ à parte: arrastar um slider redesenha só o controle, não a lista.
+    let mixer = MixerModel(volume: PlayerState.saved("volume", 0.8))
+    var volume: Double {
+        get { mixer.volume }
+        set { mixer.volume = newValue }
     }
 
     static func saved(_ key: String, _ fallback: Double) -> Double {
         UserDefaults.standard.object(forKey: key) as? Double ?? fallback
     }
-    @Published var preamp = 0.0 { didSet { syncEqualizer() } }
-    @Published var bands: [Double] = Array(repeating: 0, count: 10) { didSet { syncEqualizer() } }
+    var preamp: Double {
+        get { mixer.preamp }
+        set { mixer.preamp = newValue }
+    }
+    var bands: [Double] {
+        get { mixer.bands }
+        set { mixer.bands = newValue }
+    }
 
     private let audio = SFBAudioEngineAdapter()
     let library = LibraryController()
@@ -145,13 +182,21 @@ final class PlayerState: ObservableObject {
 
     init() {
         browser = LibraryBrowser(database: library.database)
-        audio.onNowPlayingChanged = { [weak self] url in self?.nowPlayingChanged(url) }
-        audio.onEndOfAudio = { [weak self] in
-            if self?.currentTrack?.isSegment == true { self?.step(by: 1); return }
-            self?.isPlaying = false
-            self?.progress = 0
+        search.onChange = { [weak self] _ in
+            self?.scheduleLibrarySearch()
+            self?.refreshSearchResults()
         }
+        mixer.onVolume = { [weak self] volume in
+            self?.audio.setVolume(volume)
+            UserDefaults.standard.set(volume, forKey: "volume")
+        }
+        mixer.onEqualizer = { [weak self] in self?.syncEqualizer() }
+        audio.onTrackChanged = { [weak self] url, fromQueue in self?.nowPlayingChanged(url, fromQueue: fromQueue) }
+        audio.onEndOfAudio = { [weak self] in self?.endOfAudio() }
         audio.onError = { [weak self] message in self?.skipAfterFailure("Erro ao tocar: \(message)") }
+        audio.onDecodingFailed = { [weak self] url, message, ended in
+            self?.decodingFailed(url, message: "Erro ao tocar: \(message)", ended: ended)
+        }
         audio.onConfigurationChange = { [weak self] rate in self?.outputSampleRate = rate }
         audio.setVolume(volume)
         audio.setRate(playbackRate)
@@ -180,19 +225,28 @@ final class PlayerState: ObservableObject {
         queue.current ?? tracks.first { $0.id == currentID } ?? lastPlayed.flatMap { $0.id == currentID ? $0 : nil }
     }
 
-    /// Posição 1-based da faixa atual na lista.
-    var currentPosition: Int? { tracks.firstIndex { $0.id == currentID }.map { $0 + 1 } }
+    /// Posição 1-based da faixa atual na lista (guardada; recalculada quando a lista ou a faixa muda).
+    private(set) var currentPosition: Int?
+
+    private func refreshCurrentPosition() {
+        currentPosition = currentID.flatMap { id in tracks.firstIndex { $0.id == id } }.map { $0 + 1 }
+    }
 
     private func refreshVisible() {
         visibleTracks = markFilter.map { color in tracks.filter { $0.mark == color } } ?? tracks
     }
 
-    var searchResults: [Track] {
+    /// Resultados guardados (antes eram filtrados a cada leitura, duas vezes por desenho).
+    var searchResults: [Track] { search.results }
+
+    private func refreshSearchResults() {
         let needle = query.trimmingCharacters(in: .whitespaces)
-        guard !needle.isEmpty else { return [] }
-        if library.isAvailable, !libraryResults.isEmpty { return libraryResults }
+        let found: [Track]
+        if needle.isEmpty { found = [] }
+        else if library.isAvailable, !libraryResults.isEmpty { found = libraryResults }
         // Sem resultado na biblioteca (ou fora dela): filtra a lista aberta.
-        return tracks.filter { $0.displayName.localizedCaseInsensitiveContains(needle) }
+        else { found = tracks.filter { $0.displayName.localizedCaseInsensitiveContains(needle) } }
+        if found != search.results { search.results = found }
     }
 
     var remainingSeconds: Int {
@@ -208,12 +262,36 @@ final class PlayerState: ObservableObject {
         return Int(Double(track.duration) * (1 - progress) / playbackRate)
     }
 
-    var activeLyricIndex: Int {
-        guard !lyricLines.isEmpty else { return 0 }
-        if let timed = timedLyrics {
-            return timed.index(at: elapsedInTrack) ?? 0
+    var activeLyricIndex: Int { lyricsPosition.index }
+
+    /// Recalcula a linha ativa (no tique, ao pular e ao trocar a letra); publica só se mudou.
+    func updateLyricIndex() {
+        let index: Int
+        if lyricLines.isEmpty { index = 0 }
+        else if let timed = timedLyrics { index = timed.index(at: elapsedInTrack) ?? 0 }
+        else { index = min(Int(progress * Double(lyricLines.count)), lyricLines.count - 1) }
+        if index != lyricsPosition.index { lyricsPosition.index = index }
+    }
+
+    private func updateTicker() {
+        // O relógio vive na thread principal (avisos do áudio podem chegar de outra).
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { [weak self] in self?.updateTicker() }
+            return
         }
-        return min(Int(progress * Double(lyricLines.count)), lyricLines.count - 1)
+        if isPlaying {
+            guard ticker == nil else { return }
+            let timer = Timer(timeInterval: Self.tickInterval, repeats: true) { [weak self] _ in
+                self?.tick(Self.tickInterval)
+            }
+            // .common: continua durante arrastos e menus abertos.
+            RunLoop.main.add(timer, forMode: .common)
+            ticker = timer
+            MainActor.assumeIsolated { meterModel.wake() }
+        } else {
+            ticker?.invalidate()
+            ticker = nil
+        }
     }
 
     /// Segundos tocados da faixa atual (para CUE, contados a partir do início do trecho).
@@ -233,12 +311,12 @@ final class PlayerState: ObservableObject {
 
     func startLibrary() async {
         await library.start(
-            onTracks: { [weak self] found in self?.applyLibraryTracks(found) },
+            onChange: { [weak self] in self?.applyLibraryChange() },
             onStatus: { [weak self] message in self?.statusMessage = message })
     }
 
     /// A biblioteca carregou/terminou uma varredura.
-    private func applyLibraryTracks(_ found: [LibraryTrack]) {
+    private func applyLibraryChange() {
         if usingSampleTracks {
             // Primeira carga: abre a pasta padrão (pergunta qual é, na primeira vez).
             usingSampleTracks = false
@@ -263,7 +341,8 @@ final class PlayerState: ObservableObject {
         DispatchQueue.main.async { PerfLog.record("render", since: started, detail: "\(items.count) faixas") }
         listTitle = title
         tracks = items
-        selectedID = nil
+        // Recarga automática: a seleção fica se a faixa continua na lista.
+        if !browser.isBackgroundRefresh || !items.contains(where: { $0.id == selectedID }) { selectedID = nil }
         if !restoredOnce {
             restoredOnce = true
             if ProcessInfo.processInfo.environment["WINEUP_AUTOPLAY"] != nil, let first = items.first {
@@ -369,14 +448,19 @@ final class PlayerState: ObservableObject {
         refreshDetails(for: track)
         if let url = track.url {
             do {
-                try audio.play(url)
-                if let segmentStart = track.start, segmentStart > 0 { audio.seek(toTime: segmentStart) }
-                if let fraction, fraction > 0, !track.isSegment { audio.seek(toFraction: fraction) }
+                // Início do trecho (CUE) ou ponto da sessão anterior: posicionado antes de tocar
+                // (um seek logo depois de play() era descartado).
+                var start: SFBAudioEngineAdapter.StartPoint?
+                if let segmentStart = track.start, segmentStart > 0 {
+                    start = .time(segmentStart)
+                } else if let fraction, fraction > 0, !track.isSegment {
+                    start = .fraction(fraction)
+                }
+                try audio.play(url, from: start)
                 enqueueNext(after: track)
                 isPlaying = true
                 statusMessage = nil
                 saveSession()
-                consecutiveFailures = 0
                 NowPlaying.update(self)
             } catch {
                 isPlaying = false
@@ -564,31 +648,69 @@ final class PlayerState: ObservableObject {
 
     private func enqueueNext(after track: Track) {
         guard let index = queue.nextIndex(), let url = queue.items[index].url,
-              !track.isSegment, !queue.items[index].isSegment else { return }
+              !track.isSegment, !queue.items[index].isSegment else {
+            // Sem próxima válida: não deixa um decoder antigo na fila do player.
+            audio.clearQueue()
+            return
+        }
         try? audio.enqueue(url)
     }
 
-    /// Refaz o pré-enfileiramento quando repetir/aleatório mudam.
+    /// Refaz o pré-enfileiramento quando repetir/aleatório/fila mudam (também pausado).
     func reenqueue() {
-        guard let track = queue.current, isPlaying else { return }
+        guard let track = queue.current, track.url != nil, audio.totalTime > 0 else { return }
         audio.clearQueue()
         enqueueNext(after: track)
     }
 
-    private func nowPlayingChanged(_ url: URL?) {
-        guard let url, queue.current?.url != url else { return }
-        // A SFB começou a próxima faixa pré-enfileirada (gapless): avança a fila.
-        guard let index = queue.nextIndex(), queue.items[index].url == url else { return }
+    private func nowPlayingChanged(_ url: URL?, fromQueue: Bool) {
+        guard let url else { return }
+        // A faixa começou de verdade: zera as falhas seguidas.
+        consecutiveFailures = 0
+        // A SFB começou a próxima pré-enfileirada (gapless) ou recomeçou a mesma em "Repetir uma".
+        guard let index = GaplessAdvance.index(in: queue, started: url, fromQueue: fromQueue, url: { $0.url }) else { return }
+        let restarted = index == queue.currentIndex
         queue = queue.selecting(index: index)
         let track = queue.items[index]
-        lastPlayed = track
-        currentID = track.id
-        selectedID = track.id
         progress = 0
-        refreshDetails(for: track)
+        if !restarted {
+            lastPlayed = track
+            currentID = track.id
+            selectedID = track.id
+            refreshDetails(for: track)
+        }
         enqueueNext(after: track)
         saveSession()
         NowPlaying.update(self)
+    }
+
+    /// O player tocou tudo o que tinha.
+    private func endOfAudio() {
+        if currentTrack?.isSegment == true { step(by: 1); return }
+        // Próxima não pré-enfileirada (falhou ao abrir, ou é trecho de CUE): segue para ela.
+        if let index = queue.nextIndex(), queue.items[index].url != nil {
+            queue = queue.selecting(index: index)
+            startCurrent()
+            return
+        }
+        // Fim de verdade: com delegate o SFB não para o engine sozinho.
+        audio.stop()
+        isPlaying = false
+        progress = 0
+        NowPlaying.update(self)
+    }
+
+    /// Arquivo que não abriu ou falhou no meio (aviso assíncrono do SFB).
+    private func decodingFailed(_ url: URL?, message: String, ended: Bool) {
+        if let url, url == queue.current?.url {
+            skipAfterFailure(message)
+        } else if ended {
+            statusMessage = message
+            endOfAudio()
+        } else {
+            // A próxima pré-enfileirada falhou: a atual segue; no fim, endOfAudio tenta a próxima.
+            statusMessage = message
+        }
     }
 
     private func syncEqualizer() {
@@ -602,6 +724,8 @@ final class PlayerState: ObservableObject {
         consecutiveFailures += 1
         guard consecutiveFailures < max(queue.items.count, 1),
               let next = queue.withRepeat(repeatMode == .one ? .all : repeatMode).nextIndex() else {
+            // Desistiu: nada pode continuar tocando (a faixa anterior seguia se o erro veio antes do play).
+            audio.stop()
             isPlaying = false
             consecutiveFailures = 0
             return
@@ -687,6 +811,35 @@ final class PlayerState: ObservableObject {
     }
 }
 
+/// Busca da janela: texto digitado e resultados prontos.
+final class SearchModel: ObservableObject {
+    @Published var query = "" { didSet { if query != oldValue { onChange?(query) } } }
+    @Published fileprivate(set) var results: [Track] = []
+    fileprivate var onChange: ((String) -> Void)?
+}
+
+/// Aviso do rodapé e progresso da medição de volume.
+final class StatusModel: ObservableObject {
+    @Published var message: String?
+    @Published var loudnessProgress: (done: Int, total: Int)?
+}
+
+/// Volume e curva do EQ (mudam a cada passo de um arrasto).
+final class MixerModel: ObservableObject {
+    @Published var volume: Double { didSet { onVolume?(volume) } }
+    @Published var preamp = 0.0 { didSet { onEqualizer?() } }
+    @Published var bands: [Double] = Array(repeating: 0, count: 10) { didSet { onEqualizer?() } }
+    fileprivate var onVolume: ((Double) -> Void)?
+    fileprivate var onEqualizer: (() -> Void)?
+
+    init(volume: Double) { self.volume = volume }
+}
+
+/// Linha ativa da letra.
+final class LyricsPosition: ObservableObject {
+    @Published var index = 0
+}
+
 /// Posição da faixa (0...1), publicada à parte para não redesenhar a lista a cada tick.
 final class PlaybackClock: ObservableObject {
     @Published var progress = 0.0
@@ -710,10 +863,18 @@ extension PlayerState {
     /// Mede o volume das músicas da lista em segundo plano (para a Correção de Som já valer na primeira vez).
     func measureLoudness(of tracks: [Track]) {
         loudnessTask?.cancel()
-        let urls = Array(Set(tracks.compactMap(\.url))).filter { LoudnessAnalyzer.shared.cached($0) == nil }
-        guard !urls.isEmpty else { statusMessage = "Correção de Som: todas estas músicas já estão medidas."; return }
-        loudnessProgress = (0, urls.count)
+        let all = Array(Set(tracks.compactMap(\.url)))
         loudnessTask = Task { [weak self] in
+            // Consultar o cache faz um stat por música (e carrega o loudness.json): fora da thread principal.
+            let urls = await Task.detached(priority: .utility) {
+                all.filter { LoudnessAnalyzer.shared.cached($0) == nil }
+            }.value
+            if Task.isCancelled { return }
+            guard !urls.isEmpty else {
+                await MainActor.run { self?.statusMessage = "Correção de Som: todas estas músicas já estão medidas." }
+                return
+            }
+            await MainActor.run { self?.loudnessProgress = (0, urls.count) }
             for (n, url) in urls.enumerated() {
                 if Task.isCancelled { break }
                 _ = await Task.detached(priority: .utility) { LoudnessAnalyzer.shared.measure(url) }.value

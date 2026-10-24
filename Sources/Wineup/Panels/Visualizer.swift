@@ -44,9 +44,10 @@ struct VisualScene: View {
     let energy: () -> Double
     let seed: Int
     @StateObject private var smooth = SmoothEnergy()
+    @Environment(\.animationsPaused) private var paused
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
+        TimelineView(.animation(minimumInterval: 1.0 / 20.0, paused: paused)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
             // A música só "respira" na cena: valor suavizado e com pouco peso (nada de pular).
             let e = smooth.next(energy()) * 0.35
@@ -60,7 +61,7 @@ struct VisualScene: View {
                 }
             }
         }
-        .drawingGroup()
+        // Sem .drawingGroup(): o Canvas assíncrono já desenha fora da thread principal.
         .accessibilityLabel(mode.title)
     }
 }

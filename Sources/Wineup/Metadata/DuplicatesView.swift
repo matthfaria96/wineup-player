@@ -8,7 +8,8 @@ struct DuplicatesView: View {
     @State private var marked: Set<String> = []
     @State private var confirm = false
 
-    private var groups: [(group: Int, files: [FixerFile])] { DuplicateRanking.groups(model.rows.map(\.file)) }
+    /// Calculado uma vez por mudança das linhas (o modelo guarda).
+    private var groups: [(group: Int, files: [FixerFile])] { model.duplicateGroups }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -39,9 +40,12 @@ struct DuplicatesView: View {
         .onAppear { marked = Set(groups.flatMap { $0.files.dropFirst().map(\.url.path) }) }
         .confirmationDialog("Mover \(marked.count) arquivo(s) para a Lixeira?", isPresented: $confirm) {
             Button("Mover para a Lixeira", role: .destructive) {
-                model.trash(paths: marked)
+                let paths = marked
                 marked = []
-                if groups.isEmpty { dismiss() }
+                Task {
+                    await model.trash(paths: paths)
+                    if groups.isEmpty { dismiss() }
+                }
             }
             Button("Cancelar", role: .cancel) {}
         } message: {

@@ -10,7 +10,7 @@ struct MatchPicker: View {
     /// Busca automática só uma vez por abertura (sem resultado, não repete sozinha).
     @State private var searched = false
 
-    private var row: MetadataRow? { model.rows.first { $0.id == rowID } }
+    private var row: MetadataRow? { model.row(rowID) }
     private var candidates: [MatchCandidate] { row?.proposal?.candidates ?? [] }
 
     var body: some View {

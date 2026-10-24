@@ -61,14 +61,25 @@ struct CollectionsStoreTests {
         try await withTempDir { dir in
             let db = try makeTempDatabase(in: dir)
             let r = try await SyntheticLibrary.addRoot(db)
-            for path in ["/m/rock/a.mp3", "/m/rock/sub/b.mp3", "/m/pop/c.mp3", "/m/rock_x/d.mp3"] {
+            for path in ["/m/rock/a.mp3", "/m/rock/sub/b.mp3", "/m/pop/c.mp3", "/m/rock_x/d.mp3", "/m/rock0/e.mp3", "/m/rock.mp3"] {
                 let tags = ScannedTags(title: path, artist: "A", album: nil, genre: nil, trackNumber: nil, discNumber: nil)
                 _ = try await SyntheticLibrary.addTrack(db, rootID: r, name: path, tags: tags)
             }
             let store = CollectionsStore(database: db)
             // Inclui subpastas; "_" e "%" no nome não viram curinga ("rock_x" fica de fora).
             #expect(Set(try store.tracks(under: "/m/rock").map(\.path)) == ["/m/rock/a.mp3", "/m/rock/sub/b.mp3"])
-            #expect(try store.tracks(under: "/m").count == 4)
+            #expect(try store.tracks(under: "/m").count == 6)
+            #expect(try store.tracks(under: "/m/rock/").count == 2)
+        }
+    }
+
+    @Test func tracksAtPathsInOneRead() async throws {
+        try await withTempDir { dir in
+            let (_, store) = try await seed(dir)
+            let found = try store.tracks(atPaths: ["/m/a.mp3", "/m/c.mp3", "/m/a.mp3", "/fora.mp3"])
+            #expect(Set(found.keys) == ["/m/a.mp3", "/m/c.mp3"])
+            #expect(found["/m/c.mp3"]?.title == "T2")
+            #expect(try store.tracks(atPaths: []).isEmpty)
         }
     }
 }

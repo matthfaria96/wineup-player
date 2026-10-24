@@ -80,6 +80,7 @@ private struct RowCover: View {
             }
             .clipShape(RoundedRectangle(cornerRadius: 4))
             .onAppear { covers.load(url) }
+            .onDisappear { covers.cancel() }
     }
 }
 
@@ -110,29 +111,109 @@ struct TrackTile: View {
         }
         .foregroundStyle(isCurrent ? theme.currentRow : theme.text)
         .onAppear { covers.load(track.url) }
+        .onDisappear { covers.cancel() }
     }
 }
 
 /// Carrega a capa embutida de uma faixa fora da main thread, com cache em memória.
 final class CoverLoader: ObservableObject {
     @Published var image: NSImage?
+    private var requested: URL?
+    private var waiter: CoverQueue.Waiter?
+
+    func load(_ url: URL?) {
+        guard image == nil, let url, requested != url else { return }
+        requested = url
+        waiter = CoverQueue.shared.request(url) { [weak self] found in
+            self?.waiter = nil
+            if let found { self?.image = found }
+        }
+    }
+
+    /// A linha saiu da tela: desiste do pedido (se ninguém mais espera a mesma capa, ele é cancelado).
+    func cancel() {
+        if let waiter { CoverQueue.shared.cancel(waiter) }
+        waiter = nil
+        requested = nil
+    }
+
+    deinit {
+        if let waiter { CoverQueue.shared.cancel(waiter) }
+    }
+}
+
+/// Fila única das miniaturas: no máximo 4 leituras ao mesmo tempo, pedidos iguais juntos,
+/// cache com limite de memória. Toda a contabilidade roda na thread principal.
+final class CoverQueue {
+    static let shared = CoverQueue()
+
+    final class Waiter {
+        let url: URL
+        let done: (NSImage?) -> Void
+        init(url: URL, done: @escaping (NSImage?) -> Void) { self.url = url; self.done = done }
+    }
+
+    private struct Pending {
+        var waiters: [Waiter]
+        let operation: Operation
+    }
+
+    private let queue: OperationQueue = {
+        let queue = OperationQueue()
+        queue.maxConcurrentOperationCount = 4
+        queue.qualityOfService = .utility
+        return queue
+    }()
     /// Cache de miniaturas com limite de memória (~40 MB) e de quantidade.
-    private static let cache: NSCache<NSURL, NSImage> = {
+    private let cache: NSCache<NSURL, NSImage> = {
         let cache = NSCache<NSURL, NSImage>()
         cache.totalCostLimit = 40 * 1024 * 1024
         cache.countLimit = 600
         return cache
     }()
+    /// Faixas sem capa (não relê o arquivo a cada vez que a linha aparece).
+    private let misses = NSCache<NSURL, NSNumber>()
+    private var pending: [URL: Pending] = [:]
 
-    func load(_ url: URL?) {
-        guard image == nil, let url else { return }
-        if let cached = Self.cache.object(forKey: url as NSURL) { image = cached; return }
-        DispatchQueue.global(qos: .utility).async { [weak self] in
-            guard let found = TrackLoader.thumbnail(for: url) else { return }
-            let cost = Int(found.size.width * found.size.height * 4)
-            Self.cache.setObject(found, forKey: url as NSURL, cost: cost)
-            DispatchQueue.main.async { self?.image = found }
+    /// Pede a miniatura; `done` roda na thread principal. Devolve nil quando já respondeu na hora.
+    func request(_ url: URL, done: @escaping (NSImage?) -> Void) -> Waiter? {
+        if let cached = cache.object(forKey: url as NSURL) { done(cached); return nil }
+        if misses.object(forKey: url as NSURL) != nil { done(nil); return nil }
+        let waiter = Waiter(url: url, done: done)
+        if pending[url] != nil {
+            pending[url]?.waiters.append(waiter)
+            return waiter
         }
+        let operation = BlockOperation()
+        operation.addExecutionBlock { [weak operation, weak self] in
+            guard operation?.isCancelled == false else { return }
+            let found = TrackLoader.thumbnail(for: url)
+            DispatchQueue.main.async { self?.finish(url, image: found) }
+        }
+        pending[url] = Pending(waiters: [waiter], operation: operation)
+        queue.addOperation(operation)
+        return waiter
+    }
+
+    func cancel(_ waiter: Waiter) {
+        guard var entry = pending[waiter.url] else { return }
+        entry.waiters.removeAll { $0 === waiter }
+        if entry.waiters.isEmpty {
+            entry.operation.cancel()
+            pending[waiter.url] = nil
+        } else {
+            pending[waiter.url] = entry
+        }
+    }
+
+    private func finish(_ url: URL, image: NSImage?) {
+        if let image {
+            cache.setObject(image, forKey: url as NSURL, cost: Int(image.size.width * image.size.height * 4))
+        } else {
+            misses.setObject(true, forKey: url as NSURL)
+        }
+        let waiters = pending.removeValue(forKey: url)?.waiters ?? []
+        for waiter in waiters { waiter.done(image) }
     }
 }
 

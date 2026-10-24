@@ -2,12 +2,12 @@ import CoreServices
 import Foundation
 
 /// Vigia pastas com FSEvents: músicas adicionadas, removidas ou renomeadas disparam
-/// `onChange` (agrupado: no máximo uma vez a cada `latency` segundos).
+/// `onChange` com os caminhos alterados (agrupado: no máximo uma vez a cada `latency` segundos).
 final class FolderWatcher {
     private var stream: FSEventStreamRef?
-    private let onChange: () -> Void
+    private let onChange: ([String]) -> Void
 
-    init(onChange: @escaping () -> Void) {
+    init(onChange: @escaping ([String]) -> Void) {
         self.onChange = onChange
     }
 
@@ -18,12 +18,15 @@ final class FolderWatcher {
         guard !paths.isEmpty else { return }
         var context = FSEventStreamContext(version: 0, info: Unmanaged.passUnretained(self).toOpaque(),
                                            retain: nil, release: nil, copyDescription: nil)
-        let callback: FSEventStreamCallback = { _, info, _, _, _, _ in
+        let callback: FSEventStreamCallback = { _, info, _, eventPaths, _, _ in
             guard let info else { return }
             let watcher = Unmanaged<FolderWatcher>.fromOpaque(info).takeUnretainedValue()
-            DispatchQueue.main.async { watcher.onChange() }
+            // Com UseCFTypes, eventPaths é um CFArray de CFString.
+            let paths = (Unmanaged<CFArray>.fromOpaque(eventPaths).takeUnretainedValue() as? [String]) ?? []
+            DispatchQueue.main.async { watcher.onChange(paths) }
         }
-        let flags = UInt32(kFSEventStreamCreateFlagFileEvents | kFSEventStreamCreateFlagNoDefer)
+        let flags = UInt32(kFSEventStreamCreateFlagFileEvents | kFSEventStreamCreateFlagNoDefer
+            | kFSEventStreamCreateFlagUseCFTypes)
         guard let created = FSEventStreamCreate(nil, callback, &context, paths as CFArray,
                                                 FSEventStreamEventId(kFSEventStreamEventIdSinceNow),
                                                 latency, FSEventStreamCreateFlags(flags)) else { return }

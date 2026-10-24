@@ -6,10 +6,18 @@ import WineupCore
 struct PlaylistPanel: View {
     @ObservedObject var state: PlayerState
     @ObservedObject var browser: LibraryBrowser
+    /// Texto e resultados da busca (o PlayerState não publica a cada tecla).
+    @ObservedObject private var search: SearchModel
     @Environment(\.theme) private var theme
     @Environment(\.openWindow) private var openWindow
     /// Página do artista: lançamento escolhido (nil = todas as músicas).
     @State private var artistRelease: String?
+
+    init(state: PlayerState, browser: LibraryBrowser) {
+        self.state = state
+        self.browser = browser
+        search = state.search
+    }
 
     private var isArtistPage: Bool { browser.view == .artists && browser.group != nil && state.query.isEmpty }
 
@@ -18,14 +26,16 @@ struct PlaylistPanel: View {
     }
 
     var body: some View {
+        // Montado uma vez por desenho (cabeçalho e lista usam o mesmo agrupamento).
+        let header = isArtistPage ? artistHeader : nil
         Panel(title: "") {
             VStack(spacing: 0) {
                 NavBar(state: state, browser: browser)
                 Divider().opacity(0.5)
                 titleBlock
-                if isArtistPage {
+                if let header {
                     backRow
-                    artistHeader
+                    header
                 } else if browser.group != nil && state.query.isEmpty { groupHeader }
                 if showsColumns { columnHeader }
                 Group {
@@ -33,8 +43,8 @@ struct PlaylistPanel: View {
                         trackList(state.searchResults)
                     } else if browser.showsGroups {
                         LibraryGroupsView(state: state, browser: browser)
-                    } else if isArtistPage {
-                        trackList(artistHeader.listed())
+                    } else if let header {
+                        trackList(header.listed())
                     } else {
                         trackList(state.visibleTracks)
                     }
@@ -214,8 +224,8 @@ struct PlaylistPanel: View {
                         if tracks.isEmpty && (browser.view != .files || browser.subfolders.isEmpty) && !browser.isLoading {
                             emptyState
                         }
-                        ForEach(tracks.indices, id: \.self) { offset in
-                            let track = tracks[offset]
+                        ForEach(ListRow.rows(tracks)) { row in
+                            let offset = row.offset, track = row.track
                             SelectableTrackRow(selection: state.selection, track: track, index: offset + 1,
                                                isCurrent: track.id == state.currentID,
                                                detailed: state.listStyle == .detailed)
@@ -237,13 +247,7 @@ struct PlaylistPanel: View {
             ColorDots(selection: $state.markFilter)
                 .hint("Tags de cor", "Mostra só as músicas marcadas com a cor escolhida. Clique de novo para ver todas.")
             Spacer(minLength: 0)
-            if let message = state.statusMessage {
-                Text(message)
-                    .font(.system(size: 11))
-                    .foregroundStyle(theme.mutedText)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-            }
+            StatusLine(status: state.status)
             Spacer(minLength: 0)
             SkinSegmented(selection: $state.listStyle, options: [.compact, .detailed, .grid], width: 16) { style in
                 Image(systemName: style == .compact ? "list.bullet" : style == .detailed ? "list.bullet.rectangle" : "square.grid.2x2")
@@ -255,6 +259,41 @@ struct PlaylistPanel: View {
         .padding(.horizontal, 14)
         .frame(height: 34)
         .overlay(alignment: .top) { Divider().opacity(0.5) }
+    }
+}
+
+/// Aviso do rodapé: só ele redesenha quando a mensagem muda.
+private struct StatusLine: View {
+    @ObservedObject var status: StatusModel
+    @Environment(\.theme) private var theme
+
+    var body: some View {
+        if let message = status.message {
+            Text(message)
+                .font(.system(size: 11))
+                .foregroundStyle(theme.mutedText)
+                .lineLimit(1)
+                .truncationMode(.middle)
+        }
+    }
+}
+
+/// Linha da lista com identidade estável: a faixa + quantas vezes ela já apareceu antes
+/// (uma playlist pode ter a mesma música duas vezes; o índice sozinho mudava ao inserir/remover).
+struct ListRow: Identifiable {
+    struct Key: Hashable { let track: TrackID; let occurrence: Int }
+    let id: Key
+    let offset: Int
+    let track: Track
+
+    static func rows(_ tracks: [Track]) -> [ListRow] {
+        var seen: [TrackID: Int] = [:]
+        seen.reserveCapacity(tracks.count)
+        return tracks.enumerated().map { offset, track in
+            let n = seen[track.id, default: 0]
+            seen[track.id] = n + 1
+            return ListRow(id: Key(track: track.id, occurrence: n), offset: offset, track: track)
+        }
     }
 }
 

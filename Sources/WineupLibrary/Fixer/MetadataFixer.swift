@@ -81,7 +81,7 @@ public struct MetadataFixer: Sendable {
     }
 
     private func fingerprintMatch(_ file: FixerFile) async throws -> MatchCandidate? {
-        guard let acoustID, let fpcalc, let fp = try AcoustIDClient.fingerprint(file.url, fpcalc: fpcalc),
+        guard let acoustID, let fpcalc, let fp = try await AcoustIDClient.fingerprint(file.url, fpcalc: fpcalc),
               let best = try await acoustID.lookup(fp).first, best.score >= 0.5 else { return nil }
         var c = try await musicBrainz.recording(id: best.recordingID, preferAlbum: Self.query(for: file).album)
         c?.confidence = best.score

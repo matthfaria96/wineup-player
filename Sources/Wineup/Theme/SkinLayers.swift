@@ -44,9 +44,10 @@ struct SkinLayersView: View {
     let art: SkinArt
     let layers: [SkinManifest.Layer]
     let energy: () -> Double
+    @Environment(\.animationsPaused) private var paused
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 20.0)) { timeline in
+        TimelineView(.animation(minimumInterval: 1.0 / 20.0, paused: paused)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
             let e = min(max(energy(), 0), 1)
             Canvas(rendersAsynchronously: true) { ctx, size in
@@ -62,7 +63,7 @@ struct SkinLayersView: View {
                 }
             }
         }
-        .drawingGroup()
+        // Sem .drawingGroup(): o Canvas assíncrono já desenha fora da thread principal.
         .allowsHitTesting(false)
     }
 }

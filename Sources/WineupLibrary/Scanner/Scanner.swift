@@ -8,11 +8,13 @@ public struct ScanProgress: Sendable, Equatable {
     public var missing: Int
     public var moved: Int
     public var finished: Bool
+    /// A varredura gravou algo que muda a biblioteca (novos, alterados, movidos, ausentes, CUE).
+    public var changed: Bool
 
     public init(enumerated: Int = 0, toRead: Int = 0, read: Int = 0, missing: Int = 0,
-                moved: Int = 0, finished: Bool = false) {
+                moved: Int = 0, finished: Bool = false, changed: Bool = false) {
         self.enumerated = enumerated; self.toRead = toRead; self.read = read
-        self.missing = missing; self.moved = moved; self.finished = finished
+        self.missing = missing; self.moved = moved; self.finished = finished; self.changed = changed
     }
 }
 
@@ -69,12 +71,13 @@ public final class Scanner: Sendable {
             // Volume desmontado/pasta ausente: offline, sem marcar nada como ausente.
             try await pool.write { try $0.execute(sql: "UPDATE library_root SET online = 0 WHERE id = ?",
                                                   arguments: [rootRowID]) }
-            let done = ScanProgress(finished: true)
+            let done = ScanProgress(finished: true, changed: root.online)
             progress(done)
             return done
         }
         try await pool.write { try $0.execute(sql: "UPDATE library_root SET online = 1 WHERE id = ?",
                                               arguments: [rootRowID]) }
+        let cameOnline = !root.online
 
         // Etapa 1
         let files = try FileEnumerator.enumerate(root: rootURL, isCancelled: { Task.isCancelled })
@@ -87,6 +90,9 @@ public final class Scanner: Sendable {
         let enumeratedPaths = Set(files.map(\.path))
 
         var unchanged: [Int64] = []
+        // last_seen_at dos inalterados só é regravado se tiver mais de um dia (varrer de novo não reescreve tudo).
+        var touch: [Int64] = []
+        let staleBefore = Date().addingTimeInterval(-86_400)
         var toRead: [(file: EnumeratedFile, existing: AudioFileRecord?)] = []
         var candidates: [EnumeratedFile] = []
         for f in files {
@@ -94,6 +100,7 @@ public final class Scanner: Sendable {
                 if rec.status == FileStatus.present.rawValue, rec.size == f.size,
                    rec.mtimeNs == f.mtimeNs, rec.inode == Int64(bitPattern: f.inode) {
                     unchanged.append(rec.id!)
+                    if (rec.lastSeenAt ?? .distantPast) < staleBefore { touch.append(rec.id!) }
                 } else {
                     toRead.append((f, rec))
                 }
@@ -133,7 +140,7 @@ public final class Scanner: Sendable {
         let volume = root.volumeUUID
 
         // Gravações de manutenção (last_seen, movidos) em transações curtas.
-        for chunk in stride(from: 0, to: unchanged.count, by: 1000).map({ Array(unchanged[$0..<min($0 + 1000, unchanged.count)]) }) {
+        for chunk in stride(from: 0, to: touch.count, by: 1000).map({ Array(touch[$0..<min($0 + 1000, touch.count)]) }) {
             try Task.checkCancellation()
             try await pool.write { db in
                 let st = try db.cachedStatement(sql: "UPDATE audio_file SET last_seen_at = ? WHERE id = ?")
@@ -201,10 +208,11 @@ public final class Scanner: Sendable {
         }
         state.missing = vanished.count
         try Task.checkCancellation()
-        try await CueIndexer.index(root: rootURL, rootID: rootRowID, pool: pool, now: now)
+        let cueChanged = try await CueIndexer.index(root: rootURL, rootID: rootRowID, pool: pool, now: now)
         try await pool.write { try $0.execute(sql: "UPDATE library_root SET last_scan_at = ? WHERE id = ?",
                                               arguments: [now, rootRowID]) }
         state.finished = true
+        state.changed = !toRead.isEmpty || !movedPairs.isEmpty || !vanished.isEmpty || cueChanged || cameOnline
         progress(state)
         return state
     }

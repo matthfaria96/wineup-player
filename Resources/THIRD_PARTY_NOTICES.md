@@ -37,16 +37,6 @@ Trechos de 10–20 s, sem som, reduzidos a 960 px. Cada um mantém a licença or
 
 Os clipes CC BY exigem crédito ao autor: os nomes completos estão nas páginas de origem.
 
-## Skin embutido "Noite Estrelada"
-
-| Item | Autor | Licença | Fonte |
-|---|---|---|---|
-| A Noite Estrelada (1889), pintura | Vincent van Gogh | Domínio público | https://commons.wikimedia.org/wiki/File:Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg |
-| Cormorant Garamond (fonte) | Christian Thalmann | SIL Open Font License 1.1 (texto em Skins/noite-estrelada/OFL-Cormorant.txt) | https://github.com/google/fonts/tree/main/ofl/cormorantgaramond |
-| Caveat Brush (fonte) | Pablo Impallari | SIL Open Font License 1.1 (texto em Skins/noite-estrelada/OFL-CaveatBrush.txt) | https://github.com/google/fonts/tree/main/ofl/caveatbrush |
-
-Moldura, botões e puxador foram desenhados pelo Wineup a partir da pintura.
-
 ## Skin embutido "Neon Gótico"
 
 | Item | Autor | Licença | Fonte |

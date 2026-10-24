@@ -11,6 +11,8 @@ struct CoverSearchView: View {
     @State private var results: [CoverCandidate] = []
     @State private var choice: CoverCandidate.ID?
     @State private var preview: CoverImage?
+    /// Prévia reduzida e tamanho original, decodificados fora da thread principal.
+    @State private var decoded: DecodedCover?
     @State private var loading = false
     @State private var searching = false
     @State private var error: String?
@@ -54,7 +56,7 @@ struct CoverSearchView: View {
                 VStack(spacing: 6) {
                     ZStack {
                         Color.black.opacity(0.3)
-                        if let image = preview.flatMap({ NSImage(data: $0.data) }) {
+                        if let image = decoded?.image {
                             Image(nsImage: image).resizable().scaledToFit()
                         } else if loading || searching {
                             ProgressView()
@@ -94,12 +96,18 @@ struct CoverSearchView: View {
         }
         .onChange(of: source) { _, _ in run() }
         .onChange(of: choice) { _, id in load(id) }
+        .task(id: preview) {
+            decoded = nil
+            guard let data = preview?.data else { return }
+            let result = await CoverDecode.decode(data, maxPixels: 1200)
+            guard !Task.isCancelled else { return }
+            decoded = result
+        }
     }
 
     private var caption: String {
-        guard let p = preview, let image = NSImage(data: p.data) else { return " " }
-        let px = image.representations.first.map { "\($0.pixelsWide)×\($0.pixelsHigh)" } ?? ""
-        return "\(px), \(p.data.count / 1024) KB, \(p.mimeType)"
+        guard let p = preview, let decoded else { return " " }
+        return "\(decoded.sizeText ?? ""), \(p.data.count / 1024) KB, \(p.mimeType)"
     }
 
     private func run() {

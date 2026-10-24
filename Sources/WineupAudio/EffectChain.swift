@@ -44,14 +44,19 @@ public final class EffectChain: @unchecked Sendable {
     public func reconnectInternal(_ engine: AVAudioEngine, to sink: AVAudioNode, format: AVAudioFormat) {
         engine.connect(timePitch, to: eq, format: format)
         engine.connect(eq, to: downmix, format: format)
+        connectSide(engine, format: format)
+        engine.connect(balance, to: limiter, format: format)
+        engine.connect(limiter, to: sink, format: format)
+    }
+
+    /// Único elo que muda com o lado: downmix -> balanço (o balanço é um mixer, aceita religar tocando).
+    private func connectSide(_ engine: AVAudioEngine, format: AVAudioFormat) {
         if singleSide, let mono = AVAudioFormat(standardFormatWithSampleRate: format.sampleRate, channels: 1) {
             // Saída mono do downmix: soma esquerda+direita; o pan do balanço leva tudo para um lado.
             engine.connect(downmix, to: balance, format: mono)
         } else {
             engine.connect(downmix, to: balance, format: format)
         }
-        engine.connect(balance, to: limiter, format: format)
-        engine.connect(limiter, to: sink, format: format)
     }
 
     public func setRate(_ rate: Float) {
@@ -61,9 +66,13 @@ public final class EffectChain: @unchecked Sendable {
     }
 
     /// -1 = tudo à esquerda, 0 = normal (estéreo original), 1 = tudo à direita.
-    public func setSide(_ side: Int, engine: AVAudioEngine, sink: AVAudioNode, format: AVAudioFormat) {
-        singleSide = side != 0
-        reconnectInternal(engine, to: sink, format: format)
+    /// Religa só downmix -> balanço; o resto da cadeia (e o sink) fica como está.
+    public func setSide(_ side: Int, engine: AVAudioEngine, format: AVAudioFormat) {
+        let single = side != 0
+        if single != singleSide {
+            singleSide = single
+            connectSide(engine, format: format)
+        }
         balance.pan = Float(max(-1, min(1, side)))
     }
 

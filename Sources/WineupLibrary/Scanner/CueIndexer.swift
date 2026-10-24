@@ -6,7 +6,9 @@ import WineupCore
 /// para o arquivo real (media_path) e o trecho. O arquivo dividido fica escondido nas listas.
 /// Idempotente: CUE inalterado não é relido; CUE apagado faz as faixas ficarem ausentes.
 enum CueIndexer {
-    static func index(root: URL, rootID: Int64, pool: DatabasePool, now: Date) async throws {
+    /// Devolve se algo mudou no banco (faixas novas, alteradas ou ausentes).
+    @discardableResult
+    static func index(root: URL, rootID: Int64, pool: DatabasePool, now: Date) async throws -> Bool {
         let cues = findCues(under: root)
         let existing: [String: (id: Int64, mtime: Int64, status: String)] = try await pool.read { db in
             let rows = try Row.fetchAll(db, sql: """
@@ -17,6 +19,7 @@ enum CueIndexer {
         }
         var seen = Set<String>()
         var covered = Set<String>()
+        var changed = false
         for cue in cues {
             guard let sheet = parse(cue.url) else { continue }
             var mediaTags: [String: ScannedTags] = [:]
@@ -27,6 +30,7 @@ enum CueIndexer {
                 if let old = existing[virtualPath], old.mtime == cue.mtime, old.status == FileStatus.present.rawValue {
                     continue   // CUE inalterado
                 }
+                changed = true
                 let media = mediaTags[entry.file.path] ?? (try? TagReader.read(entry.file)) ?? ScannedTags()
                 mediaTags[entry.file.path] = media
                 let mediaDuration = media.duration ?? 0
@@ -67,6 +71,7 @@ enum CueIndexer {
                 try db.execute(sql: "UPDATE audio_file SET hidden = 1 WHERE path = ? AND media_path IS NULL", arguments: [path])
             }
         }
+        return changed || !gone.isEmpty
     }
 
     private static func findCues(under root: URL) -> [(url: URL, mtime: Int64)] {

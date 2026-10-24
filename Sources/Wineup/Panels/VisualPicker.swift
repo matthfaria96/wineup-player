@@ -4,6 +4,8 @@ import SwiftUI
 /// Escolha guardada para "Vídeos Personalizados": uma animação ("scene:aurora") ou uma categoria ("video:cidades").
 enum MotionChoice {
     static let key = "artwork.motion"
+    /// Primeira vez em Vídeos Personalizados: a Aurora.
+    static let firstUse = "scene:aurora"
 
     static func label(_ raw: String) -> String? {
         if raw.hasPrefix("scene:"), let m = VisualMode(rawValue: String(raw.dropFirst(6))) { return m.title }
@@ -19,7 +21,7 @@ struct VisualPicker: View {
     @Binding var videoCategory: String
     let hasSkinArt: Bool
     let onConfigure: () -> Void
-    @AppStorage(MotionChoice.key) private var motion = ""
+    @AppStorage(MotionChoice.key) private var motion = MotionChoice.firstUse
     @Environment(\.dismiss) private var dismiss
 
     private var mode: VisualMode { VisualMode(rawValue: modeRaw) ?? .cover }

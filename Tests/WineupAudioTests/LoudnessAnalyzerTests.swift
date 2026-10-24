@@ -30,7 +30,7 @@ struct LoudnessAnalyzerTests {
         #expect(abs(info.integrated - -20) < 0.2)
         #expect(abs(info.peak - 0.1) < 0.01)
         #expect(analyzer.cached(url) == info)
-        Thread.sleep(forTimeInterval: 0.3)
+        analyzer.saveNow()
         #expect(LoudnessAnalyzer(directory: dir).cached(url) == info)
     }
 }
@@ -49,5 +49,73 @@ struct LoudnessRealTests {
                   20 * log10(SoundCorrection.linearGain(target: -14, loudness: i!)), Date().timeIntervalSince(start)))
         }
         try? FileManager.default.removeItem(at: tmp)
+    }
+}
+
+@Suite("Correção de Som: medidas que não valem")
+struct LoudnessAnalyzerFailureTests {
+    private func tempDir() throws -> URL {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
+    private func sine(_ dir: URL) throws -> URL {
+        let url = dir.appendingPathComponent("sine.wav")
+        let format = AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 2)!
+        let file = try AVAudioFile(forWriting: url, settings: format.settings)
+        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 48_000 * 3)!
+        buffer.frameLength = buffer.frameCapacity
+        for c in 0..<2 { for i in 0..<Int(buffer.frameLength) { buffer.floatChannelData![c][i] = 0.1 * Float(sin(Double(i) / 7)) } }
+        try file.write(from: buffer)
+        return url
+    }
+
+    @Test func unreadableFileIsNotCached() throws {
+        let dir = try tempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("quebrado.wav")
+        try Data(repeating: 0x5A, count: 50_000).write(to: url)
+        let analyzer = LoudnessAnalyzer(directory: dir)
+        #expect(analyzer.measure(url) == nil)
+        #expect(analyzer.cached(url) == nil)
+    }
+
+    @Test func cancelledMeasurementIsNotCached() throws {
+        let dir = try tempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = try sine(dir)
+        let analyzer = LoudnessAnalyzer(directory: dir)
+        #expect(analyzer.measure(url, isCancelled: { true }) == nil)
+        #expect(analyzer.cached(url) == nil)
+        #expect(analyzer.measure(url) != nil)
+    }
+
+    /// Medição em segundo plano para quando a forma de onda pede a vez.
+    @Test func backgroundReadYieldsToInteractive() throws {
+        let dir = try tempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = try sine(dir)
+        var calls = 0
+        let outcome = AudioFileReader.read(url, priority: .background, isCancelled: {
+            calls += 1
+            if calls == 2 { AudioFileReader.setInteractiveWaitingForTesting(1) }
+            return false
+        }) { _, _ in }
+        AudioFileReader.setInteractiveWaitingForTesting(-1)
+        #expect(outcome == .yielded)
+    }
+
+    @Test func staleEntriesAreDroppedOnLoad() throws {
+        let dir = try tempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let keep = try sine(dir)
+        let gone = dir.appendingPathComponent("apagado.wav")
+        try FileManager.default.copyItem(at: keep, to: gone)
+        let first = LoudnessAnalyzer(directory: dir)
+        #expect(first.measure(keep) != nil && first.measure(gone) != nil)
+        first.saveNow()
+        try FileManager.default.removeItem(at: gone)
+        #expect(LoudnessAnalyzer(directory: dir).measuredCount == 1)
     }
 }

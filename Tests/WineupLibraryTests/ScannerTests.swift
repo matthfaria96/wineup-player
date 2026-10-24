@@ -58,12 +58,14 @@ struct ScannerTests {
             let (db, music, id) = try makeLibrary(dir, count: 3)
             let scanner = Scanner(database: db)
             let p1 = try await scanner.scan(rootID: id, progress: { _ in })
-            #expect(p1.enumerated == 3 && p1.read == 3 && p1.finished)
+            #expect(p1.enumerated == 3 && p1.read == 3 && p1.finished && p1.changed)
             let p2 = try await scanner.scan(rootID: id, progress: { _ in })
             #expect(p2.enumerated == 3 && p2.read == 0)
+            // Nada mudou: o app não recarrega a lista.
+            #expect(!p2.changed)
             try WAVFixture.write(to: music.appendingPathComponent("t1.wav"), seconds: 0.2)
             let p3 = try await scanner.scan(rootID: id, progress: { _ in })
-            #expect(p3.read == 1)
+            #expect(p3.read == 1 && p3.changed)
             let n = try await db.pool.read { try Int.fetchOne($0, sql: "SELECT COUNT(*) FROM audio_file") }
             #expect(n == 3)
         }

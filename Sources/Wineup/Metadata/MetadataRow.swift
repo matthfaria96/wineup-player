@@ -20,9 +20,17 @@ struct MetadataRow: Identifiable, Equatable {
         }
     }
 
-    var file: FixerFile
+    /// Chaves pré-calculadas de ordenação e do filtro de texto; refeitas só quando o arquivo ou as edições mudam.
+    struct Keys: Equatable {
+        var search = ""
+        var file = "", title = "", artist = "", album = "", genre = "", path = ""
+        var albumArtist = "", comment = "", composer = ""
+        var track = 0, year = 0, disc = 0
+    }
+
+    var file: FixerFile { didSet { refreshKeys() } }
     /// Campos (vocabulário do TagSnapshot) com valor novo; "" limpa o campo.
-    var edits: [String: String] = [:]
+    var edits: [String: String] = [:] { didSet { refreshKeys() } }
     var cover: CoverImage?
     var lyrics: LyricsCandidate?
     var replaceLyrics = false
@@ -30,6 +38,15 @@ struct MetadataRow: Identifiable, Equatable {
     var status: Status = .idle
     /// Problemas que o usuário mandou ignorar neste arquivo (não contam e não voltam).
     var ignored: Set<FixerIssue> = []
+    private(set) var keys = Keys()
+
+    init(file: FixerFile, proposal: FixProposal? = nil, status: Status = .idle, ignored: Set<FixerIssue> = []) {
+        self.file = file
+        self.proposal = proposal
+        self.status = status
+        self.ignored = ignored
+        refreshKeys()
+    }
 
     var id: String { file.id }
     var url: URL { file.url }
@@ -38,20 +55,33 @@ struct MetadataRow: Identifiable, Equatable {
 
     func value(_ field: String) -> String { edits[field] ?? file.value(field) }
 
-    // Chaves de ordenação da tabela (faixa e ano como número).
-    var sortFile: String { fileName.lowercased() }
-    var sortTitle: String { value("title").lowercased() }
-    var sortArtist: String { value("artist").lowercased() }
-    var sortAlbum: String { value("album").lowercased() }
-    var sortGenre: String { value("genre").lowercased() }
-    var sortTrack: Int { (Int(value("discNumber")) ?? 1) * 1000 + (Int(value("trackNumber")) ?? 999) }
-    var sortYear: Int { Int(value("year").prefix(4)) ?? 0 }
+    private mutating func refreshKeys() {
+        let title = value("title"), artist = value("artist"), album = value("album")
+        keys = Keys(
+            search: ManagerSearch.key([fileName, title, artist, album]),
+            file: fileName.lowercased(), title: title.lowercased(), artist: artist.lowercased(),
+            album: album.lowercased(), genre: value("genre").lowercased(),
+            path: url.deletingLastPathComponent().path.lowercased(),
+            albumArtist: value("albumArtist").lowercased(), comment: value("comment").lowercased(),
+            composer: value("composer").lowercased(),
+            track: (Int(value("discNumber")) ?? 1) * 1000 + (Int(value("trackNumber")) ?? 999),
+            year: Int(value("year").prefix(4)) ?? 0, disc: Int(value("discNumber")) ?? 0)
+    }
+
+    // Chaves de ordenação da tabela (faixa e ano como número), lidas do cache.
+    var sortFile: String { keys.file }
+    var sortTitle: String { keys.title }
+    var sortArtist: String { keys.artist }
+    var sortAlbum: String { keys.album }
+    var sortGenre: String { keys.genre }
+    var sortTrack: Int { keys.track }
+    var sortYear: Int { keys.year }
     var sortConfidence: Double { confidence ?? -1 }
-    var sortPath: String { url.deletingLastPathComponent().path.lowercased() }
-    var sortAlbumArtist: String { value("albumArtist").lowercased() }
-    var sortComment: String { value("comment").lowercased() }
-    var sortComposer: String { value("composer").lowercased() }
-    var sortDisc: Int { Int(value("discNumber")) ?? 0 }
+    var sortPath: String { keys.path }
+    var sortAlbumArtist: String { keys.albumArtist }
+    var sortComment: String { keys.comment }
+    var sortComposer: String { keys.composer }
+    var sortDisc: Int { keys.disc }
     var sortBitrate: Int { file.tech.bitrate ?? 0 }
     var sortSampleRate: Double { file.tech.sampleRate ?? 0 }
     var sortDuration: Double { file.duration ?? 0 }
@@ -60,13 +90,30 @@ struct MetadataRow: Identifiable, Equatable {
     var hasTagChanges: Bool { !edits.isEmpty || cover != nil }
     var isDirty: Bool { hasTagChanges || lyrics?.text != nil }
 
-    /// Define um campo; voltar ao valor do arquivo desfaz a edição.
+    /// Define um campo como digitado (o espaço no fim não some no meio da digitação);
+    /// igual ao valor do arquivo desfaz a edição. O texto é aparado só ao gravar (`tagChanges`).
     mutating func set(_ field: String, _ value: String) {
-        let trimmed = value.trimmingCharacters(in: .whitespaces)
-        if trimmed == file.value(field) { edits[field] = nil } else { edits[field] = trimmed }
+        let stored = ManagerEdits.stored(value, original: file.value(field))
+        guard edits[field] != stored else { return }
+        edits[field] = stored
     }
 
-    var tagChanges: TagChanges { TagChanges(fields: edits, cover: cover) }
+    /// Status depois de uma edição: com alteração fica "Pronta para salvar"; sem, volta ao normal.
+    mutating func refreshStatus() {
+        if isDirty { status = .ready } else if status == .ready { status = .idle }
+    }
+
+    /// Letra nova (ou nil para descartar); substitui o .lrc existente ao salvar.
+    mutating func setLyrics(_ new: LyricsCandidate?) {
+        lyrics = new
+        replaceLyrics = file.hasSidecarLyrics
+        refreshStatus()
+    }
+
+    /// O que vai para o arquivo: valores aparados, sem os que ficaram iguais ao original.
+    var tagChanges: TagChanges {
+        TagChanges(fields: ManagerEdits.committed(edits, original: file.value), cover: cover)
+    }
 
     var willHaveCover: Bool { cover != nil || file.hasCover }
     var willHaveLyrics: Bool { lyrics?.text != nil || file.hasLyrics }
