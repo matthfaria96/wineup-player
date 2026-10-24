@@ -138,7 +138,7 @@ struct LyricsBox: View {
                         withAnimation(.snappy) { editing = false }
                     }
                 } else {
-                    iconButton("pencil", shown == nil ? "Escrever a letra" : "Editar a letra") {
+                    iconButton("pencil", shown == nil ? "Escrever a letra" : "Editar: ajustar a sincronia ou o texto") {
                         draft = shown?.text ?? ""
                         withAnimation(.snappy) { editing = true; options = [] }
                     }
@@ -207,16 +207,7 @@ struct LyricsBox: View {
     }
 
     private var editor: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            TextEditor(text: $draft)
-                .font(.system(size: 12))
-                .frame(minHeight: 300)
-                .scrollContentBackground(.hidden)
-                .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.04)))
-                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.accentColor.opacity(0.5)))
-            Text("Uma linha por verso. Com marcas como [01:23.45] no início das linhas, a letra fica sincronizada.")
-                .font(.system(size: 10)).foregroundStyle(.secondary)
-        }
+        LyricsSyncEditor(draft: $draft, fileURL: row.url, onWillPlay: { model.pauseMainPlayback?() })
     }
 
     private var results: some View {

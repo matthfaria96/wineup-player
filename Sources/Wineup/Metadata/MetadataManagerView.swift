@@ -59,6 +59,7 @@ struct MetadataManagerView: View {
             MatchPicker(model: model, rowID: item.id)
         }
         .onAppear {
+            model.pauseMainPlayback = { [weak state] in if state?.isPlaying == true { state?.pause() } }
             model.openIfNeeded(state.browser.folder)
             model.refreshHistory()
         }

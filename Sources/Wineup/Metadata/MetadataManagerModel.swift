@@ -63,6 +63,8 @@ final class MetadataManagerModel: ObservableObject {
         didSet { UserDefaults.standard.set(acoustIDKey, forKey: Self.acoustIDKeyDefaults) }
     }
 
+    /// Pausa o player principal antes da prévia da letra tocar (senão saem duas músicas juntas).
+    var pauseMainPlayback: (() -> Void)?
     private let writer: TagWriter?
     private var work: Task<Void, Never>?
 
