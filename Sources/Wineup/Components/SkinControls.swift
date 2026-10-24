@@ -50,6 +50,8 @@ struct SkinButtonStyle: ButtonStyle {
 /// Menu com o rótulo dentro da arte de botão do skin (a lista que abre é a do sistema).
 struct SkinMenu<Items: View, Label: View>: View {
     var help: String = ""
+    /// Largura mínima do conteúdo (para alinhar com botões vizinhos do mesmo tamanho).
+    var minWidth: CGFloat? = nil
     @ViewBuilder var items: Items
     @ViewBuilder var label: Label
     @Environment(\.theme) private var theme
@@ -64,6 +66,7 @@ struct SkinMenu<Items: View, Label: View>: View {
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
         .fixedSize()
+        .frame(minWidth: minWidth)
         .tint(theme.buttonText)
         .foregroundStyle(theme.buttonText)
         .font(.system(size: 11, weight: .medium))

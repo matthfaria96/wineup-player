@@ -87,9 +87,11 @@ struct MainView: View {
                 Button { state.browser.goBack() } label: { Image(systemName: "chevron.left").frame(width: 14) }
                     .disabled(state.browser.backStack.isEmpty)
                     .accessibilityLabel("Voltar")
+                    .hint("Voltar (⌘[)", "Volta para a pasta ou tela anterior da lista.")
                 Button { state.browser.goForward() } label: { Image(systemName: "chevron.right").frame(width: 14) }
                     .disabled(state.browser.forwardStack.isEmpty)
                     .accessibilityLabel("Avançar")
+                    .hint("Avançar (⌘])", "Vai de novo para onde você estava antes de voltar.")
             }
             .buttonStyle(SkinButtonStyle(compact: true))
             Button { openWindow(id: "metadata") } label: {
@@ -97,7 +99,7 @@ struct MainView: View {
                 else { Label("Metadados", systemImage: "tag").labelStyle(.titleAndIcon) }
             }
             .buttonStyle(SkinButtonStyle())
-            .help("Metadados: gerenciador completo de tags, capas e letras")
+            .hint("Metadados", "Abre o gerenciador de tags: título, artista, álbum, capas e letras das músicas. Busca dados online e salva nos arquivos.")
             Spacer(minLength: 8)
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass").foregroundStyle(theme.mutedText)
@@ -118,17 +120,20 @@ struct MainView: View {
             .skinField()
             .contentShape(Rectangle())
             .onTapGesture { searchFocused = true }
+            .hint("Buscar (⌘F)", "Procura músicas por título, artista ou álbum em toda a sua biblioteca. Esc limpa.")
             .background {
                 // ⌘F: vai para a busca.
                 Button("") { searchFocused = true }.keyboardShortcut("f", modifiers: .command).opacity(0).allowsHitTesting(false)
             }
             Spacer(minLength: 8)
-            Button { TrayMode.enter(state: state, openWindow: openWindow) } label: { Image(systemName: "menubar.arrow.up.rectangle") }
-                .buttonStyle(SkinButtonStyle(compact: true))
-                .help("Tocar pela barra de menus: fecha a janela e deixa o player no topo do Mac (⌥⌘M)")
-                .accessibilityLabel("Tocar pela barra de menus")
-            // Skin: entre a barra de menus e o layout.
-            SkinMenu(help: "Skin") {
+            Button { TrayMode.enter(state: state, openWindow: openWindow) } label: {
+                Image(systemName: "menubar.arrow.up.rectangle").frame(width: Self.iconButtonWidth - 12)
+            }
+            .buttonStyle(SkinButtonStyle(compact: true))
+            .hint("Tocar pela barra de menus (⌥⌘M)", "Fecha a janela e deixa um player pequeno no topo do Mac, ao lado do relógio. A música continua tocando.")
+            .accessibilityLabel("Tocar pela barra de menus")
+            // Skin: entre a barra de menus e o layout, com a mesma largura do botão da barra de menus.
+            SkinMenu(minWidth: Self.iconButtonWidth - 16) {
                 Button { themeID = Theme.noneID } label: {
                     Label("Sem skin (visual padrão)", systemImage: themeID == Theme.noneID ? "checkmark" : "circle.slash")
                 }
@@ -141,10 +146,11 @@ struct MainView: View {
                 Divider()
                 Button("Editar, criar, importar ou exportar skins…") { openWindow(id: "themes") }
             } label: {
-                Image(systemName: "paintpalette")
+                Image(systemName: "swatchpalette")
             }
+            .hint("Tema (skin)", "Troca o visual da janela inteira: cores, molduras, botões e arte de fundo. Também dá para editar, criar e importar temas.")
             // Seletor de layout que mostra o modo atual (no Compacto, só o ícone).
-            SkinMenu(help: "Layout: Padrão, Compacto ou Completo") {
+            SkinMenu {
                 Picker("Layout", selection: $layoutRaw) {
                     ForEach(LayoutMode.allCases) { Text($0.name).tag($0.rawValue) }
                 }
@@ -157,6 +163,7 @@ struct MainView: View {
                     Label(LayoutMode.named(layoutRaw).name, systemImage: "square.grid.2x2").labelStyle(.titleAndIcon)
                 }
             }
+            .hint("Layout: \(LayoutMode.named(layoutRaw).name)", "Compacto: só o player e a lista, numa coluna. Padrão: lista, player, FX e capa. Completo: tudo isso e a letra ao lado. Arraste o título de um painel para trocá-lo de lugar.")
         }
         .font(.system(size: 11))
         .padding(.trailing, 10)
@@ -165,6 +172,10 @@ struct MainView: View {
 }
 
 extension MainView {
+    /// Largura total dos botões de ícone do topo: barra de menus e tema ficam do mesmo tamanho
+    /// (o botão tem 6 pt de margem de cada lado; o menu do tema, 8 pt).
+    static let iconButtonWidth: CGFloat = 42
+
     /// Ajusta a largura da janela ao modo (o Compacto fica estreito, sem sobras dos lados).
     func resizeWindow(for mode: LayoutMode) {
         DispatchQueue.main.async {

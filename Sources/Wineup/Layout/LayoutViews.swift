@@ -201,6 +201,6 @@ final class DropHighlight: ObservableObject {
 
 /// Estado local da janela principal (colunas e NSWindow).
 final class MainViewModel: ObservableObject {
-    @Published var columns: [PanelColumn] = LayoutMode.standard.columns()
+    @Published var columns: [PanelColumn] = LayoutMode.firstUse.columns()
     var window: NSWindow?
 }

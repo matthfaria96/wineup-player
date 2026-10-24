@@ -23,6 +23,8 @@ cp Resources/THIRD_PARTY_NOTICES.md "$APP/Contents/Resources/"
 cp -R Resources/Videos "$APP/Contents/Resources/Videos"
 # Skins embutidos (arte, fontes OFL e skin.json).
 cp -R Resources/Skins "$APP/Contents/Resources/Skins"
+# App em português: menus e janelas do sistema (Ajustes…, Ocultar, Sair) seguem o idioma.
+mkdir -p "$APP/Contents/Resources/pt-BR.lproj"
 
 # Frameworks dinâmicos (inclui os LGPL, que precisam continuar substituíveis).
 mkdir -p "$APP/Contents/Frameworks"
@@ -37,6 +39,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key><string>Wineup Player</string>
+    <key>CFBundleDevelopmentRegion</key><string>pt-BR</string>
+    <key>CFBundleLocalizations</key><array><string>pt-BR</string></array>
     <key>CFBundleDisplayName</key><string>Wineup Player</string>
     <key>CFBundleExecutable</key><string>Wineup</string>
     <key>CFBundleIdentifier</key><string>app.wineup.player</string>

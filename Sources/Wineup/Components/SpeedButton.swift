@@ -13,7 +13,7 @@ struct SpeedButton: View {
         }
         .buttonStyle(SkinButtonStyle(on: open || abs(state.playbackRate - 1) > 0.001, compact: true))
         .frame(height: 20)
-        .help("Velocidade da reprodução")
+        .hint("Velocidade", "Toca mais rápido ou mais devagar, sem mudar o tom da voz (0,5× a 3×).")
         .accessibilityLabel("Velocidade da reprodução")
         .accessibilityValue(PlayerPanel.rateText(state.playbackRate))
         .popover(isPresented: $open, arrowEdge: .bottom) { SpeedMenu(state: state) }

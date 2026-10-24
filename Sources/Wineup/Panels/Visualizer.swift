@@ -34,6 +34,8 @@ enum VisualMode: String, CaseIterable, Identifiable {
     }
 
     static let key = "artwork.visual"
+    /// Primeiro uso: a arte do skin (a capa da música continua a um clique).
+    static let firstUse = VisualMode.skinArt
 }
 
 /// Cena animada (20 fps: cenas lentas não precisam de mais e o player fica leve). `energy` (0...1) vem do medidor: a cena acende e acelera com a música.

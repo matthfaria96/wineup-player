@@ -25,6 +25,7 @@ struct PlayerPanel: View {
                     .frame(height: 26)
                     .opacity(state.currentTrack == nil ? 0.2 : 1)
                     .allowsHitTesting(state.currentTrack != nil)
+                    .hint("Forma de onda", "O volume da música do começo ao fim: trechos altos ficam altos. Clique para pular para esse ponto.")
                 transport
                 mixRow
             }
@@ -85,19 +86,26 @@ struct PlayerPanel: View {
     private var transport: some View {
         HStack(spacing: 6) {
             ChromeButton(symbol: "backward.fill") { state.step(by: -1) }.frame(width: 38)
+                .hint("Anterior (Z)", "Volta para a música anterior da lista.")
             ChromeButton(symbol: state.isPlaying ? "pause.fill" : "play.fill", isOn: state.isPlaying) { state.togglePlay() }
                 .frame(width: 48)
+                .hint(state.isPlaying ? "Pausar (espaço)" : "Tocar (espaço)", "Toca ou pausa a música atual.")
             ChromeButton(symbol: "stop.fill") { state.stop() }.frame(width: 38)
+                .hint("Parar (V)", "Para a música e volta ao começo dela.")
             ChromeButton(symbol: "forward.fill") { state.step(by: 1) }.frame(width: 38)
+                .hint("Próxima (B)", "Pula para a próxima música da lista.")
             Spacer(minLength: 0)
             ChromeButton(symbol: "shuffle", isOn: state.shuffleOn) { state.shuffleOn.toggle() }
-                .frame(width: 34).help(state.shuffleOn ? "Aleatório: ligado" : "Aleatório: desligado")
+                .frame(width: 34)
+                .hint(state.shuffleOn ? "Aleatório: ligado" : "Aleatório: desligado", "Toca as músicas da lista fora de ordem.")
             ChromeButton(symbol: state.repeatMode == .one ? "repeat.1" : "repeat", isOn: state.repeatMode != .off) {
                 state.repeatMode = { switch state.repeatMode { case .off: .all; case .all: .one; case .one: .off } }()
             }
             .frame(width: 34)
-            .help(["off": "Repetir: desligado", "all": "Repetir: todas", "one": "Repetir: uma"][state.repeatMode.rawValue] ?? "")
-            ChromeButton(symbol: "folder") { state.presentOpenPanel() }.frame(width: 34).help("Abrir arquivos ou pastas")
+            .hint(["off": "Repetir: desligado", "all": "Repetir: todas", "one": "Repetir: uma"][state.repeatMode.rawValue] ?? "Repetir",
+                  "Clique para alternar: não repetir, repetir a lista toda ou repetir só esta música.")
+            ChromeButton(symbol: "folder") { state.presentOpenPanel() }.frame(width: 34)
+                .hint("Abrir (⌘O)", "Abre arquivos de música ou pastas inteiras para tocar.")
         }
     }
 
@@ -106,6 +114,7 @@ struct PlayerPanel: View {
             Image(systemName: "speaker.wave.2.fill").font(.system(size: 10)).foregroundStyle(theme.mutedText)
             ChromeSlider(value: $state.volume, knobThickness: 12).frame(height: 16)
                 .accessibilityLabel("Volume")
+                .hint("Volume (↑ ↓)", "Volume do Wineup. Não muda o volume do Mac.")
             // Velocidade: botão com o valor; o menu (como o do YouTube) tem slider, − / + e atalhos.
             SpeedButton(state: state)
             // Lado: L = música inteira na esquerda, • = normal, R = inteira na direita.
@@ -117,7 +126,7 @@ struct PlayerPanel: View {
                 .accessibilityLabel(side < 0 ? "Esquerda" : side > 0 ? "Direita" : "Normal")
             }
             .frame(height: 18)
-            .help("Som: L (tudo na esquerda), normal ou R (tudo na direita)")
+            .hint("Lado do som", "L: a música inteira no fone/caixa da esquerda. •: normal (estéreo). R: inteira na direita.")
         }
     }
 
@@ -134,7 +143,8 @@ private struct LiveMeter: View {
     var body: some View {
         LevelMeter(levels: meter.bars)
             .accessibilityHidden(true)
-            .onAppear { meter.start(tap: tap) }
-            .onDisappear { meter.stop() }
+            .hint("Medidor de volume", "Canal esquerdo em cima e direito embaixo. Acende conforme a música: amarelo nos trechos fortes, vermelho nos picos.")
+            .onAppear { meter.attach(tap: tap) }
+            .onDisappear { meter.detach() }
     }
 }

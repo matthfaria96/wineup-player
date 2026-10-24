@@ -93,7 +93,7 @@ final class PlayerState: ObservableObject {
     private var loudnessTask: Task<Void, Never>?
     @Published var outputSampleRate: Double?
     @Published var eqBypass = false { didSet { syncEqualizer() } }
-    @Published var preset = "Custom"
+    @Published var preset = "Flat"
     @Published var presets: [EqPreset] = EqPreset.builtIns
     @Published var query = "" { didSet { scheduleLibrarySearch() } }
     @Published var libraryResults: [Track] = []
@@ -125,7 +125,7 @@ final class PlayerState: ObservableObject {
         UserDefaults.standard.object(forKey: key) as? Double ?? fallback
     }
     @Published var preamp = 0.0 { didSet { syncEqualizer() } }
-    @Published var bands: [Double] = SampleData.presets["Custom"] ?? [] { didSet { syncEqualizer() } }
+    @Published var bands: [Double] = Array(repeating: 0, count: 10) { didSet { syncEqualizer() } }
 
     private let audio = SFBAudioEngineAdapter()
     let library = LibraryController()
@@ -533,9 +533,19 @@ final class PlayerState: ObservableObject {
         guard let store = library.presetStore else { return }
         reloadPresets(store)
         guard let saved = store.loadCurrent() else { return }
+        eqBypass = saved.bypass
+        // A curva de exemplo das primeiras versões (e os presets antigos, mais fortes) voltam ao padrão atual.
+        if saved.bands == SampleData.legacyCustomCurve {
+            apply(preset: "Flat")
+            return
+        }
+        if let name = saved.presetName, EqPreset.isBuiltInName(name) {
+            apply(preset: name)
+            preamp = saved.preamp
+            return
+        }
         preamp = saved.preamp
         bands = saved.bands
-        eqBypass = saved.bypass
         preset = saved.presetName ?? "Custom"
     }
 

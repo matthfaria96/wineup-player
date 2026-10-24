@@ -21,6 +21,19 @@ final class MeterModel: ObservableObject {
     private var lastTick = ProcessInfo.processInfo.systemUptime
     private var barMeters = [BarMeter(), BarMeter()]
     private var currentSnapshot: MeterSnapshot?
+    /// Telas que mostram o medidor agora. O relógio só para quando a última sai: ao trocar de layout, a
+    /// tela nova aparece antes de a antiga sumir, e parar no `onDisappear` da antiga deixava as barras mortas.
+    private var viewers = 0
+
+    func attach(tap: LevelTap) {
+        viewers += 1
+        if timer == nil { start(tap: tap) }
+    }
+
+    func detach() {
+        viewers = max(0, viewers - 1)
+        if viewers == 0 { stop() }
+    }
 
     func start(tap: LevelTap) {
         stop()
@@ -44,7 +57,8 @@ final class MeterModel: ObservableObject {
 
         var targetLevels: [Float] = [0, 0]
         var targetBands = [Float](repeating: 0, count: Self.bandCount)
-        let fresh = tap.snapshot().flatMap { MeterMath.isStale(timestamp: $0.timestamp, now: now) ? nil : $0 }
+        // O tap entrega blocos de até ~0,1 s (4 800 quadros a 48 kHz): só conta como silêncio depois de 0,25 s sem dados.
+        let fresh = tap.snapshot().flatMap { MeterMath.isStale(timestamp: $0.timestamp, now: now, maxAge: 0.25) ? nil : $0 }
         currentSnapshot = fresh
         if let snap = fresh {
             targetLevels = (0..<2).map { channel in

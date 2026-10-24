@@ -53,13 +53,7 @@ enum SampleData {
         "Letras de verdade virão do .lrc",
     ]
 
-    static let presets: [String: [Double]] = [
-        "Flat": Array(repeating: 0, count: 10),
-        "Vintage": [6, -2, -4, -3, -2, 0, -3, -2, 4, 5],
-        "Bass Boost": [8, 6, 4, 2, 0, 0, 0, 0, 0, 0],
-        "Vocal": [-3, -2, 0, 3, 5, 5, 3, 1, -1, -2],
-        "Custom": [-6, 5, 3, -3, 4, -3, -1, 2, 6, 5],
-    ]
+    /// Curva "Custom" de exemplo que as primeiras versões usavam como EQ inicial.
+    static let legacyCustomCurve: [Double] = [-6, 5, 3, -3, 4, -3, -1, 2, 6, 5]
 
-    static let presetNames = ["Custom", "Flat", "Vintage", "Bass Boost", "Vocal"]
 }

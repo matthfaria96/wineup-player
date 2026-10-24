@@ -5,6 +5,9 @@ enum LayoutMode: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    /// Layout do primeiro uso: o Completo, com todos os painéis.
+    static let firstUse = LayoutMode.full
+
     var name: String {
         switch self {
         case .standard: "Padrão"

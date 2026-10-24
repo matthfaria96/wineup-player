@@ -131,7 +131,7 @@ struct LyricsPanel: View {
             Toggle("Buscar letras online quando a faixa não tiver", isOn: $state.lyricsOnline)
         } label: { Image(systemName: "ellipsis") }
             .skinMenuChrome(compact: true)
-            .help("Opções da letra")
+            .hint("Opções da letra", "Tamanho do texto, buscar letra online e outras opções do painel de letra.")
     }
 
     private var statusLine: String {

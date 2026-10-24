@@ -12,6 +12,7 @@ public final class SFBAudioEngineAdapter: NSObject, AudioEngine, AudioPlayer.Del
         var rgCache: [URL: ReplayGainInfo] = [:]
         var mode: ReplayGainMode = .off
         var preventClipping = true
+        var eq: (preamp: Double, bands: [Double], bypass: Bool) = (0, [], false)
         /// Correção de Som: todas as faixas no mesmo volume percebido (alvo em LUFS).
         var correction = false
         var target = SoundCorrection.defaultTarget
@@ -48,7 +49,11 @@ public final class SFBAudioEngineAdapter: NSObject, AudioEngine, AudioPlayer.Del
 
     public var preventClipping: Bool {
         get { state.withLock { $0.preventClipping } }
-        set { state.withLock { $0.preventClipping = newValue } }
+        set {
+            state.withLock { $0.preventClipping = newValue }
+            chain.setLimiter(on: newValue)
+            refreshEqualizer()
+        }
     }
 
     public override init() {
@@ -63,7 +68,10 @@ public final class SFBAudioEngineAdapter: NSObject, AudioEngine, AudioPlayer.Del
             engine.disconnectNodeOutput(source)
             chain.connect(engine, from: source, to: mixer, format: source.outputFormat(forBus: 0))
         }
-        meter.install(on: mixer)
+        chain.setLimiter(on: true)
+        // Medidor no fim da cadeia (com EQ e Correção de Som), antes do volume do app: as barras mostram a
+        // música, e não somem quando o volume do Wineup está baixo.
+        meter.install(on: chain.limiter)
     }
 
     // MARK: AudioEngine
@@ -121,8 +129,16 @@ public final class SFBAudioEngineAdapter: NSObject, AudioEngine, AudioPlayer.Del
     public func setReplayGain(linear: Double) { chain.setGain(linear: Float(linear)) }
 
     public func applyEqualizer(preamp: Double, bands: [Double], bypass: Bool) {
-        let global = EqMath.effectiveGlobalGain(preamp: preamp, bands: bands)
-        chain.applyEqualizer(globalGain: Float(global), bands: bands.map { Float($0) }, bypass: bypass)
+        state.withLock { $0.eq = (preamp, bands, bypass) }
+        refreshEqualizer()
+    }
+
+    /// Com o limitador ligado, o EQ só abaixa metade do pico das bandas: o resto o limitador segura sem
+    /// distorcer. Abaixar o pico inteiro deixava a música toda mais baixa e "pior" a cada reforço.
+    private func refreshEqualizer() {
+        let (eq, limited) = state.withLock { ($0.eq, $0.preventClipping) }
+        let global = EqMath.effectiveGlobalGain(preamp: eq.preamp, bands: eq.bands, share: limited ? 0.5 : 1)
+        chain.applyEqualizer(globalGain: Float(global), bands: eq.bands.map { Float($0) }, bypass: eq.bypass)
     }
 
     public var currentTime: TimeInterval { player.currentTime ?? 0 }
@@ -218,7 +234,7 @@ public final class SFBAudioEngineAdapter: NSObject, AudioEngine, AudioPlayer.Del
 
     public func audioPlayer(_ audioPlayer: AudioPlayer, audioEngineConfigurationChange userInfo: [AnyHashable: Any]?) {
         // O SFB já reconecta e reinicia o engine; só reinstalamos o tap e informamos a taxa.
-        meter.install(on: audioPlayer.mainMixerNode)
+        meter.install(on: chain.limiter)
         let rate = audioPlayer.outputNode.outputFormat(forBus: 0).sampleRate
         DispatchQueue.main.async { [weak self] in self?.onConfigurationChange?(rate) }
     }

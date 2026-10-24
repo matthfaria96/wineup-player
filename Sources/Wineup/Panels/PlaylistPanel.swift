@@ -73,7 +73,7 @@ struct PlaylistPanel: View {
                 .menuStyle(.borderlessButton)
                 .menuIndicator(.hidden)
                 .fixedSize()
-                .help("Ver esta pasta por: Pastas, Músicas, Álbuns, Artistas, Gêneros ou Playlists")
+                .hint("Ver por", "Mostra esta pasta como Pastas, Músicas, Álbuns, Artistas, Gêneros ou Playlists.")
                 Text(subtitle)
                     .font(.system(size: 12)).foregroundStyle(theme.mutedText).lineLimit(1)
             }
@@ -235,7 +235,7 @@ struct PlaylistPanel: View {
     private var footer: some View {
         HStack(spacing: 6) {
             ColorDots(selection: $state.markFilter)
-                .help("Filtrar por tag de cor")
+                .hint("Tags de cor", "Mostra só as músicas marcadas com a cor escolhida. Clique de novo para ver todas.")
             Spacer(minLength: 0)
             if let message = state.statusMessage {
                 Text(message)
@@ -247,8 +247,8 @@ struct PlaylistPanel: View {
             Spacer(minLength: 0)
             SkinSegmented(selection: $state.listStyle, options: [.compact, .detailed, .grid], width: 16) { style in
                 Image(systemName: style == .compact ? "list.bullet" : style == .detailed ? "list.bullet.rectangle" : "square.grid.2x2")
-                    .help(style.title)
                     .accessibilityLabel(style.title)
+                    .hint("Lista: \(style.title)", "Muda o jeito de mostrar a lista: compacta, detalhada ou em grade com capas.")
             }
             .frame(height: 22)
         }

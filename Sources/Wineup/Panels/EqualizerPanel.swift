@@ -7,6 +7,19 @@ struct EqualizerPanel: View {
     @Environment(\.theme) private var theme
     @StateObject private var dialogs = PresetDialogs()
     private let labels = ["60", "170", "310", "600", "1K", "2K", "5K", "8K", "12K", "16K"]
+    /// O que cada faixa de frequência muda no som (dica ao passar o mouse).
+    private let bandHints = [
+        "Subgrave: o peso da batida e do bumbo.",
+        "Grave: o corpo do baixo.",
+        "Grave-médio: calor. Demais deixa o som embolado.",
+        "Médio-grave: o corpo das vozes e dos violões.",
+        "Médio: a presença da voz e da caixa da bateria.",
+        "Médio-agudo: ataque e clareza. Demais cansa o ouvido.",
+        "Presença: a nitidez da voz e das consoantes.",
+        "Agudo: o brilho dos pratos.",
+        "Brilho: detalhe e ar.",
+        "Ar: o brilho mais alto, bem sutil.",
+    ]
 
     var body: some View {
         Panel(title: "FX") {
@@ -24,6 +37,7 @@ struct EqualizerPanel: View {
             Text("+12dB")
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(theme.text)
+                .hint("Escala do equalizador", "Cada controle sobe ou desce até 12 dB. A linha pontilhada é o 0 (sem mudança).")
             ChromeButton(isOn: state.eqBypass, action: { state.eqBypass.toggle() }) {
                 HStack(spacing: 4) {
                     Text("Bypass")
@@ -33,14 +47,16 @@ struct EqualizerPanel: View {
                 }
             }
             .frame(width: 74)
+            .hint(state.eqBypass ? "Bypass ligado" : "Bypass",
+                  "Desliga o equalizador para comparar com o som original, sem perder o seu ajuste.")
             ChromeButton(isOn: state.soundCorrection, spoken: "Correção de Som",
                          action: { state.soundCorrection.toggle() }) {
                 Image(systemName: "dial.medium")
             }
             .frame(width: 30)
-            .help(state.soundCorrection ? "Correção de Som ligada: todas as músicas no mesmo volume"
-                                        : "Correção de Som: deixar todas as músicas no mesmo volume")
-            SkinMenu(help: "Preset do equalizador") {
+            .hint(state.soundCorrection ? "Correção de Som: ligada" : "Correção de Som: desligada",
+                  "Deixa todas as músicas no mesmo volume: abaixa as altas e sobe as baixas. Não altera os arquivos. Nível e medição no menu ⋯ ao lado.")
+            SkinMenu {
                 Picker("Preset", selection: Binding(get: { state.preset }, set: { p in withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { state.apply(preset: p) } })) {
                     ForEach((state.presets.map(\.name) + ["Custom"]), id: \.self) { Text($0).tag($0) }
                 }
@@ -50,10 +66,18 @@ struct EqualizerPanel: View {
                 Text(state.preset).lineLimit(1).truncationMode(.tail).frame(maxWidth: 62, alignment: .leading)
             }
             .frame(maxWidth: .infinity)
+            .hint("Preset: \(state.preset)", presetHint)
             ChromeButton("Reset") { withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { state.apply(preset: "Flat"); state.preamp = 0 } }
                 .frame(width: 48)
+                .hint("Reset", "Volta todas as faixas e o Pre para 0 (Flat).")
             presetBar
+                .hint("Mais opções", "Salvar e apagar presets, nível da Correção de Som, medir o volume das músicas e ReplayGain.")
         }
+    }
+
+    private var presetHint: String {
+        let what = EqPreset.builtInDetails[state.preset] ?? (state.isUserPreset ? "Preset salvo por você." : "Ajuste feito à mão.")
+        return what + " Presets mudam o timbre ao seu gosto; não consertam a música."
     }
 
     /// Presets e ReplayGain num menu compacto, para não apertar os sliders.
@@ -79,7 +103,7 @@ struct EqualizerPanel: View {
                 Text("Por álbum").tag(ReplayGainMode.album)
             }
             .disabled(state.soundCorrection)
-            Toggle("Evitar clipping", isOn: $state.preventClipping)
+            Toggle("Evitar distorção (limitador)", isOn: $state.preventClipping)
         } label: {
             Image(systemName: "slider.horizontal.3").foregroundStyle(theme.text)
         }
@@ -103,8 +127,10 @@ struct EqualizerPanel: View {
     private var sliders: some View {
         HStack(spacing: 0) {
             column(value: $state.preamp, label: "Pre")
+                .hint("Pre (pré-amplificação)", "Volume geral antes do equalizador. Abaixe se o som distorcer com muitos reforços.")
             ForEach(Array(labels.enumerated()), id: \.offset) { index, label in
                 column(value: bandBinding(index), label: label)
+                    .hint(label.hasSuffix("K") ? "\(label.dropLast()) kHz" : "\(label) Hz", bandHints[index])
             }
         }
         .background(alignment: .center) {

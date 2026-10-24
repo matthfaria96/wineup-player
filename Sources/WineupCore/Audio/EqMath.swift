@@ -27,10 +27,11 @@ public enum EqMath {
         return peak
     }
 
-    /// Ganho global efetivo: preamp menos o pico positivo (compensação), limitado a +/-24 dB.
-    public static func effectiveGlobalGain(preamp: Double, bands: [Double], autoCompensate: Bool = true) -> Double {
+    /// Ganho global efetivo: preamp menos uma parte (`share`) do pico positivo (compensação), limitado a +/-24 dB.
+    public static func effectiveGlobalGain(preamp: Double, bands: [Double], autoCompensate: Bool = true,
+                                           share: Double = 1) -> Double {
         let pre = preamp.isFinite ? preamp : 0
-        let comp = autoCompensate ? max(0, peakResponseDB(bands: bands)) : 0
+        let comp = autoCompensate ? max(0, peakResponseDB(bands: bands)) * min(max(share, 0), 1) : 0
         return min(24, max(-24, pre - comp))
     }
 }

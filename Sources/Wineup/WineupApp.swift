@@ -7,7 +7,7 @@ import WineupCore
 struct WineupApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var state = PlayerState()
-    @AppStorage("layoutMode.v2") private var layoutRaw = LayoutMode.standard.rawValue
+    @AppStorage(DisplayKeys.layout) private var layoutRaw = LayoutMode.firstUse.rawValue
     @AppStorage("themeID") private var themeID = SkinStore.defaultID
     @ObservedObject private var skinStore = SkinStore.shared
     @Environment(\.openWindow) private var openWindow
@@ -141,6 +141,11 @@ struct WineupApp: App {
         }
         .defaultSize(width: 900, height: 640)
         .handlesExternalEvents(matching: [])
+
+        // Ajustes (⌘,): layout, tema, quadro da capa, som, sobre e licenças.
+        Settings {
+            SettingsView(state: state, layoutRaw: $layoutRaw, themeID: $themeID)
+        }
 
         Window("Sobre o Wineup Player", id: "about") {
             AboutView()

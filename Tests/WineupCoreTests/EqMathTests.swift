@@ -24,3 +24,10 @@ import Testing
     let cut = Array(repeating: -6.0, count: 10)
     #expect(EqMath.effectiveGlobalGain(preamp: 0, bands: cut) == 0)
 }
+
+@Test func halfShareLeavesTheRestToTheLimiter() {
+    let boost = [6.0, 5, 3, 1, 0, 0, 0, 0, 0, 0]
+    let full = EqMath.effectiveGlobalGain(preamp: 0, bands: boost)
+    let half = EqMath.effectiveGlobalGain(preamp: 0, bands: boost, share: 0.5)
+    #expect(abs(half - full / 2) < 0.001)
+}

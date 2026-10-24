@@ -6,61 +6,56 @@ import SwiftUI
 /// Sem capa, mostra o símbolo de nota no mesmo quadrado.
 struct ArtworkPanel: View {
     @ObservedObject var state: PlayerState
-    @AppStorage(VisualMode.key) private var modeRaw = VisualMode.cover.rawValue
+    @AppStorage(VisualMode.key) private var modeRaw = VisualMode.firstUse.rawValue
     @AppStorage(VideoCategoryStore.selectedKey) private var videoCategory = ""
     @ObservedObject private var videoStore = VideoCategoryStore.shared
     @State private var showVideoSettings = false
     @State private var showPicker = false
-    @State private var showInfo = false
-
-    private var infoText: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("Capa da Música", systemImage: "photo").font(.headline)
-            Text("A capa da música tocando. Se ela não tiver capa, aparece a arte da skin.")
-            Label("Arte da Skin", systemImage: "paintpalette").font(.headline)
-            Text("Sempre a ilustração da skin em uso.")
-            Label("Vídeos Personalizados", systemImage: "film").font(.headline)
-            Text("Animações e vídeos por categoria, no lugar da capa.")
-        }
-        .font(.system(size: 12))
-        .padding(14)
-        .frame(width: 280)
-    }
+    /// Cantos de tudo o que aparece no quadro: capa, arte do skin, cenas e vídeos.
+    static let corner: CGFloat = 8
 
     @Environment(\.theme) private var theme
 
-    private var mode: VisualMode { VisualMode(rawValue: modeRaw) ?? .cover }
+    private var mode: VisualMode { VisualMode(rawValue: modeRaw) ?? .firstUse }
 
     var body: some View {
         Panel(title: mode == .cover ? "Capa" : mode == .skinArt ? "Arte" : mode == .videos ? "Vídeo" : "Visual") {
             cover
-                .aspectRatio(1, contentMode: .fit)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .padding(.horizontal, 12).padding(.top, 4).padding(.bottom, 12)
         }
     }
 
+    /// Quadro quadrado fixo: o conteúdo preenche o quadro inteiro (cortando as sobras) e nunca muda o tamanho
+    /// dele, seja capa grande, pequena, retangular, arte do skin, cena animada ou vídeo.
     private var cover: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 6)
-                .fill(LinearGradient(colors: [theme.artworkTint.opacity(0.9), theme.artworkTint.opacity(0.35)],
-                                     startPoint: .top, endPoint: .bottom))
-            switch mode {
-            case .cover: artwork
-            case .skinArt: skinArtwork ?? AnyView(artwork)
-            case .videos: videos
-            default:
-                VisualScene(mode: mode, energy: { [weak state] in
-                    MainActor.assumeIsolated {
-                        let levels = state?.meterModel.levels ?? []
-                        return min(1, (levels.reduce(0, +) / Double(max(levels.count, 1))) * 1.4)
-                    }
-                }, seed: state.currentTrack?.id.seed ?? 0)
+        Color.clear
+            .aspectRatio(1, contentMode: .fit)
+            .overlay {
+                ZStack {
+                    LinearGradient(colors: [theme.artworkTint.opacity(0.9), theme.artworkTint.opacity(0.35)],
+                                   startPoint: .top, endPoint: .bottom)
+                    content
+                }
             }
+            .clipShape(RoundedRectangle(cornerRadius: Self.corner, style: .continuous))
+            .overlay(alignment: .topLeading) { formatBadge }
+            .overlay(alignment: .topTrailing) { modeMenu }
+    }
+
+    @ViewBuilder private var content: some View {
+        switch mode {
+        case .cover: artwork
+        case .skinArt: skinArtwork ?? AnyView(artwork)
+        case .videos: videos
+        default:
+            VisualScene(mode: mode, energy: { [weak state] in
+                MainActor.assumeIsolated {
+                    let levels = state?.meterModel.levels ?? []
+                    return min(1, (levels.reduce(0, +) / Double(max(levels.count, 1))) * 1.4)
+                }
+            }, seed: state.currentTrack?.id.seed ?? 0)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 6))
-        .overlay(alignment: .topLeading) { formatBadge }
-        .overlay(alignment: .topTrailing) { modeMenu }
     }
 
     /// Menu no canto da capa: capa, cenas animadas e o submenu de vídeos por categoria.
@@ -74,15 +69,8 @@ struct ArtworkPanel: View {
                 DispatchQueue.main.async { showVideoSettings = true }
             }
         }
-        .help("O que mostrar aqui")
-        .overlay(alignment: .leading) {
-            Button { showInfo.toggle() } label: { Image(systemName: "info.circle").font(.system(size: 11)) }
-                .buttonStyle(SkinButtonStyle(compact: true))
-                .offset(x: -30)
-                .help("Sobre os modos")
-                .accessibilityLabel("Sobre os modos do painel")
-                .popover(isPresented: $showInfo, arrowEdge: .bottom) { infoText }
-        }
+        .hint("O que mostrar aqui: \(mode.title)",
+              "Capa da música (sem capa, aparece a arte do skin), Arte do skin, cenas animadas que reagem à música ou seus vídeos por categoria.")
         .padding(8)
         .accessibilityLabel("Escolher o que aparece no lugar da capa")
         .sheet(isPresented: $showVideoSettings) { MotionLibraryView(modeRaw: $modeRaw, videoCategory: $videoCategory) }
@@ -108,7 +96,7 @@ struct ArtworkPanel: View {
             }
             .padding(20)
         } else {
-            VideoWall(clips: clips, trackKey: state.currentTrack?.id.seed ?? 0)
+            VideoWall(clips: clips, trackKey: state.currentTrack?.id.seed ?? 0, cornerRadius: Self.corner)
                 .overlay(alignment: .bottomLeading) {
                     Text(category?.name ?? "").font(.system(size: 10, weight: .semibold)).foregroundStyle(.white.opacity(0.85))
                         .padding(.horizontal, 7).padding(.vertical, 3)
@@ -129,18 +117,18 @@ struct ArtworkPanel: View {
     }
 
     @ViewBuilder private var artwork: some View {
-        ZStack {
-            if let image = state.cover {
-                Image(nsImage: image)
-                    .resizable()
-                    .scaledToFill()
-            } else if let skin = skinArtwork {
-                skin
-            } else {
-                Image(systemName: "music.note")
-                    .font(.system(size: 90, weight: .regular))
-                    .foregroundStyle(Color.black.opacity(0.28))
-            }
+        if let image = state.cover {
+            Image(nsImage: image)
+                .resizable()
+                .interpolation(.high)
+                .scaledToFill()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if let skin = skinArtwork {
+            skin
+        } else {
+            Image(systemName: "music.note")
+                .font(.system(size: 90, weight: .regular))
+                .foregroundStyle(Color.black.opacity(0.28))
         }
     }
 

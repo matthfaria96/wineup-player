@@ -18,11 +18,11 @@ struct NavBar: View {
                 Image(systemName: browser.isCurrentFavorite ? "star.fill" : "star")
             }
             .buttonStyle(SkinButtonStyle(on: browser.isCurrentFavorite, compact: true))
-            .help(browser.isCurrentFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos")
+            .hint(browser.isCurrentFavorite ? "Favorita" : "Favoritar pasta", browser.isCurrentFavorite ? "Clique para tirar esta pasta dos favoritos." : "Guarda esta pasta nos favoritos para voltar a ela rápido.")
             actionsMenu
             Button { browser.refresh() } label: { Image(systemName: "arrow.clockwise") }
                 .buttonStyle(SkinButtonStyle(compact: true))
-                .help("Atualizar")
+                .hint("Atualizar (⌘R)", "Lê a pasta de novo para mostrar músicas novas ou removidas.")
         }
         .font(.system(size: 12))
         .foregroundStyle(theme.text)
@@ -109,7 +109,7 @@ struct NavBar: View {
             Image(systemName: "ellipsis")
         }
         .skinMenuChrome(compact: true)
-        .help("Mais ações")
+        .hint("Mais ações", "Copiar o caminho, abrir no Finder, ir para outra pasta ou subir um nível.")
     }
 
     // MARK: Caminho clicável (a partir da pasta padrão, ou da pasta pessoal)

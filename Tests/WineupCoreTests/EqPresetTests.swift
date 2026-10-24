@@ -20,13 +20,16 @@ private let ten = Array(repeating: 0.0, count: 10)
 
 @Test func builtIns() {
     let names = EqPreset.builtIns.map(\.name)
-    #expect(names == ["Flat", "Vintage", "Bass Boost", "Vocal"])
-    #expect(EqPreset.builtIns[1].bands == [6, -2, -4, -3, -2, 0, -3, -2, 4, 5])
+    #expect(names.first == "Flat")
+    #expect(Set(names).count == names.count)
+    #expect(names.allSatisfy { EqPreset.builtInDetails[$0] != nil })
+    // Curvas suaves: nenhuma banda passa de +6 dB.
+    #expect(EqPreset.builtIns.allSatisfy { $0.bands.allSatisfy { $0 <= 6 } })
     #expect(EqPreset.builtIns.allSatisfy { EqPreset.validated(name: $0.name, preamp: $0.preamp, bands: $0.bands) == $0 })
 }
 
 @Test func codableRoundTrip() throws {
-    let p = EqPreset.builtIns[2]
+    let p = EqPreset.builtIns.first { $0.name == "Bass Boost" }!
     let back = try JSONDecoder().decode(EqPreset.self, from: JSONEncoder().encode(p))
     #expect(back == p)
 }

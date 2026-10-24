@@ -123,6 +123,8 @@ final class VideoCategoryStore: ObservableObject {
 struct VideoWall: NSViewRepresentable {
     let clips: [URL]
     let trackKey: Int
+    /// Cantos arredondados no próprio layer (o recorte do SwiftUI não alcança a camada de vídeo).
+    var cornerRadius: CGFloat = 0
 
     final class Coordinator {
         let player = AVQueuePlayer()
@@ -138,6 +140,9 @@ struct VideoWall: NSViewRepresentable {
         let layer = AVPlayerLayer(player: context.coordinator.player)
         layer.videoGravity = .resizeAspectFill
         layer.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
+        layer.cornerRadius = cornerRadius
+        layer.cornerCurve = .continuous
+        layer.masksToBounds = true
         view.layer = layer
         context.coordinator.player.isMuted = true
         context.coordinator.player.preventsDisplaySleepDuringVideoPlayback = false

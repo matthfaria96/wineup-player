@@ -3,6 +3,8 @@ import SwiftUI
 
 /// Janela "Sobre o Wineup Player", no mesmo padrão dos outros apps witchmymac.
 struct AboutView: View {
+    /// Dentro dos Ajustes: sem largura fixa de janela.
+    var compact = false
     @StateObject private var sheet = AboutSheetState()
 
     private var version: String {
@@ -52,8 +54,8 @@ struct AboutView: View {
             }
             .padding(.top, 10)
         }
-        .frame(width: 540)
-        .padding(.top, 36)
+        .frame(width: compact ? nil : 540)
+        .padding(.top, compact ? 20 : 36)
         .padding(.bottom, 32)
         .sheet(isPresented: $sheet.showLicenses) { OpenSourceLicensesView() }
     }

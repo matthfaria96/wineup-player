@@ -1,6 +1,6 @@
 import AVFoundation
 
-/// Cadeia de efeitos TimePitch -> EQ -> mixer de balanço (pan + ganho), independente do SFB.
+/// Cadeia de efeitos TimePitch -> EQ -> mixer de balanço (pan + ganho) -> limitador de pico, independente do SFB.
 public final class EffectChain: @unchecked Sendable {
     public static let bandFrequencies: [Float] = [60, 170, 310, 600, 1_000, 2_000, 5_000, 8_000, 12_000, 16_000]
 
@@ -9,6 +9,11 @@ public final class EffectChain: @unchecked Sendable {
     public let balance = AVAudioMixerNode()
     /// Mixer de downmix: no modo L/R entrega mono (esquerda+direita somadas) ao balanço.
     public let downmix = AVAudioMixerNode()
+    /// Limitador de pico da Apple (AUPeakLimiter): segura só o que passaria de 0 dBFS, sem distorcer.
+    /// Deixa o equalizador e a Correção de Som subirem o volume sem estourar. Desligado por padrão.
+    public let limiter = AVAudioUnitEffect(audioComponentDescription: AudioComponentDescription(
+        componentType: kAudioUnitType_Effect, componentSubType: kAudioUnitSubType_PeakLimiter,
+        componentManufacturer: kAudioUnitManufacturer_Apple, componentFlags: 0, componentFlagsMask: 0))
 
     public var first: AVAudioNode { timePitch }
 
@@ -20,10 +25,11 @@ public final class EffectChain: @unchecked Sendable {
             band.gain = 0
             band.bypass = false
         }
+        limiter.bypass = true
     }
 
     public func attach(to engine: AVAudioEngine) {
-        for node in [timePitch, eq, downmix, balance] as [AVAudioNode] { engine.attach(node) }
+        for node in [timePitch, eq, downmix, balance, limiter] as [AVAudioNode] { engine.attach(node) }
     }
 
     public func connect(_ engine: AVAudioEngine, from source: AVAudioNode, to sink: AVAudioNode, format: AVAudioFormat) {
@@ -44,7 +50,8 @@ public final class EffectChain: @unchecked Sendable {
         } else {
             engine.connect(downmix, to: balance, format: format)
         }
-        engine.connect(balance, to: sink, format: format)
+        engine.connect(balance, to: limiter, format: format)
+        engine.connect(limiter, to: sink, format: format)
     }
 
     public func setRate(_ rate: Float) {
@@ -62,6 +69,10 @@ public final class EffectChain: @unchecked Sendable {
 
     public func setPan(_ pan: Float) {
         balance.pan = Self.clamp(pan, -1, 1, fallback: 0)
+    }
+
+    public func setLimiter(on: Bool) {
+        limiter.bypass = !on
     }
 
     public func setGain(linear: Float) {
