@@ -322,7 +322,6 @@
  "Embutida no arquivo": "파일에 포함됨",
  "Embutidas": "기본 제공",
  "Embutir no arquivo de música": "음악 파일에 포함",
- "Encontrada com confiança baixa: confira em Correspondência": "낮은 신뢰도로 찾음: 일치 항목에서 확인하세요",
  "Encontrada com pouca confiança": "낮은 신뢰도로 찾음",
  "Encontrado, ainda não gravado: %@": "찾았지만 아직 기록되지 않음: %@",
  "Encontrado, falta salvar": "찾음, 저장 필요",
@@ -1002,5 +1001,6 @@
  "Prontas para salvar: %lld · Para revisar: %lld": "저장 준비: %lld · 검토 필요: %lld",
  "Revisar (%lld)": "검토(%lld)",
  "Ver histórico de gravações…": "기록 내역 보기…",
- "Ver os resultados encontrados e escolher o certo para esta música": "찾은 결과를 보고 이 노래에 맞는 것을 선택"
+ "Ver os resultados encontrados e escolher o certo para esta música": "찾은 결과를 보고 이 노래에 맞는 것을 선택",
+ "Encontrada com pouca confiança: clique duas vezes para escolher o resultado": "낮은 신뢰도로 찾음: 두 번 클릭하여 결과를 선택하세요"
 }

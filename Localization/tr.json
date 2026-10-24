@@ -322,7 +322,6 @@
  "Embutida no arquivo": "Dosyaya gömülü",
  "Embutidas": "Yerleşik",
  "Embutir no arquivo de música": "Müzik dosyasına göm",
- "Encontrada com confiança baixa: confira em Correspondência": "Düşük güvenle bulundu: Eşleşme bölümünden kontrol edin",
  "Encontrada com pouca confiança": "Düşük güvenle bulundu",
  "Encontrado, ainda não gravado: %@": "Bulundu, henüz yazılmadı: %@",
  "Encontrado, falta salvar": "Bulundu, kaydedilmedi",
@@ -1002,5 +1001,6 @@
  "Prontas para salvar: %lld · Para revisar: %lld": "Kaydetmeye hazır: %lld · İncelenecek: %lld",
  "Revisar (%lld)": "Gözden geçir (%lld)",
  "Ver histórico de gravações…": "Yazma geçmişini gör…",
- "Ver os resultados encontrados e escolher o certo para esta música": "Bulunan sonuçları gör ve bu şarkı için doğru olanı seç"
+ "Ver os resultados encontrados e escolher o certo para esta música": "Bulunan sonuçları gör ve bu şarkı için doğru olanı seç",
+ "Encontrada com pouca confiança: clique duas vezes para escolher o resultado": "Düşük güvenle bulundu: sonucu seçmek için çift tıklayın"
 }

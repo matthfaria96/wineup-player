@@ -81,29 +81,6 @@ let package = Package(
             ],
             path: "Sources/WineupDemo"
         ),
-        // Serviços de reprodução, sessão e configurações sobre Core/Library/Audio.
-        .target(
-            name: "WineupServices",
-            dependencies: [
-                "WineupCore",
-                "WineupLibrary",
-                "WineupAudio",
-                .product(name: "GRDB", package: "GRDB.swift"),
-                .product(name: "SFBAudioEngine", package: "SFBAudioEngine"),
-            ],
-            path: "Sources/WineupServices",
-            swiftSettings: [.unsafeFlags(["-strict-concurrency=complete"])]
-        ),
-        .testTarget(
-            name: "WineupServicesTests",
-            dependencies: [
-                "WineupServices",
-                "WineupLibrary",
-                "WineupCore",
-                .product(name: "GRDB", package: "GRDB.swift"),
-            ],
-            path: "Tests/WineupServicesTests"
-        ),
         .testTarget(
             name: "WineupAudioTests",
             dependencies: [

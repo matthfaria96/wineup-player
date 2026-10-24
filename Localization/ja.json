@@ -322,7 +322,6 @@
  "Embutida no arquivo": "ファイルに埋め込み",
  "Embutidas": "内蔵",
  "Embutir no arquivo de música": "音楽ファイルに埋め込む",
- "Encontrada com confiança baixa: confira em Correspondência": "低い信頼度で検出：「一致」で確認してください",
  "Encontrada com pouca confiança": "低い信頼度で検出",
  "Encontrado, ainda não gravado: %@": "検出、まだ書き込まれていません：%@",
  "Encontrado, falta salvar": "検出、未保存",
@@ -1002,5 +1001,6 @@
  "Prontas para salvar: %lld · Para revisar: %lld": "保存可能：%lld · 要確認：%lld",
  "Revisar (%lld)": "確認（%lld）",
  "Ver histórico de gravações…": "書き込み履歴を表示…",
- "Ver os resultados encontrados e escolher o certo para esta música": "見つかった結果を表示して、この曲に合うものを選ぶ"
+ "Ver os resultados encontrados e escolher o certo para esta música": "見つかった結果を表示して、この曲に合うものを選ぶ",
+ "Encontrada com pouca confiança: clique duas vezes para escolher o resultado": "信頼度が低い結果です：ダブルクリックして結果を選んでください"
 }

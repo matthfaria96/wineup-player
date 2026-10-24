@@ -43,7 +43,7 @@ enum RowLook {
         case .complete: parts.append(row.status == .saved ? String(localized: "Salva e completa")
                                   : String(localized: "Completa: título, artista, álbum, ano, faixa, gênero, capa e letra"))
         case .incomplete: parts.append(String(localized: "Falta: \(row.missingEssentials.joined(separator: ", "))"))
-        case .review: parts.append(String(localized: "Encontrada com confiança baixa: confira em Correspondência"))
+        case .review: parts.append(String(localized: "Encontrada com pouca confiança: clique duas vezes para escolher o resultado"))
         case .notFound: parts.append(String(localized: "Nada encontrado nas bases"))
         case .failed: parts.append(row.status.label)
         }

@@ -322,7 +322,6 @@
  "Embutida no arquivo": "Osadzony w pliku",
  "Embutidas": "Wbudowane",
  "Embutir no arquivo de música": "Osadź w pliku muzycznym",
- "Encontrada com confiança baixa: confira em Correspondência": "Znaleziono z niską pewnością: sprawdź w Dopasowaniu",
  "Encontrada com pouca confiança": "Znaleziono z niską pewnością",
  "Encontrado, ainda não gravado: %@": "Znaleziono, jeszcze nie zapisano: %@",
  "Encontrado, falta salvar": "Znaleziono, trzeba zachować",
@@ -1002,5 +1001,6 @@
  "Prontas para salvar: %lld · Para revisar: %lld": "Gotowe do zachowania: %lld · Do sprawdzenia: %lld",
  "Revisar (%lld)": "Sprawdź (%lld)",
  "Ver histórico de gravações…": "Pokaż historię zapisów…",
- "Ver os resultados encontrados e escolher o certo para esta música": "Zobacz znalezione wyniki i wybierz właściwy dla tego utworu"
+ "Ver os resultados encontrados e escolher o certo para esta música": "Zobacz znalezione wyniki i wybierz właściwy dla tego utworu",
+ "Encontrada com pouca confiança: clique duas vezes para escolher o resultado": "Znaleziono z niską pewnością: kliknij dwukrotnie, aby wybrać wynik"
 }

@@ -22,27 +22,63 @@ extension PlayerState {
     }
 
     /// Restaura a fila e a última faixa (sem tocar), prontas na posição salva.
+    /// Disco e banco são lidos fora da thread principal; o resultado volta para ela.
     func restoreSession(in list: [Track]) {
         guard queue.current == nil,
-              let path = UserDefaults.standard.string(forKey: Self.sessionPathKey),
-              Self.keyExists(path) else { return }
-        let id = TrackID(stableKey: URL(fileURLWithPath: path).standardizedFileURL.path)
-        let savedPaths = (UserDefaults.standard.stringArray(forKey: Self.sessionQueueKey) ?? [])
-            .filter(Self.keyExists)
-        let byID = Dictionary(list.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-        let restored = savedPaths.map { p -> Track in
-            let key = TrackID(stableKey: URL(fileURLWithPath: p).standardizedFileURL.path)
-            return byID[key] ?? browser.track(atPath: p)
+              let path = UserDefaults.standard.string(forKey: Self.sessionPathKey) else { return }
+        let saved = UserDefaults.standard.stringArray(forKey: Self.sessionQueueKey) ?? []
+        let position = UserDefaults.standard.double(forKey: Self.sessionPositionKey)
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard Self.keyExists(path) else { return }
+            let plan = Self.restorePlan(path: path, saved: saved.filter(Self.keyExists), list: list)
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.browser.tracks(atPaths: plan.lookups) { found in
+                    self.applyRestore(plan, found: found, list: list, position: position)
+                }
+            }
         }
-        let source = restored.contains { $0.id == id } ? restored
-            : (list.contains { $0.id == id } ? list : [browser.track(atPath: path)])
-        guard let index = source.firstIndex(where: { $0.id == id }) else { return }
+    }
+
+    /// O que restaurar: a fila salva (ou a lista, ou só a faixa) e os caminhos a buscar no banco.
+    struct RestorePlan {
+        let id: TrackID
+        let savedPaths: [String]
+        let lookups: [String]
+        let useSaved: Bool
+        let useList: Bool
+    }
+
+    private static func trackID(_ path: String) -> TrackID {
+        TrackID(stableKey: URL(fileURLWithPath: path).standardizedFileURL.path)
+    }
+
+    private static func restorePlan(path: String, saved: [String], list: [Track]) -> RestorePlan {
+        let id = trackID(path)
+        let known = Set(list.map(\.id))
+        let useSaved = saved.contains { trackID($0) == id }
+        let useList = !useSaved && known.contains(id)
+        let lookups = useSaved ? saved.filter { !known.contains(trackID($0)) } : (useList ? [] : [path])
+        return RestorePlan(id: id, savedPaths: saved, lookups: lookups, useSaved: useSaved, useList: useList)
+    }
+
+    private func applyRestore(_ plan: RestorePlan, found: [Track], list: [Track], position: Double) {
+        // O usuário já começou a tocar algo: não substitui a fila dele.
+        guard queue.current == nil, currentID == nil else { return }
+        let source: [Track]
+        if plan.useSaved {
+            let byID = Dictionary(list.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+            var extra = found.makeIterator()
+            source = plan.savedPaths.compactMap { byID[Self.trackID($0)] ?? extra.next() }
+        } else {
+            source = plan.useList ? list : found
+        }
+        guard let index = source.firstIndex(where: { $0.id == plan.id }) else { return }
         queue = PlaybackQueue(items: source, currentIndex: index).withRepeat(repeatMode)
         let track = source[index]
         lastPlayed = track
         currentID = track.id
         selectedID = track.id
-        let position = UserDefaults.standard.double(forKey: Self.sessionPositionKey)
         progress = position
         resumeFraction = position
         refreshDetailsPublic(for: track)

@@ -322,7 +322,6 @@
  "Embutida no arquivo": "Вбудований у файл",
  "Embutidas": "Вбудовані",
  "Embutir no arquivo de música": "Вбудувати в музичний файл",
- "Encontrada com confiança baixa: confira em Correspondência": "Знайдено з низькою впевненістю: перевірте в розділі «Збіг»",
  "Encontrada com pouca confiança": "Знайдено з низькою впевненістю",
  "Encontrado, ainda não gravado: %@": "Знайдено, ще не записано: %@",
  "Encontrado, falta salvar": "Знайдено, потрібно зберегти",
@@ -1002,5 +1001,6 @@
  "Prontas para salvar: %lld · Para revisar: %lld": "Готово до збереження: %lld · На перевірку: %lld",
  "Revisar (%lld)": "Перевірити (%lld)",
  "Ver histórico de gravações…": "Показати історію записів…",
- "Ver os resultados encontrados e escolher o certo para esta música": "Переглянути знайдені результати та вибрати правильний для цієї пісні"
+ "Ver os resultados encontrados e escolher o certo para esta música": "Переглянути знайдені результати та вибрати правильний для цієї пісні",
+ "Encontrada com pouca confiança: clique duas vezes para escolher o resultado": "Знайдено з низькою впевненістю: двічі клацніть, щоб вибрати результат"
 }

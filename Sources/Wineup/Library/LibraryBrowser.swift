@@ -645,6 +645,13 @@ final class LibraryBrowser: ObservableObject {
     func resolvePath(path: String, title: String, artist: String) -> String? {
         (try? collections?.resolvePath(path: path, title: title, artist: artist)) ?? nil
     }
+
+    /// Resolve vários caminhos (perfil importado) na fila do banco; `done` roda na thread principal, na mesma ordem.
+    func resolvePaths(_ items: [(path: String, title: String, artist: String)], done: @escaping ([String?]) -> Void) {
+        inBackground({ store in
+            items.map { (try? store.resolvePath(path: $0.path, title: $0.title, artist: $0.artist)) ?? nil }
+        }) { done($0 ?? Array(repeating: nil, count: items.count)) }
+    }
 }
 
 /// Ações de caminho compartilhadas (copiar, Finder).

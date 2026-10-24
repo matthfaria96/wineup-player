@@ -1,5 +1,6 @@
 import AppKit
 import WineupCore
+import WineupLibrary
 import SwiftUI
 
 /// Linha de faixa usada na playlist e na busca.
@@ -22,7 +23,7 @@ struct TrackRow: View {
     var body: some View {
         HStack(spacing: 6) {
             if detailed {
-                RowCover(url: track.url)
+                RowCover(url: track.url, album: track.album)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(track.title).lineLimit(1)
                     Text([track.artist, track.album].compactMap { $0 }.joined(separator: " · "))
@@ -65,6 +66,7 @@ struct TrackRow: View {
 /// Miniatura da capa no modo "Com detalhes" (nota musical enquanto carrega ou sem capa).
 private struct RowCover: View {
     let url: URL?
+    let album: String?
     @StateObject private var covers = CoverLoader()
     @Environment(\.theme) private var theme
 
@@ -79,7 +81,7 @@ private struct RowCover: View {
                 }
             }
             .clipShape(RoundedRectangle(cornerRadius: 4))
-            .onAppear { covers.load(url) }
+            .onAppear { covers.load(url, album: album) }
             .onDisappear { covers.cancel() }
     }
 }
@@ -110,7 +112,7 @@ struct TrackTile: View {
             Text(track.artist).font(.system(size: 10)).foregroundStyle(theme.mutedText).lineLimit(1)
         }
         .foregroundStyle(isCurrent ? theme.currentRow : theme.text)
-        .onAppear { covers.load(track.url) }
+        .onAppear { covers.load(track.url, album: track.album) }
         .onDisappear { covers.cancel() }
     }
 }
@@ -121,10 +123,12 @@ final class CoverLoader: ObservableObject {
     private var requested: URL?
     private var waiter: CoverQueue.Waiter?
 
-    func load(_ url: URL?) {
+    /// Com `album`, as faixas do mesmo álbum na mesma pasta dividem uma miniatura só.
+    func load(_ url: URL?, album: String? = nil) {
         guard image == nil, let url, requested != url else { return }
         requested = url
-        waiter = CoverQueue.shared.request(url) { [weak self] found in
+        let albumKey = album.flatMap { LibraryBrowser.isUnknownAlbum($0) ? nil : CoverKey.album(for: url, album: $0) }
+        waiter = CoverQueue.shared.request(url, albumKey: albumKey) { [weak self] found in
             self?.waiter = nil
             if let found { self?.image = found }
         }
@@ -142,15 +146,20 @@ final class CoverLoader: ObservableObject {
     }
 }
 
-/// Fila única das miniaturas: no máximo 4 leituras ao mesmo tempo, pedidos iguais juntos,
-/// cache com limite de memória. Toda a contabilidade roda na thread principal.
+/// Fila única das miniaturas: no máximo 4 leituras ao mesmo tempo, pedidos iguais juntos
+/// (mesmo arquivo ou mesmo álbum na pasta), cache com limite de memória.
+/// Toda a contabilidade roda na thread principal.
 final class CoverQueue {
     static let shared = CoverQueue()
 
     final class Waiter {
         let url: URL
+        /// Pedido em andamento a que este espera pertence (álbum ou arquivo).
+        fileprivate(set) var key: String
         let done: (NSImage?) -> Void
-        init(url: URL, done: @escaping (NSImage?) -> Void) { self.url = url; self.done = done }
+        init(url: URL, key: String, done: @escaping (NSImage?) -> Void) {
+            self.url = url; self.key = key; self.done = done
+        }
     }
 
     private struct Pending {
@@ -171,49 +180,91 @@ final class CoverQueue {
         cache.countLimit = 600
         return cache
     }()
+    /// Segundo nível: miniatura por álbum (pasta + álbum) ou por imagem da pasta.
+    /// Um álbum de 15 faixas decodifica a capa uma vez só.
+    private let albumCache: NSCache<NSString, NSImage> = {
+        let cache = NSCache<NSString, NSImage>()
+        cache.totalCostLimit = 24 * 1024 * 1024
+        cache.countLimit = 400
+        return cache
+    }()
     /// Faixas sem capa (não relê o arquivo a cada vez que a linha aparece).
     private let misses = NSCache<NSURL, NSNumber>()
-    private var pending: [URL: Pending] = [:]
+    private var pending: [String: Pending] = [:]
 
     /// Pede a miniatura; `done` roda na thread principal. Devolve nil quando já respondeu na hora.
-    func request(_ url: URL, done: @escaping (NSImage?) -> Void) -> Waiter? {
+    func request(_ url: URL, albumKey: String? = nil, done: @escaping (NSImage?) -> Void) -> Waiter? {
         if let cached = cache.object(forKey: url as NSURL) { done(cached); return nil }
         if misses.object(forKey: url as NSURL) != nil { done(nil); return nil }
-        let waiter = Waiter(url: url, done: done)
-        if pending[url] != nil {
-            pending[url]?.waiters.append(waiter)
-            return waiter
-        }
-        let operation = BlockOperation()
-        operation.addExecutionBlock { [weak operation, weak self] in
-            guard operation?.isCancelled == false else { return }
-            let found = TrackLoader.thumbnail(for: url)
-            DispatchQueue.main.async { self?.finish(url, image: found) }
-        }
-        pending[url] = Pending(waiters: [waiter], operation: operation)
-        queue.addOperation(operation)
+        if let albumKey, let shared = albumCache.object(forKey: albumKey as NSString) { done(shared); return nil }
+        let waiter = Waiter(url: url, key: albumKey ?? url.path, done: done)
+        enqueue(waiter, albumKey: albumKey)
         return waiter
     }
 
     func cancel(_ waiter: Waiter) {
-        guard var entry = pending[waiter.url] else { return }
+        guard var entry = pending[waiter.key] else { return }
         entry.waiters.removeAll { $0 === waiter }
         if entry.waiters.isEmpty {
             entry.operation.cancel()
-            pending[waiter.url] = nil
+            pending[waiter.key] = nil
         } else {
-            pending[waiter.url] = entry
+            pending[waiter.key] = entry
         }
     }
 
-    private func finish(_ url: URL, image: NSImage?) {
-        if let image {
-            cache.setObject(image, forKey: url as NSURL, cost: Int(image.size.width * image.size.height * 4))
-        } else {
-            misses.setObject(true, forKey: url as NSURL)
+    /// Junta ao pedido em andamento com a mesma chave ou cria a leitura.
+    private func enqueue(_ waiter: Waiter, albumKey: String?) {
+        let key = waiter.key
+        if pending[key] != nil {
+            pending[key]?.waiters.append(waiter)
+            return
         }
-        let waiters = pending.removeValue(forKey: url)?.waiters ?? []
+        let url = waiter.url
+        let operation = BlockOperation()
+        operation.addExecutionBlock { [weak operation, weak self] in
+            guard operation?.isCancelled == false, let self else { return }
+            let found = self.decode(url)
+            DispatchQueue.main.async {
+                self.finish(key, url: url, albumKey: albumKey, image: found.image, folderKey: found.folderKey)
+            }
+        }
+        pending[key] = Pending(waiters: [waiter], operation: operation)
+        queue.addOperation(operation)
+    }
+
+    /// Fora da thread principal: capa embutida; sem ela, a imagem da pasta (decodificada uma vez por pasta).
+    private func decode(_ url: URL) -> (image: NSImage?, folderKey: String?) {
+        if let data = TrackLoader.embeddedCoverData(for: url) { return (TrackLoader.thumbnail(data: data), nil) }
+        guard let file = FolderCover.url(for: url) else { return (nil, nil) }
+        let folderKey = CoverKey.folder(file.deletingLastPathComponent().path)
+        if let shared = albumCache.object(forKey: folderKey as NSString) { return (shared, folderKey) }
+        return ((try? Data(contentsOf: file)).flatMap { TrackLoader.thumbnail(data: $0) }, folderKey)
+    }
+
+    private func finish(_ key: String, url: URL, albumKey: String?, image: NSImage?, folderKey: String?) {
+        let waiters = pending.removeValue(forKey: key)?.waiters ?? []
+        guard let image else {
+            misses.setObject(true, forKey: url as NSURL)
+            for waiter in waiters {
+                // Outra faixa do álbum pode ter capa própria: tenta o arquivo dela.
+                if waiter.url == url { waiter.done(nil) } else { retryAlone(waiter) }
+            }
+            return
+        }
+        let cost = Int(image.size.width * image.size.height * 4)
+        cache.setObject(image, forKey: url as NSURL, cost: cost)
+        if let albumKey { albumCache.setObject(image, forKey: albumKey as NSString, cost: cost) }
+        if let folderKey { albumCache.setObject(image, forKey: folderKey as NSString, cost: cost) }
         for waiter in waiters { waiter.done(image) }
+    }
+
+    /// Refaz o pedido só pelo arquivo (sem juntar ao álbum).
+    private func retryAlone(_ waiter: Waiter) {
+        if let cached = cache.object(forKey: waiter.url as NSURL) { waiter.done(cached); return }
+        if misses.object(forKey: waiter.url as NSURL) != nil { waiter.done(nil); return }
+        waiter.key = waiter.url.path
+        enqueue(waiter, albumKey: nil)
     }
 }
 

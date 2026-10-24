@@ -148,8 +148,8 @@ Plans:
 | 1. Fundação e Infraestrutura de Teste | 3/3 | Complete    | 2026-10-20 |
 | 2. Dados e Escrita Segura | 6/6 | Complete    | 2026-10-20 |
 | 3. Áudio Real | 6/6 | Complete    | 2026-10-20 |
-| 4. Serviços de Reprodução | 0/0 | Não iniciada | - |
-| 5. Interface sobre Serviços Reais | 0/0 | Não iniciada | - |
-| 6. Integração com o Sistema e Distribuição | 0/0 | Não iniciada | - |
-| 7. Library Fixer v1 (offline) | 0/0 | Não iniciada | - |
-| 8. Provedores Online e Fingerprint | 0/0 | Não iniciada | - |
+| 4. Serviços de Reprodução | — | Entregue fora dos planos (ver STATE.md) | 2026-10-23 |
+| 5. Interface sobre Serviços Reais | — | Entregue fora dos planos (ver STATE.md) | 2026-10-24 |
+| 6. Integração com o Sistema e Distribuição | — | Parcial: falta release assinado/notarizado | - |
+| 7. Library Fixer v1 (offline) | — | Entregue fora dos planos (janela Metadados) | 2026-10-24 |
+| 8. Provedores Online e Fingerprint | — | Entregue fora dos planos (ver STATE.md) | 2026-10-23 |

@@ -1,9 +1,3 @@
-
-
-
-
-
-
 # Estado do Projeto
 
 ## Referência do Projeto
@@ -11,68 +5,63 @@
 Ver: .planning/PROJECT.md (atualizado em 2026-10-19)
 
 **Valor central:** Tocar a biblioteca local do usuário de forma confiável, com a interface clássica de painéis, e nunca danificar os arquivos dele.
-**Foco atual:** Fase 1 - Fundação e Infraestrutura de Teste
+**Foco atual:** Estabilizar e testar antes do primeiro release (o usuário pediu para NÃO publicar ainda).
 
 ## Posição Atual
 
-Fase: 1 de 8 (Fundação e Infraestrutura de Teste)
-Plano: 0 de 0 na fase atual
-Status: Ready to plan
-Última atividade: 2026-10-20 - Roadmap criado
+As fases 1 a 3 foram feitas pelo fluxo GSD (planos em `phases/`). Depois disso o trabalho seguiu por pedidos
+diretos do usuário, fora dos planos, e entregou na prática quase tudo das fases 4, 5, 7 e 8 e parte da 6:
 
-Progresso: [░░░░░░░░░░] 0%
+| Fase | Situação real | O que falta |
+|------|---------------|-------------|
+| 4. Serviços de Reprodução | Entregue (fila, playlists, sessão, capas) direto no app | — |
+| 5. Interface sobre Serviços Reais | Entregue: painéis, discografia, letras sincronizadas, skins próprias, dicas ao passar o mouse | — |
+| 6. Integração e Distribuição | Parcial: teclas de mídia, atalhos, player na barra de menus | Release assinado, notarizado e em `.dmg` |
+| 7. Library Fixer v1 | Entregue como janela "Metadados" (diagnóstico, prévia, lote, desfazer, edição) | — |
+| 8. Provedores Online | Entregue: MusicBrainz, Cover Art Archive, iTunes, letras online, AcoustID opcional, consentimento | — |
 
-## Métricas de Desempenho
+Última atividade: 2026-10-24 — revisão geral de desempenho, traduções e limpeza da tela de Metadados.
 
-**Velocidade:**
-- Planos concluídos: 0
-- Duração média: -
-- Tempo total: 0 horas
+## Feito em 2026-10-23/24 (commits d52d1d2 … 5deacb6 e seguintes)
 
-**Por fase:**
-
-| Fase | Planos | Total | Média/Plano |
-|------|--------|-------|-------------|
-| - | - | - | - |
+- Desempenho e travamentos: Metadados (salvar/desfazer/lixeira fora da thread principal, índices, cache),
+  janela principal (PlayerState dividido em modelos pequenos, temas e busca em cache, animações pausam com a
+  janela oculta), áudio (falhas de leitura pulam a faixa, seek no início para CUE/sessão, medição de volume só
+  com a Correção de Som, repetir uma, motor para no fim).
+- EQ: presets suaves com descrição e limitador de pico da Apple; Correção de Som por EBU R128.
+- Skins: ordem Musical, Retro, PixelArt, Sci-Fi, Neon Gótico, Emoboy (Noite Estrelada removida).
+- Traduções: 16 idiomas + pt-BR (`scripts/l10n-extract.sh`, `scripts/l10n.py`, `Localization/*.json`),
+  idioma escolhido em Ajustes › Geral (padrão: Sistema).
+- Ajustes (⌘,) no padrão do MacDash; dicas `.hint` em toda a tela principal.
+- Metadados: barra enxuta (Corrigir tudo, Buscar, Histórico, Opções, Mostrar), faixa de aprovação com
+  "prontas para salvar" e "para revisar", filtro Para revisar, botão Escolher resultado….
+- Removido código morto: módulo `WineupServices` (PlaybackController/SessionStore não eram usados).
+- Músicas de demonstração apagadas a pedido; o usuário usa a própria pasta ~/Music.
 
 ## Contexto Acumulado
 
 ### Decisões
 
-- Camadas horizontais (escolha do usuário), com build demonstrável e app tocando ao fim de cada fase
-- Sem sandbox, Developer ID + hardened runtime; acesso a pastas atrás de `LibraryRoot` (registrar na Fase 1)
-- Infraestrutura de escrita segura (backup, journal, verificação) entra na Fase 2, antes de qualquer UI do Fixer
-- Swift Testing como padrão; plano B: toolchain swift.org ou executável `WineupSelfTests`
+- Camadas horizontais, com build demonstrável e app tocando ao fim de cada fase
+- Sem sandbox, Developer ID + hardened runtime; acesso a pastas atrás de `LibraryRoot`
+- Escrita segura (backup, journal, verificação) antes de qualquer gravação de tags
+- Swift Testing; testes com `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./scripts/test.sh`
+- Texto em português do código é a chave de tradução; todo texto novo de tela precisa ser traduzível
+- Não publicar (GitHub/site) até o usuário pedir
 
 ### Pendências
 
-Nenhuma ainda.
+- O usuário vai testar: troca de idioma + Reabrir, faixa de aprovação e Escolher resultado nos Metadados,
+  dicas ao passar o mouse, repetir uma, retomar sessão, pulo de arquivo corrompido
+- Revisão nativa das traduções além de inglês e espanhol
+- Release: versão (ainda 0.1.0), assinatura, notarização, `.dmg`, página no witchmymac.com
 
 ### Bloqueios/Preocupações
 
-- [VERIFICAR] `swift test` só com Command Line Tools (Fase 1)
-- [VERIFICAR] GRDB 7.11.1 compila com CLT e tools 5.9 (Fases 1/2)
-- Pesquisa de fase necessária antes de planejar: 2, 3, 6, 7, 8
+- Nenhum bloqueio. Capturas de tela: usar `WINEUP_OPEN_WINDOW` e `WINEUP_TEST_SCREEN=left` com `open -g`
+  para não tirar o foco do usuário.
 
 ## Continuidade da Sessão
 
-Última sessão: 2026-10-20
-Parou em: Roadmap criado, aguardando aprovação
-Arquivo de retomada: Nenhum
-
-## Atualização 2026-10-23 (fora das fases: pedidos diretos do usuário)
-
-Feito e testado (189 testes, conferência visual no app):
-- Gerenciador de metadados no estilo Mp3tag: busca por álbum (MusicBrainz, etapa 2 com campos marcáveis e faixas × arquivos por arrasto), procurar capas (Cover Art Archive + iTunes), letras (catálogo principal, reserva NetEase, Musixmatch com token do usuário; a tela não cita fontes), visualizador de .lrc, histórico com desfazer por lote, duplicadas → Lixeira com confirmação, ignorar problemas, colunas técnicas configuráveis.
-- Consentimento antes da primeira consulta online (NET-02).
-- Player: velocidade em menu (0,5×–3×), atalhos clássicos Z X C V B/setas, modo mini sempre por cima, página do artista (Reproduzir tudo/Embaralhar sem repetir single×álbum), VoiceOver nos controles próprios, arrastar painéis por coluna, janela única sem restauração de sessão de janelas.
-- Shazam removido (usuário não quer).
-
-Pendentes conscientes:
-- DISC-02 (ordem de capas com imagem da pasta), UI-02 (formato de skin documentado), SYS-04 (assinatura: sem certificado), SYS-05 (conferir versões nos avisos), NET-01 (liga/desliga por provedor; hoje é um consentimento geral), NET-04 (opção de salvar capa ao lado em vez de embutir).
-
-## Atualização 2026-10-23 (2)
-- Correção de Som: medidor EBU R128 próprio (calibrado: seno 997 Hz = -3,01/-20 LUFS), medição em cache (loudness.json), ganho na reprodução com alvo -18/-14/-11 LUFS, sem estourar; mede ao entrar na fila e em lote.
-- Visual no lugar da capa: cenas desenhadas pelo app (aurora, fiorde, cidade, universo) reagindo ao som; "Seus vídeos" toca clipes de uma pasta do usuário (sem som). Conteúdo de terceiros (anime/filmes) não é embutido.
-- Temas: formato .wineuptheme (JSON, 14 cores), editor com prévia, embutidos editáveis com restaurar, importar/exportar (UI-02).
-- Player na barra de menus substituiu o modo mini.
+Última sessão: 2026-10-24
+Parou em: correções finais pedidas pelo usuário; aguardando os testes dele antes de qualquer release.

@@ -322,7 +322,6 @@
  "Embutida no arquivo": "Vložený v souboru",
  "Embutidas": "Vestavěné",
  "Embutir no arquivo de música": "Vložit do hudebního souboru",
- "Encontrada com confiança baixa: confira em Correspondência": "Nalezeno s nízkou jistotou: zkontrolujte ve Shodě",
  "Encontrada com pouca confiança": "Nalezeno s nízkou jistotou",
  "Encontrado, ainda não gravado: %@": "Nalezeno, zatím nezapsáno: %@",
  "Encontrado, falta salvar": "Nalezeno, zbývá uložit",
@@ -1002,5 +1001,6 @@
  "Prontas para salvar: %lld · Para revisar: %lld": "Připraveno k uložení: %lld · Ke kontrole: %lld",
  "Revisar (%lld)": "Zkontrolovat (%lld)",
  "Ver histórico de gravações…": "Zobrazit historii zápisů…",
- "Ver os resultados encontrados e escolher o certo para esta música": "Zobrazit nalezené výsledky a vybrat správný pro tuto skladbu"
+ "Ver os resultados encontrados e escolher o certo para esta música": "Zobrazit nalezené výsledky a vybrat správný pro tuto skladbu",
+ "Encontrada com pouca confiança: clique duas vezes para escolher o resultado": "Nalezeno s nízkou jistotou: dvojitým kliknutím vyberte výsledek"
 }

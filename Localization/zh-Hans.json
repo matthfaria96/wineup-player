@@ -322,7 +322,6 @@
  "Embutida no arquivo": "嵌入在文件中",
  "Embutidas": "内置",
  "Embutir no arquivo de música": "嵌入到音乐文件",
- "Encontrada com confiança baixa: confira em Correspondência": "以低可信度找到：请在“匹配”中检查",
  "Encontrada com pouca confiança": "以低可信度找到",
  "Encontrado, ainda não gravado: %@": "已找到，尚未写入：%@",
  "Encontrado, falta salvar": "已找到，尚未存储",
@@ -1002,5 +1001,6 @@
  "Prontas para salvar: %lld · Para revisar: %lld": "可存储：%lld · 待检查：%lld",
  "Revisar (%lld)": "检查（%lld）",
  "Ver histórico de gravações…": "查看写入历史记录…",
- "Ver os resultados encontrados e escolher o certo para esta música": "查看找到的结果并为这首歌曲选择正确的"
+ "Ver os resultados encontrados e escolher o certo para esta música": "查看找到的结果并为这首歌曲选择正确的",
+ "Encontrada com pouca confiança: clique duas vezes para escolher o resultado": "匹配可信度低：连按两次以选择结果"
 }

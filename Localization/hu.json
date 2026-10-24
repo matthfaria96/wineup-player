@@ -322,7 +322,6 @@
  "Embutida no arquivo": "Beágyazva a fájlba",
  "Embutidas": "Beépített",
  "Embutir no arquivo de música": "Beágyazás a zenefájlba",
- "Encontrada com confiança baixa: confira em Correspondência": "Alacsony megbízhatósággal található: ellenőrizd az Egyezés részben",
  "Encontrada com pouca confiança": "Alacsony megbízhatósággal található",
  "Encontrado, ainda não gravado: %@": "Megtalálva, még nincs mentve: %@",
  "Encontrado, falta salvar": "Megtalálva, mentésre vár",
@@ -1002,5 +1001,6 @@
  "Prontas para salvar: %lld · Para revisar: %lld": "Mentésre kész: %lld · Ellenőrizendő: %lld",
  "Revisar (%lld)": "Ellenőrzés (%lld)",
  "Ver histórico de gravações…": "Kiírási előzmények megtekintése…",
- "Ver os resultados encontrados e escolher o certo para esta música": "A talált találatok megtekintése és a helyes kiválasztása ehhez a dalhoz"
+ "Ver os resultados encontrados e escolher o certo para esta música": "A talált találatok megtekintése és a helyes kiválasztása ehhez a dalhoz",
+ "Encontrada com pouca confiança: clique duas vezes para escolher o resultado": "Alacsony megbízhatósággal található: kattints duplán az eredmény kiválasztásához"
 }

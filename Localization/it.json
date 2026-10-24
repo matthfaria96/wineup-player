@@ -322,7 +322,6 @@
  "Embutida no arquivo": "Incorporato nel file",
  "Embutidas": "Integrate",
  "Embutir no arquivo de música": "Incorpora nel file musicale",
- "Encontrada com confiança baixa: confira em Correspondência": "Trovato con affidabilità bassa: controlla in Corrispondenza",
  "Encontrada com pouca confiança": "Trovato con poca affidabilità",
  "Encontrado, ainda não gravado: %@": "Trovato, non ancora scritto: %@",
  "Encontrado, falta salvar": "Trovato, da salvare",
@@ -1002,5 +1001,6 @@
  "Prontas para salvar: %lld · Para revisar: %lld": "Pronti da salvare: %lld · Da rivedere: %lld",
  "Revisar (%lld)": "Rivedi (%lld)",
  "Ver histórico de gravações…": "Vedi la cronologia delle scritture…",
- "Ver os resultados encontrados e escolher o certo para esta música": "Vedi i risultati trovati e scegli quello giusto per questo brano"
+ "Ver os resultados encontrados e escolher o certo para esta música": "Vedi i risultati trovati e scegli quello giusto per questo brano",
+ "Encontrada com pouca confiança: clique duas vezes para escolher o resultado": "Trovata con bassa affidabilità: fai doppio clic per scegliere il risultato"
 }

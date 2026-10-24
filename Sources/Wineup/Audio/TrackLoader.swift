@@ -72,16 +72,23 @@ enum TrackLoader {
     /// Miniatura reduzida da capa embutida (decodifica já no tamanho final, sem a imagem inteira).
     /// Capa: a embutida (frontal primeiro); sem ela, a imagem da pasta (cover.jpg, folder.jpg...).
     static func coverData(for url: URL) -> Data? {
-        if let file = try? AudioFile(readingPropertiesAndMetadataFrom: url) {
-            let pics = file.metadata.attachedPictures
-            if let p = pics.first(where: { $0.type == .frontCover }) ?? pics.first { return p.imageData }
-        }
-        return FolderCover.url(for: url).flatMap { try? Data(contentsOf: $0) }
+        embeddedCoverData(for: url) ?? FolderCover.url(for: url).flatMap { try? Data(contentsOf: $0) }
+    }
+
+    /// Só a capa embutida no arquivo (frontal primeiro).
+    static func embeddedCoverData(for url: URL) -> Data? {
+        guard let file = try? AudioFile(readingPropertiesAndMetadataFrom: url) else { return nil }
+        let pics = file.metadata.attachedPictures
+        return (pics.first(where: { $0.type == .frontCover }) ?? pics.first)?.imageData
     }
 
     static func thumbnail(for url: URL, maxPixel: Int = 160) -> NSImage? {
-        guard let data = coverData(for: url),
-              let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        coverData(for: url).flatMap { thumbnail(data: $0, maxPixel: maxPixel) }
+    }
+
+    /// Miniatura a partir dos bytes da imagem.
+    static func thumbnail(data: Data, maxPixel: Int = 160) -> NSImage? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceThumbnailMaxPixelSize: maxPixel,

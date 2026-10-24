@@ -322,7 +322,6 @@
  "Embutida no arquivo": "Ingesloten in bestand",
  "Embutidas": "Ingebouwd",
  "Embutir no arquivo de música": "Sluit in in muziekbestand",
- "Encontrada com confiança baixa: confira em Correspondência": "Gevonden met lage betrouwbaarheid: controleer bij Overeenkomst",
  "Encontrada com pouca confiança": "Gevonden met weinig betrouwbaarheid",
  "Encontrado, ainda não gravado: %@": "Gevonden, nog niet weggeschreven: %@",
  "Encontrado, falta salvar": "Gevonden, nog te bewaren",
@@ -1002,5 +1001,6 @@
  "Prontas para salvar: %lld · Para revisar: %lld": "Klaar om te bewaren: %lld · Te controleren: %lld",
  "Revisar (%lld)": "Controleer (%lld)",
  "Ver histórico de gravações…": "Schrijfgeschiedenis tonen…",
- "Ver os resultados encontrados e escolher o certo para esta música": "Bekijk de gevonden resultaten en kies het juiste voor dit nummer"
+ "Ver os resultados encontrados e escolher o certo para esta música": "Bekijk de gevonden resultaten en kies het juiste voor dit nummer",
+ "Encontrada com pouca confiança: clique duas vezes para escolher o resultado": "Gevonden met weinig zekerheid: dubbelklik om het resultaat te kiezen"
 }
