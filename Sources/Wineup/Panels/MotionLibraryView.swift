@@ -101,7 +101,7 @@ struct MotionLibraryView: View {
 
     private func categoryCard(_ c: VideoCategory) -> some View {
         let n = c.clips.count
-        return Card(title: c.name, caption: n == 0 ? String(localized: "Sem vídeos") : String(localized: "\(n) vídeo\(n == 1 ? "" : "s")"),
+        return Card(title: c.name, caption: n == 0 ? String(localized: "Sem vídeos") : String(localized: "Vídeos: \(n)"),
                     selected: selectedCategory?.id == c.id) {
             if let first = c.clips.first { VideoThumbnail(url: first) }
             else { Image(systemName: c.symbol).font(.system(size: 26, weight: .light)).foregroundStyle(.white.opacity(0.6)) }

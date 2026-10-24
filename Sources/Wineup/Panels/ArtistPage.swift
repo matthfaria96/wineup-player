@@ -46,7 +46,7 @@ struct ArtistHeader: View {
             HStack(alignment: .center, spacing: 10) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(artist).font(.system(size: 20, weight: .bold)).lineLimit(1)
-                    Text("\(releases.count) lançamento\(releases.count == 1 ? "" : "s") · \(tracks.count) música\(tracks.count == 1 ? "" : "s")")
+                    Text("Lançamentos: \(releases.count) · Músicas: \(tracks.count)")
                         .font(.system(size: 11)).foregroundStyle(theme.mutedText)
                 }
                 Spacer()

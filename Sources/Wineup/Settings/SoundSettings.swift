@@ -43,7 +43,7 @@ struct SoundSettings: View {
                             symbol: "slider.vertical.3") {
                     Picker("Preset", selection: Binding(get: { state.preset }, set: { state.apply(preset: $0) })) {
                         ForEach(state.presets.map(\.name) + (state.presets.contains { $0.name == state.preset } ? [] : [state.preset]),
-                                id: \.self) { Text($0).tag($0) }
+                                id: \.self) { Text(EqPreset.displayName($0)).tag($0) }
                     }
                     .settingsMenu()
                 }

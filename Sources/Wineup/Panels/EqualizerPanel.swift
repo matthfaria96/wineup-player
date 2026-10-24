@@ -69,7 +69,7 @@ struct EqualizerPanel: View {
             Button { showPresets.toggle() } label: {
                 HStack(spacing: 4) {
                     Image(systemName: "chevron.down").font(.system(size: 8, weight: .bold)).opacity(0.8)
-                    Text(state.preset).lineLimit(1).truncationMode(.tail)
+                    Text(EqPreset.displayName(state.preset)).lineLimit(1).truncationMode(.tail)
                     Spacer(minLength: 0)
                 }
                 .frame(minWidth: 0, maxWidth: .infinity)
@@ -80,9 +80,11 @@ struct EqualizerPanel: View {
             .popover(isPresented: $showPresets, arrowEdge: .bottom) {
                 PresetList(state: state) { showPresets = false }
             }
-            .hintVerbatim(String(localized: "Preset: \(state.preset)"), presetHint)
+            .hintVerbatim(String(localized: "Preset: \(EqPreset.displayName(state.preset))"), presetHint)
             ChromeButton("Reset") { withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { state.apply(preset: "Flat"); state.preamp = 0 } }
-                .frame(width: 48)
+                // Cresce com o texto traduzido ("Zurücksetzen"); quem cede espaço é o botão de preset.
+                .frame(minWidth: 48)
+                .fixedSize(horizontal: true, vertical: false)
                 .hint("Reset", "Volta todas as faixas e o Pre para 0 (Flat).")
             presetBar
                 .hint("Mais opções", "Salvar e apagar presets, nível da Correção de Som, medir o volume das músicas e ReplayGain.")
@@ -214,7 +216,7 @@ private struct PresetList: View {
                             Image(systemName: "checkmark").font(.system(size: 10, weight: .bold))
                                 .opacity(name == state.preset ? 1 : 0)
                             VStack(alignment: .leading, spacing: 1) {
-                                Text(name).font(.system(size: 12, weight: .medium)).lineLimit(1)
+                                Text(EqPreset.displayName(name)).font(.system(size: 12, weight: .medium)).lineLimit(1)
                                 Text(EqPreset.builtInDetails[name] ?? (name == "Custom" ? String(localized: "Ajuste feito à mão.") : String(localized: "Preset salvo por você.")))
                                     .font(.system(size: 10.5)).foregroundStyle(.secondary).lineLimit(2)
                             }

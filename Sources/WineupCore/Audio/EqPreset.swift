@@ -34,6 +34,25 @@ public struct EqPreset: Codable, Sendable, Equatable, Identifiable {
         EqPreset(name: "Vocal", preamp: 0, bands: [-2, -1, 0, 2, 4, 4, 3, 1, 0, -1]),
     ]
 
+    /// Nome mostrado na tela: os prontos (e "Custom") no idioma do app; os do usuário como ele escreveu.
+    public static func displayName(_ name: String) -> String {
+        switch name {
+        case "Flat": String(localized: "Flat")
+        case "Rock": String(localized: "Rock")
+        case "Pop": String(localized: "Pop")
+        case "Jazz": String(localized: "Jazz")
+        case "Clássica": String(localized: "Clássica")
+        case "Eletrônica": String(localized: "Eletrônica")
+        case "Acústico": String(localized: "Acústico")
+        case "Volume baixo": String(localized: "Volume baixo")
+        case "Vintage": String(localized: "Vintage")
+        case "Bass Boost": String(localized: "Bass Boost")
+        case "Vocal": String(localized: "Vocal")
+        case "Custom": String(localized: "Personalizado")
+        default: name
+        }
+    }
+
     /// O que cada preset faz, para o menu.
     public static let builtInDetails: [String: String] = [
         "Flat": String(localized: "Sem ajuste: o som original da música."),

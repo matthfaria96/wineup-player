@@ -259,7 +259,7 @@ struct VideoCategoriesView: View {
 
     private func detail(_ c: VideoCategory) -> String {
         let n = c.clips.count
-        var parts = [String(localized: "\(n) clipe\(n == 1 ? "" : "s")")]
+        var parts = [String(localized: "Clipes: \(n)")]
         if let f = c.folder { parts.append(String(localized: "pasta: \(NavPlaces.displayPath(URL(fileURLWithPath: f)))")) }
         if c.builtIn && n == 0 { parts.append(String(localized: "clipes embutidos ausentes nesta cópia do app")) }
         return parts.joined(separator: " · ")
