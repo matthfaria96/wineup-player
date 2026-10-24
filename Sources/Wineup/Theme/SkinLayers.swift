@@ -45,9 +45,10 @@ struct SkinLayersView: View {
     let layers: [SkinManifest.Layer]
     let energy: () -> Double
     @Environment(\.animationsPaused) private var paused
+    @Environment(\.animationFPS) private var fps
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 20.0, paused: paused)) { timeline in
+        TimelineView(.animation(minimumInterval: 1.0 / fps, paused: paused)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
             let e = min(max(energy(), 0), 1)
             Canvas(rendersAsynchronously: true) { ctx, size in

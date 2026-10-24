@@ -1002,5 +1002,9 @@
  "Revisar (%lld)": "Controleer (%lld)",
  "Ver histórico de gravações…": "Schrijfgeschiedenis tonen…",
  "Ver os resultados encontrados e escolher o certo para esta música": "Bekijk de gevonden resultaten en kies het juiste voor dit nummer",
- "Encontrada com pouca confiança: clique duas vezes para escolher o resultado": "Gevonden met weinig zekerheid: dubbelklik om het resultaat te kiezen"
+ "Encontrada com pouca confiança: clique duas vezes para escolher o resultado": "Gevonden met weinig zekerheid: dubbelklik om het resultaat te kiezen",
+ "Abrindo arquivos: %lld de %lld…": "Bestanden openen: %1$lld van %2$lld…",
+ "Animar o fundo do skin": "Skin-achtergrond animeren",
+ "Desligada, o fundo do skin fica parado e o Wineup gasta menos bateria. Com \"Reduzir movimento\" ligado no macOS, ele também fica parado.": "Uit: de skin-achtergrond staat stil en Wineup verbruikt minder batterij. Hij staat ook stil als ‘Verminder beweging’ in macOS aan staat.",
+ "Estrelas, brilhos e efeitos que se mexem com a música.": "Sterren, gloed en effecten die met de muziek bewegen."
 }

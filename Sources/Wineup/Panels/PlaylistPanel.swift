@@ -40,13 +40,14 @@ struct PlaylistPanel: View {
                 if showsColumns { columnHeader }
                 Group {
                     if !state.query.isEmpty {
-                        trackList(state.searchResults)
+                        trackList(search.rows, tracks: search.results)
                     } else if browser.showsGroups {
                         LibraryGroupsView(state: state, browser: browser)
                     } else if let header {
-                        trackList(header.listed())
+                        let listed = header.listed()
+                        trackList(ListRow.rows(listed), tracks: listed)
                     } else {
-                        trackList(state.visibleTracks)
+                        trackList(state.visibleRows, tracks: state.visibleTracks)
                     }
                 }
                 .frame(maxHeight: .infinity)
@@ -203,7 +204,7 @@ struct PlaylistPanel: View {
         }
     }
 
-    private func trackList(_ tracks: [Track]) -> some View {
+    private func trackList(_ rows: [ListRow], tracks: [Track]) -> some View {
         ScrollViewReader { proxy in
             ScrollView {
                 if state.listStyle == .grid {
@@ -222,7 +223,7 @@ struct PlaylistPanel: View {
                         if tracks.isEmpty && (browser.view != .files || browser.subfolders.isEmpty) && !browser.isLoading {
                             emptyState
                         }
-                        ForEach(ListRow.rows(tracks)) { row in
+                        ForEach(rows) { row in
                             let offset = row.offset, track = row.track
                             SelectableTrackRow(selection: state.selection, track: track, index: offset + 1,
                                                isCurrent: track.id == state.currentID,

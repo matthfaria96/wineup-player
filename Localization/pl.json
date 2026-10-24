@@ -1002,5 +1002,9 @@
  "Revisar (%lld)": "Sprawdź (%lld)",
  "Ver histórico de gravações…": "Pokaż historię zapisów…",
  "Ver os resultados encontrados e escolher o certo para esta música": "Zobacz znalezione wyniki i wybierz właściwy dla tego utworu",
- "Encontrada com pouca confiança: clique duas vezes para escolher o resultado": "Znaleziono z niską pewnością: kliknij dwukrotnie, aby wybrać wynik"
+ "Encontrada com pouca confiança: clique duas vezes para escolher o resultado": "Znaleziono z niską pewnością: kliknij dwukrotnie, aby wybrać wynik",
+ "Abrindo arquivos: %lld de %lld…": "Otwieranie plików: %1$lld z %2$lld…",
+ "Animar o fundo do skin": "Animuj tło skórki",
+ "Desligada, o fundo do skin fica parado e o Wineup gasta menos bateria. Com \"Reduzir movimento\" ligado no macOS, ele também fica parado.": "Po wyłączeniu tło skórki stoi w miejscu, a Wineup zużywa mniej baterii. Tło stoi też, gdy w macOS włączone jest „Ogranicz ruch”.",
+ "Estrelas, brilhos e efeitos que se mexem com a música.": "Gwiazdy, poświaty i efekty poruszające się z muzyką."
 }

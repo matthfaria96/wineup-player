@@ -55,15 +55,17 @@ struct MetadataRow: Identifiable, Equatable {
 
     func value(_ field: String) -> String { edits[field] ?? file.value(field) }
 
+    /// Chaves de texto "naturais" (sem acentos, números por valor): a ordenação compara só com `<`.
     private mutating func refreshKeys() {
         let title = value("title"), artist = value("artist"), album = value("album")
+        let key = NaturalSortKey.make
         keys = Keys(
             search: ManagerSearch.key([fileName, title, artist, album]),
-            file: fileName.lowercased(), title: title.lowercased(), artist: artist.lowercased(),
-            album: album.lowercased(), genre: value("genre").lowercased(),
-            path: url.deletingLastPathComponent().path.lowercased(),
-            albumArtist: value("albumArtist").lowercased(), comment: value("comment").lowercased(),
-            composer: value("composer").lowercased(),
+            file: key(fileName), title: key(title), artist: key(artist),
+            album: key(album), genre: key(value("genre")),
+            path: key(url.deletingLastPathComponent().path),
+            albumArtist: key(value("albumArtist")), comment: key(value("comment")),
+            composer: key(value("composer")),
             track: (Int(value("discNumber")) ?? 1) * 1000 + (Int(value("trackNumber")) ?? 999),
             year: Int(value("year").prefix(4)) ?? 0, disc: Int(value("discNumber")) ?? 0)
     }

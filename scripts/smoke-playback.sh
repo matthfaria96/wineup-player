@@ -26,7 +26,8 @@ afconvert -f m4af -d aac "$TMP/sine.wav" "$TMP/sine.m4a"
 
 for f in sine.flac sine.m4a sine.wav; do
     BEFORE=$({ find ~/Library/Logs/DiagnosticReports -maxdepth 1 -name "Wineup-*.ips" 2>/dev/null || true; } | wc -l | tr -d " ")
-    open --env WINEUP_LIBRARY_PATH="$WINEUP_LIBRARY_PATH" -a "$APP_ABS" "$TMP/$f"
+    # Em segundo plano (-g) e sem som (WINEUP_MUTE): não toma o foco, não toca alto e não grava sessão.
+    open -g -n --env WINEUP_LIBRARY_PATH="$WINEUP_LIBRARY_PATH" --env WINEUP_MUTE=1 -a "$APP_ABS" "$TMP/$f"
     sleep 5
     pgrep -f "$PATTERN" >/dev/null || fail "app morreu tocando $f"
     AFTER=$({ find ~/Library/Logs/DiagnosticReports -maxdepth 1 -name "Wineup-*.ips" 2>/dev/null || true; } | wc -l | tr -d " ")

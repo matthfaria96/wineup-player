@@ -14,7 +14,7 @@ extension PlayerState {
     }
 
     func saveSession() {
-        guard let key = currentTrack?.storeKey else { return }
+        guard !Measure.mute, let key = currentTrack?.storeKey else { return }
         UserDefaults.standard.set(key, forKey: Self.sessionPathKey)
         UserDefaults.standard.set(progress, forKey: Self.sessionPositionKey)
         let paths = queue.items.prefix(2000).compactMap(\.storeKey)

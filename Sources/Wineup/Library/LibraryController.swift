@@ -60,23 +60,33 @@ final class LibraryController {
         }.map(\.id))
         guard !affected.isEmpty else { return }
         if scanTask != nil {
-            if hasPending { pendingRoots = pendingRoots.map { $0.union(affected) } } else { pendingRoots = affected }
-            hasPending = true
+            folderChangedRoots(affected)
         } else {
             beginScan(rootIDs: Array(affected))
         }
     }
 
+    /// Varredura em andamento (medições e o roteiro de carga).
+    var isScanning: Bool { scanTask != nil }
+
     func addFolders(_ urls: [URL]) async {
         guard let database else { return }
         let store = LibraryRootStore(db: database)
-        var added = false
-        for url in urls {
+        let added = urls.compactMap { url -> UUID? in
             var isDir: ObjCBool = false
-            guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir), isDir.boolValue else { continue }
-            if (try? store.addRoot(url)) != nil { added = true }
+            guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir), isDir.boolValue else { return nil }
+            return (try? store.addRoot(url))?.id
         }
-        if added { beginScan(rootIDs: nil); watchRoots() } else { onStatus?(String(localized: "Nenhuma pasta válida para adicionar.")) }
+        guard !added.isEmpty else { onStatus?(String(localized: "Nenhuma pasta válida para adicionar.")); return }
+        // Só as pastas adicionadas: as outras raízes já estão em dia (o vigia cuida delas).
+        if scanTask != nil { folderChangedRoots(Set(added)) } else { beginScan(rootIDs: added) }
+        watchRoots()
+    }
+
+    /// Junta raízes à varredura pendente (a atual termina primeiro).
+    private func folderChangedRoots(_ ids: Set<UUID>) {
+        if hasPending { pendingRoots = pendingRoots.map { $0.union(ids) } } else { pendingRoots = ids }
+        hasPending = true
     }
 
     func search(_ text: String) async -> [LibraryTrack] {

@@ -89,6 +89,7 @@ codesign --force --sign - "$APP"
 echo "Pronto: $APP"
 
 ./scripts/verify-app.sh "$APP"
-if [ "${SKIP_SMOKE:-0}" != "1" ]; then
+# Teste de reprodução só quando pedido (RUN_SMOKE=1): abre o app de verdade, mesmo sem som e em segundo plano.
+if [ "${RUN_SMOKE:-0}" = "1" ]; then
     ./scripts/smoke-playback.sh "$APP"
 fi

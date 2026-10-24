@@ -44,6 +44,45 @@ enum TrackLoader {
         audioURLs(in: urls).map { track(url: $0) }
     }
 
+    /// Leituras de tags ao mesmo tempo (o TagLib bloqueia a thread; mais que isso só disputa o disco).
+    static let maxConcurrentReads = 6
+
+    /// Lê as faixas com até `width` leituras simultâneas, fora da thread principal, e entrega na ordem dos
+    /// arquivos em lotes crescentes (`LoadBatches`): a lista aparece com os primeiros sem esperar os 5 mil.
+    static func trackBatches(_ urls: [URL], width: Int = maxConcurrentReads) -> AsyncStream<[Track]> {
+        AsyncStream { continuation in
+            let task = Task.detached(priority: .userInitiated) {
+                await withTaskGroup(of: (Int, Track).self) { group in
+                    var ready = [Track?](repeating: nil, count: urls.count)
+                    var next = 0, delivered = 0
+                    while next < min(max(1, width), urls.count) {
+                        let (i, url) = (next, urls[next])
+                        group.addTask { (i, track(url: url)) }
+                        next += 1
+                    }
+                    for await (i, track) in group {
+                        if Task.isCancelled { group.cancelAll(); break }
+                        ready[i] = track
+                        if next < urls.count {
+                            let (j, url) = (next, urls[next])
+                            group.addTask { (j, Self.track(url: url)) }
+                            next += 1
+                        }
+                        // Entrega só o trecho contínuo já lido (a ordem da lista não muda depois).
+                        var end = delivered
+                        while end < urls.count, ready[end] != nil { end += 1 }
+                        if end - delivered >= LoadBatches.size(afterDelivered: delivered) || end == urls.count, end > delivered {
+                            continuation.yield(ready[delivered..<end].compactMap { $0 })
+                            delivered = end
+                        }
+                    }
+                }
+                continuation.finish()
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
     static func track(url: URL) -> Track {
         let fallbackTitle = url.deletingPathExtension().lastPathComponent
         guard let file = try? AudioFile(readingPropertiesAndMetadataFrom: url) else {

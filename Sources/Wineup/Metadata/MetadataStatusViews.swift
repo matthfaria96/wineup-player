@@ -52,25 +52,6 @@ enum RowLook {
     }
 }
 
-/// Célula do nome: bolinha azul (dados encontrados, falta salvar), capa com selo, confiança e nome.
-struct NameCell: View {
-    let row: MetadataRow
-
-    var body: some View {
-        HStack(spacing: 5) {
-            FoundDot(visible: row.isDirty)
-            RowThumb(row: row)
-            if let c = row.confidence {
-                ConfidenceChip(value: c)
-                    .transition(.scale.combined(with: .opacity))
-            }
-            Text(row.fileName).lineLimit(1).help(row.url.path)
-        }
-        .animation(.snappy, value: row.isDirty)
-        .animation(.snappy, value: row.confidence)
-    }
-}
-
 /// Bolinha azul antes da capa: a busca trouxe dados que ainda não foram gravados.
 struct FoundDot: View {
     let visible: Bool
@@ -178,21 +159,18 @@ struct StatusBadge: View {
     }
 }
 
-/// Coluna Letra: símbolo com explicação ao passar o mouse.
-struct LyricsFlag: View {
-    let row: MetadataRow
-
-    var body: some View {
+/// Coluna Letra: símbolo, cor e explicação ao passar o mouse (célula em MetadataCells).
+enum LyricsFlag {
+    /// Relógio verde = sincronizada; texto laranja = estática; traço vermelho = sem letra; azul = nova, não gravada.
+    static func look(_ row: MetadataRow) -> (symbol: String, color: Color, tooltip: String) {
         let synced = row.lyrics.map(\.isSynced) ?? row.file.lyricsSynced
         let pending = row.lyrics?.text != nil
-        Image(systemName: synced == true ? "clock.fill" : synced == false ? "text.alignleft" : "minus.circle")
-            .foregroundStyle(pending ? Color.accentColor : synced == true ? .green : synced == false ? .orange : Color.red.opacity(0.8))
-            .frame(maxWidth: .infinity)
-            .contentShape(Rectangle())
-            .help(explanation(synced: synced, pending: pending))
+        let symbol = synced == true ? "clock.fill" : synced == false ? "text.alignleft" : "minus.circle"
+        let color = pending ? Color.accentColor : synced == true ? .green : synced == false ? .orange : Color.red.opacity(0.8)
+        return (symbol, color, explanation(synced: synced, pending: pending))
     }
 
-    private func explanation(synced: Bool?, pending: Bool) -> String {
+    private static func explanation(synced: Bool?, pending: Bool) -> String {
         let state = switch synced {
         case true?: String(localized: "Letra sincronizada: acompanha a música linha a linha (relógio verde).")
         case false?: String(localized: "Letra estática: o texto existe, mas sem marcas de tempo (ícone laranja).")

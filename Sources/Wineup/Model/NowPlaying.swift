@@ -4,6 +4,8 @@ import MediaPlayer
 /// Integração com o sistema: "Tocando agora" (Central de Controle) e teclas de mídia.
 enum NowPlaying {
     static func attach(_ state: PlayerState) {
+        // Roteiro de carga: não pega as teclas de mídia nem aparece no "Tocando agora".
+        guard !Measure.stress else { return }
         let center = MPRemoteCommandCenter.shared()
         center.playCommand.addTarget { [weak state] _ in
             guard let state else { return .commandFailed }
@@ -35,6 +37,7 @@ enum NowPlaying {
     }
 
     static func update(_ state: PlayerState) {
+        guard !Measure.stress else { return }
         let info = MPNowPlayingInfoCenter.default()
         guard let track = state.currentTrack else {
             info.nowPlayingInfo = nil

@@ -1002,5 +1002,9 @@
  "Revisar (%lld)": "检查（%lld）",
  "Ver histórico de gravações…": "查看写入历史记录…",
  "Ver os resultados encontrados e escolher o certo para esta música": "查看找到的结果并为这首歌曲选择正确的",
- "Encontrada com pouca confiança: clique duas vezes para escolher o resultado": "匹配可信度低：连按两次以选择结果"
+ "Encontrada com pouca confiança: clique duas vezes para escolher o resultado": "匹配可信度低：连按两次以选择结果",
+ "Abrindo arquivos: %lld de %lld…": "正在打开文件：%1$lld / %2$lld…",
+ "Animar o fundo do skin": "动画显示皮肤背景",
+ "Desligada, o fundo do skin fica parado e o Wineup gasta menos bateria. Com \"Reduzir movimento\" ligado no macOS, ele também fica parado.": "关闭后，皮肤背景保持静止，Wineup 更省电。macOS 中开启“减弱动态效果”时也会保持静止。",
+ "Estrelas, brilhos e efeitos que se mexem com a música.": "随音乐律动的星光、辉光和特效。"
 }

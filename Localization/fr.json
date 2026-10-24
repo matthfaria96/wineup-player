@@ -1002,5 +1002,9 @@
  "Revisar (%lld)": "Vérifier (%lld)",
  "Ver histórico de gravações…": "Voir l’historique des écritures…",
  "Ver os resultados encontrados e escolher o certo para esta música": "Voir les résultats trouvés et choisir le bon pour ce morceau",
- "Encontrada com pouca confiança: clique duas vezes para escolher o resultado": "Trouvée avec une faible confiance : double-cliquez pour choisir le résultat"
+ "Encontrada com pouca confiança: clique duas vezes para escolher o resultado": "Trouvée avec une faible confiance : double-cliquez pour choisir le résultat",
+ "Abrindo arquivos: %lld de %lld…": "Ouverture des fichiers : %1$lld sur %2$lld…",
+ "Animar o fundo do skin": "Animer le fond du skin",
+ "Desligada, o fundo do skin fica parado e o Wineup gasta menos bateria. Com \"Reduzir movimento\" ligado no macOS, ele também fica parado.": "Désactivé, le fond du skin reste fixe et Wineup consomme moins de batterie. Il reste aussi fixe si « Réduire les animations » est activé dans macOS.",
+ "Estrelas, brilhos e efeitos que se mexem com a música.": "Étoiles, lueurs et effets qui bougent avec la musique."
 }

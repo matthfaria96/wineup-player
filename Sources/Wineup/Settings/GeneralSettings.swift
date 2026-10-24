@@ -12,6 +12,7 @@ struct GeneralSettings: View {
     @ObservedObject private var skins = SkinStore.shared
     @Environment(\.openWindow) private var openWindow
     @State private var showMotion = false
+    @AppStorage(WindowVisibility.skinAnimationKey) private var skinAnimation = true
     @State private var language = AppLanguage.current
     /// Idioma ao abrir os Ajustes: se mudar, o app precisa abrir de novo.
     @State private var openedLanguage = AppLanguage.current
@@ -81,6 +82,13 @@ struct GeneralSettings: View {
                 SettingsSeparator()
                 SettingsRow(title: "Editar temas", detail: "Criar, editar, importar ou exportar skins.", symbol: "paintbrush") {
                     Button("Abrir…") { openWindow(id: "themes") }
+                }
+            }
+
+            SettingsSection(title: "Animação",
+                            footer: "Desligada, o fundo do skin fica parado e o Wineup gasta menos bateria. Com \"Reduzir movimento\" ligado no macOS, ele também fica parado.") {
+                SettingsRow(title: "Animar o fundo do skin", detail: "Estrelas, brilhos e efeitos que se mexem com a música.", symbol: "sparkles") {
+                    Toggle("Animar o fundo do skin", isOn: $skinAnimation).settingsSwitch()
                 }
             }
 

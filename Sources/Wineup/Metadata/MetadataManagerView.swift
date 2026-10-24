@@ -66,6 +66,7 @@ struct MetadataManagerView: View {
         .onAppear {
             model.pauseMainPlayback = { [weak state] in if state?.isPlaying == true { state?.pause() } }
             model.openIfNeeded(state.browser.folder)
+            if Measure.stress { StressRun.metadata = model }
             model.refreshHistory()
         }
         // Janela fechada: a busca para (o resultado não teria onde aparecer); uma gravação termina o bloco.

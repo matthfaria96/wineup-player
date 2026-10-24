@@ -22,6 +22,8 @@ struct WineupApp: App {
                     appDelegate.reopenMain = { [openWindow] in openWindow(id: "main") }
                     ClassicKeys.install(state: state)
                     SkinEnergy.meter = state.meterModel
+                    // Medições: WINEUP_STRESS=1 roda o roteiro de carga (ver StressRun).
+                    StressRun.startIfRequested(state: state, openWindow: { openWindow(id: $0) })
                     // Testes: WINEUP_OPEN_WINDOW=metadata abre essa janela ao iniciar (capturas sem clicar).
                     // (Depois de 1 s: ao abrir, o app fecha as janelas que o sistema tenta restaurar.)
                     if let id = ProcessInfo.processInfo.environment["WINEUP_OPEN_WINDOW"] {
@@ -208,6 +210,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Se o sistema ainda reabrir Metadados ou Sobre da sessão anterior, fecha: só a principal abre sozinha.
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Medições: WINEUP_HANG_LOG=<arquivo> liga o vigia de travadas da thread principal.
+        HangWatchdog.shared?.start()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
             for window in NSApp.windows {
                 window.isRestorable = false

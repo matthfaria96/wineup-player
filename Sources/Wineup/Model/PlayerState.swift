@@ -15,6 +15,8 @@ final class PlayerState: ObservableObject {
     }
     /// Lista exibida (com o filtro de cor aplicado), guardada pronta.
     private(set) var visibleTracks: [Track] = []
+    /// Linhas da lista exibida (identidade estável), montadas uma vez por mudança e não a cada desenho.
+    private(set) var visibleRows: [ListRow] = []
     /// Letra sincronizada da faixa atual (.lrc ao lado do arquivo ou embutida com marcas de tempo).
     var timedLyrics: TimedLyrics? { didSet { updateLyricIndex() } }
     @Published var currentID: TrackID? { didSet { if currentID != oldValue { refreshCurrentPosition() } } }
@@ -29,7 +31,14 @@ final class PlayerState: ObservableObject {
             DispatchQueue.main.async { PerfLog.record("select", since: started) }
         }
     }
-    @Published var isPlaying = false { didSet { if isPlaying != oldValue { updateTicker() } } }
+    @Published var isPlaying = false {
+        didSet {
+            guard isPlaying != oldValue else { return }
+            updateTicker()
+            let playing = isPlaying
+            MainActor.assumeIsolated { WindowVisibility.shared.setPlaying(playing) }
+        }
+    }
     /// Relógio da posição: roda enquanto toca, mesmo com a janela fechada (modo barra de menus).
     private var ticker: Timer?
     private static let tickInterval = 0.25
@@ -146,7 +155,7 @@ final class PlayerState: ObservableObject {
     }
 
     /// Volume e EQ à parte: arrastar um slider redesenha só o controle, não a lista.
-    let mixer = MixerModel(volume: PlayerState.saved("volume", 0.8))
+    let mixer = MixerModel(volume: Measure.mute ? 0 : PlayerState.saved("volume", 0.8))
     var volume: Double {
         get { mixer.volume }
         set { mixer.volume = newValue }
@@ -170,6 +179,10 @@ final class PlayerState: ObservableObject {
     /// Última faixa tocada, para o player continuar mostrando-a quando a lista muda de grupo.
     var lastPlayed: Track?
     private var searchTask: Task<Void, Never>?
+    /// Leitura dos arquivos abertos (⌘O, Finder, arrastar), em lotes.
+    private var filesTask: Task<Void, Never>?
+    /// Filtro da lista aberta (busca sem resultado na biblioteca), feito fora da thread principal.
+    private var listFilterTask: Task<Void, Never>?
     private var usingSampleTracks = true
     private var restoredOnce = false
     /// Arquivos abertos pelo Finder/⌘O antes da biblioteca carregar: a lista fica com eles.
@@ -188,7 +201,7 @@ final class PlayerState: ObservableObject {
         }
         mixer.onVolume = { [weak self] volume in
             self?.audio.setVolume(volume)
-            UserDefaults.standard.set(volume, forKey: "volume")
+            if !Measure.mute { UserDefaults.standard.set(volume, forKey: "volume") }
         }
         mixer.onEqualizer = { [weak self] in self?.syncEqualizer() }
         audio.onTrackChanged = { [weak self] url, fromQueue in self?.nowPlayingChanged(url, fromQueue: fromQueue) }
@@ -221,8 +234,15 @@ final class PlayerState: ObservableObject {
     private(set) lazy var meterModel: MeterModel = MainActor.assumeIsolated { MeterModel() }
 
 
+    /// Lida várias vezes por desenho (player, capa, letras): usa a posição guardada, sem varrer a lista
+    /// (com 50 mil faixas e nada tocando, cada leitura percorria a lista inteira).
     var currentTrack: Track? {
-        queue.current ?? tracks.first { $0.id == currentID } ?? lastPlayed.flatMap { $0.id == currentID ? $0 : nil }
+        if let current = queue.current { return current }
+        guard let id = currentID else { return nil }
+        if let position = currentPosition, tracks.indices.contains(position - 1), tracks[position - 1].id == id {
+            return tracks[position - 1]
+        }
+        return lastPlayed.flatMap { $0.id == id ? $0 : nil }
     }
 
     /// Posição 1-based da faixa atual na lista (guardada; recalculada quando a lista ou a faixa muda).
@@ -234,18 +254,30 @@ final class PlayerState: ObservableObject {
 
     private func refreshVisible() {
         visibleTracks = markFilter.map { color in tracks.filter { $0.mark == color } } ?? tracks
+        visibleRows = ListRow.rows(visibleTracks)
     }
 
     /// Resultados guardados (antes eram filtrados a cada leitura, duas vezes por desenho).
     var searchResults: [Track] { search.results }
 
     private func refreshSearchResults() {
+        listFilterTask?.cancel()
         let needle = query.trimmingCharacters(in: .whitespaces)
-        let found: [Track]
-        if needle.isEmpty { found = [] }
-        else if library.isAvailable, !libraryResults.isEmpty { found = libraryResults }
-        // Sem resultado na biblioteca (ou fora dela): filtra a lista aberta.
-        else { found = tracks.filter { $0.displayName.localizedCaseInsensitiveContains(needle) } }
+        if needle.isEmpty { publishSearch([]); return }
+        if library.isAvailable, !libraryResults.isEmpty { publishSearch(libraryResults); return }
+        // Sem resultado na biblioteca (ou fora dela): filtra a lista aberta fora da thread principal,
+        // depois de uma pausa entre teclas (com 50 mil faixas, filtrar a cada tecla travava ~40 ms).
+        let list = tracks
+        listFilterTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 80_000_000)
+            guard !Task.isCancelled else { return }
+            let found = await Task.detached(priority: .userInitiated) { TrackList.matching(needle, in: list) }.value
+            guard !Task.isCancelled, let self, self.query.trimmingCharacters(in: .whitespaces) == needle else { return }
+            self.publishSearch(found)
+        }
+    }
+
+    private func publishSearch(_ found: [Track]) {
         if found != search.results { search.results = found }
     }
 
@@ -394,25 +426,59 @@ final class PlayerState: ObservableObject {
         loadFiles(urls)
     }
 
+    /// Abre arquivos soltos: as tags são lidas em paralelo fora da thread principal e a lista cresce em lotes
+    /// (os primeiros já tocam enquanto o resto é lido; antes, 5 mil arquivos esperavam ~3 s sem nada na tela).
     private func loadFiles(_ urls: [URL]) {
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let loaded = TrackLoader.tracks(from: urls)
-            DispatchQueue.main.async {
-                guard let self else { return }
-                guard !loaded.isEmpty else {
-                    self.statusMessage = String(localized: "Nenhum áudio suportado encontrado.")
-                    return
-                }
-                self.stop()
-                if !self.restoredOnce { self.openedFilesFirst = true }
-                self.externalList = true
-                self.tracks = loaded
-                self.currentID = loaded.first?.id
-                self.selectedID = nil
-                self.statusMessage = nil
-                self.play(loaded[0])
+        filesTask?.cancel()
+        filesTask = Task { @MainActor [weak self] in
+            let found = await Task.detached(priority: .userInitiated) { TrackLoader.audioURLs(in: urls) }.value
+            guard let self, !Task.isCancelled else { return }
+            guard !found.isEmpty else {
+                self.statusMessage = String(localized: "Nenhum áudio suportado encontrado.")
+                return
             }
+            var shown = 0
+            for await batch in TrackLoader.trackBatches(found) {
+                guard !Task.isCancelled else { return }
+                if shown == 0 {
+                    self.showOpenedFiles(batch)
+                } else {
+                    // O usuário abriu outra lista no meio da leitura: o resto não entra nela.
+                    guard self.externalList, self.tracks.count == shown else { return }
+                    self.appendOpenedFiles(batch)
+                }
+                shown += batch.count
+                if shown < found.count {
+                    self.statusMessage = String(localized: "Abrindo arquivos: \(shown) de \(found.count)…")
+                }
+            }
+            if self.externalList, self.tracks.count == found.count { self.statusMessage = nil }
         }
+    }
+
+    /// Primeiro lote: substitui a lista e toca a primeira faixa.
+    private func showOpenedFiles(_ loaded: [Track]) {
+        stop()
+        if !restoredOnce { openedFilesFirst = true }
+        externalList = true
+        tracks = loaded
+        currentID = loaded.first?.id
+        selectedID = nil
+        statusMessage = nil
+        if let first = loaded.first { play(first) }
+    }
+
+    /// Lotes seguintes: entram no fim da lista e, se a fila é esta lista, no fim da fila também.
+    private func appendOpenedFiles(_ batch: [Track]) {
+        let previous = tracks
+        let queueIsList = queue.items.count == previous.count && queue.items.first?.id == previous.first?.id
+            && queue.items.last?.id == previous.last?.id
+        tracks = previous + batch
+        guard queueIsList else { return }
+        // A próxima pré-carregada muda se a atual era a última ou se a ordem é aleatória.
+        let nextChanges = queue.currentIndex == previous.count - 1 || queue.isShuffled
+        queue = queue.appending(batch)
+        if nextChanges { reenqueue() }
     }
 
     func presentOpenPanel() {
@@ -446,7 +512,8 @@ final class PlayerState: ObservableObject {
         selectedID = track.id
         progress = 0
         refreshDetails(for: track)
-        if let url = track.url {
+        // Roteiro de carga: nunca abre o arquivo (sem som enquanto a pessoa usa o Mac).
+        if let url = track.url, !Measure.stress {
             do {
                 // Início do trecho (CUE) ou ponto da sessão anterior: posicionado antes de tocar
                 // (um seek logo depois de play() era descartado).
@@ -814,7 +881,9 @@ final class PlayerState: ObservableObject {
 /// Busca da janela: texto digitado e resultados prontos.
 final class SearchModel: ObservableObject {
     @Published var query = "" { didSet { if query != oldValue { onChange?(query) } } }
-    @Published fileprivate(set) var results: [Track] = []
+    @Published fileprivate(set) var results: [Track] = [] { didSet { rows = ListRow.rows(results) } }
+    /// Linhas dos resultados, montadas junto com eles.
+    private(set) var rows: [ListRow] = []
     fileprivate var onChange: ((String) -> Void)?
 }
 

@@ -83,6 +83,9 @@ final class MetadataManagerModel: ObservableObject {
     private var rowsVersion = 0
     private var selectionVersion = 0
     private var listVersion = 0
+    /// Muda quando as linhas mostradas (conteúdo, ordem, filtro ou texto) mudam: a tabela só recarrega aí.
+    struct ListStamp: Equatable { let rows: Int; let list: Int }
+    var listStamp: ListStamp { ListStamp(rows: rowsVersion, list: listVersion) }
     private var rowIndex = RowIndex<MetadataRow.ID>([])
     private var visibleCache: (rows: Int, list: Int, value: [MetadataRow])?
     private var selectedCache: (rows: Int, selection: Int, value: [MetadataRow])?
@@ -121,10 +124,15 @@ final class MetadataManagerModel: ObservableObject {
         return value
     }
 
+    /// Ordena pelas chaves já calculadas de cada linha (lidas uma vez), não com o comparador localizado
+    /// da tabela a cada comparação: 5 mil linhas ordenavam em ~100 ms na thread principal.
     static func visible(_ rows: [MetadataRow], filter: MetadataFilter, query: String,
                         sortOrder: [KeyPathComparator<MetadataRow>]) -> [MetadataRow] {
-        rows.filter { filter.includes($0) && ManagerSearch.matches(key: $0.keys.search, query: query) }
-            .sorted(using: sortOrder)
+        let kept = rows.filter { filter.includes($0) && ManagerSearch.matches(key: $0.keys.search, query: query) }
+        guard !sortOrder.isEmpty else { return kept }
+        let paths = sortOrder.map(\.keyPath)
+        let keys = kept.map { row in paths.map { SortValue(any: row[keyPath: $0]) } }
+        return ManagerSort.order(keys, ascending: sortOrder.map { $0.order == .forward }).map { kept[$0] }
     }
 
     var selectedRows: [MetadataRow] {
@@ -253,10 +261,14 @@ final class MetadataManagerModel: ObservableObject {
         Task {
             let urls = await Task.detached { FolderAnalyzer.audioFiles(in: folder) }.value
             let files = await FolderAnalyzer.analyze(urls)
-            let ignored = await Task.detached { IgnoredIssuesStore.shared.all() }.value
+            // As linhas (e as chaves de busca e ordenação de cada uma) são montadas fora da thread principal.
+            let built = await Task.detached {
+                let ignored = IgnoredIssuesStore.shared.all()
+                return files.map { MetadataRow(file: $0, ignored: ignored[$0.url.path] ?? []) }
+            }.value
             // Outra pasta (ou outra análise) começou enquanto esta lia: descarta.
             guard self.folder == folder, self.loadToken == token else { return }
-            replaceRows(files.map { MetadataRow(file: $0, ignored: ignored[$0.url.path] ?? []) })
+            replaceRows(built)
             selection = []
             isLoading = false
             let problems = summary.withProblems

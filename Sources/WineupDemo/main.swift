@@ -180,7 +180,8 @@ if CommandLine.arguments.count == 3, CommandLine.arguments[1] == "--scanbench", 
 // Insere N faixas direto no banco, sem criar arquivos de áudio.
 if CommandLine.arguments.count == 5, CommandLine.arguments[1] == "--synthetic", let count = Int(CommandLine.arguments[2]) {
     let db = try LibraryDatabase(path: CommandLine.arguments[3])
-    let root = CommandLine.arguments[4]
+    // Mesma forma de caminho que o app usa ao abrir a pasta (/private/tmp vira /tmp).
+    let root = URL(fileURLWithPath: CommandLine.arguments[4]).standardizedFileURL.path
     let genres = ["Rock", "Pop", "Jazz", "Blues", "Folk", "Metal", "Soul", "Funk", "Reggae", "Samba"]
     let rootID: Int64 = try await db.pool.write { d in
         try d.execute(sql: "INSERT INTO library_root(uuid,path,online,added_at) VALUES (?,?,1,?)",
@@ -206,7 +207,49 @@ if CommandLine.arguments.count == 5, CommandLine.arguments[1] == "--synthetic", 
         }
         start = end
     }
-    print("sintético: \(count) faixas em \(root)")
+    // Playlist grande (até 10 mil faixas) e algumas tags de cor, para medir a abertura de playlists.
+    let collections = CollectionsStore(database: db)
+    let big = try collections.createPlaylist(named: "Playlist Grande")
+    let listed = (0..<min(count, 10_000)).map { "\(root)/Artista \($0 % 400)/Album \($0 % 2500)/\($0).flac" }
+    let added = try collections.append(paths: listed, toPlaylist: big.id)
+    let colors = ["green", "blue", "purple", "red", "orange", "yellow"]
+    for i in stride(from: 0, to: min(count, 3000), by: 7) {
+        _ = try collections.setMark(path: "\(root)/Artista \(i % 400)/Album \(i % 2500)/\(i).flac", color: colors[i % colors.count])
+    }
+    print("sintético: \(count) faixas em \(root); playlist com \(added) faixas")
+    exit(0)
+}
+
+// Arquivos reais (medições): wineup-demo --fixtures N <pasta>
+// Cria uma faixa FLAC curta e copia N vezes com tags variadas (algumas incompletas e repetidas).
+if CommandLine.arguments.count == 4, CommandLine.arguments[1] == "--fixtures", let count = Int(CommandLine.arguments[2]) {
+    let target = URL(fileURLWithPath: CommandLine.arguments[3], isDirectory: true)
+    let source = DemoTrack(title: "Amostra", artist: "Banda", album: "Disco", genre: "Rock", number: 1, year: "2025",
+                           seconds: 1, root: 220, tempo: 120, format: "flac", lyrics: nil)
+    let sample = try write(source, index: 0, to: target.appendingPathComponent(".origem"))
+    let genres = ["Rock", "Pop", "Jazz", "Blues", "Folk", "Metal", "Soul", "Funk", "Reggae", "Samba"]
+    for i in 0..<count {
+        let artist = "Artista \(i % 120)", album = "Album \(i % 600)"
+        let dir = target.appendingPathComponent("\(artist)/\(album)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let out = dir.appendingPathComponent(String(format: "%02d Faixa %d.flac", i % 12 + 1, i))
+        if !FileManager.default.fileExists(atPath: out.path) { try FileManager.default.copyItem(at: sample, to: out) }
+        let audio = try AudioFile(readingPropertiesAndMetadataFrom: out)
+        let meta = audio.metadata
+        // Um terço mantém a capa embutida (miniaturas na grade e nos Metadados).
+        if i % 3 != 0 { meta.removeAllAttachedPictures() }
+        // A cada 17 sem título, a cada 11 sem álbum, a cada 50 uma repetida (mesmo artista e título).
+        meta.title = i % 17 == 0 ? nil : (i % 50 == 0 ? "Faixa 0" : "Faixa \(i)")
+        meta.artist = i % 50 == 0 ? "Artista 0" : artist
+        meta.albumTitle = i % 11 == 0 ? nil : album
+        meta.albumArtist = artist
+        meta.genre = genres[i % genres.count]
+        meta.releaseDate = i % 5 == 0 ? nil : "\(1970 + i % 50)"
+        meta.trackNumber = i % 12 + 1
+        try audio.writeMetadata()
+    }
+    try? FileManager.default.removeItem(at: target.appendingPathComponent(".origem"))
+    print("fixtures: \(count) arquivos em \(target.path)")
     exit(0)
 }
 

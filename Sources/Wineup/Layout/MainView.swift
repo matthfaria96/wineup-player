@@ -8,6 +8,8 @@ struct MainView: View {
     @Binding var layoutRaw: String
     @Binding var themeID: String
     @StateObject private var model = MainViewModel()
+    @AppStorage(WindowVisibility.skinAnimationKey) private var skinAnimation = true
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openWindow) private var openWindow
     /// Editar um tema no editor redesenha a janela na hora.
     @ObservedObject private var skins = SkinStore.shared
@@ -25,7 +27,6 @@ struct MainView: View {
         }
         .ignoresSafeArea(.container, edges: .top)
         .environment(\.theme, theme)
-        .environment(\.animationsPaused, !visibility.mainVisible)
         .background {
             ZStack {
                 LinearGradient(colors: [theme.windowTop, theme.windowBottom], startPoint: .top, endPoint: .bottom)
@@ -45,6 +46,9 @@ struct MainView: View {
             .allowsHitTesting(false)
             .ignoresSafeArea()
         }
+        // Depois do fundo: assim a arte animada da janela também pausa e muda de ritmo.
+        .environment(\.animationsPaused, !visibility.mainVisible || (skinAnimation == false) || reduceMotion)
+        .environment(\.animationFPS, visibility.animationFPS)
         .frame(minWidth: layout.minSize.width, minHeight: layout.minSize.height)
         .background(WindowAccessor(onWindow: { window in
             let first = model.window == nil

@@ -1002,5 +1002,9 @@
  "Revisar (%lld)": "검토(%lld)",
  "Ver histórico de gravações…": "기록 내역 보기…",
  "Ver os resultados encontrados e escolher o certo para esta música": "찾은 결과를 보고 이 노래에 맞는 것을 선택",
- "Encontrada com pouca confiança: clique duas vezes para escolher o resultado": "낮은 신뢰도로 찾음: 두 번 클릭하여 결과를 선택하세요"
+ "Encontrada com pouca confiança: clique duas vezes para escolher o resultado": "낮은 신뢰도로 찾음: 두 번 클릭하여 결과를 선택하세요",
+ "Abrindo arquivos: %lld de %lld…": "파일 여는 중: %1$lld/%2$lld…",
+ "Animar o fundo do skin": "스킨 배경 애니메이션",
+ "Desligada, o fundo do skin fica parado e o Wineup gasta menos bateria. Com \"Reduzir movimento\" ligado no macOS, ele também fica parado.": "끄면 스킨 배경이 멈추고 Wineup의 배터리 사용이 줄어듭니다. macOS에서 ‘동작 줄이기’가 켜져 있어도 멈춥니다.",
+ "Estrelas, brilhos e efeitos que se mexem com a música.": "음악에 맞춰 움직이는 별, 빛, 효과."
 }

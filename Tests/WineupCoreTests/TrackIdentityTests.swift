@@ -49,3 +49,23 @@ private func sample() -> [Track] {
     let id = TrackID(UUID(uuidString: "01020304-0000-0000-0000-000000000000")!)
     #expect(id.seed == 0x0102)
 }
+
+@Test func matchingFiltersByArtistAndTitleIgnoringCase() {
+    let tracks = [Track(artist: "Banda", title: "Faixa 12", duration: 1, mark: nil),
+                  Track(artist: "Outra", title: "Nada", duration: 1, mark: nil),
+                  Track(artist: "FAIXA", title: "x", duration: 1, mark: nil)]
+    #expect(TrackList.matching("faixa", in: tracks).map(\.title) == ["Faixa 12", "x"])
+    #expect(TrackList.matching("  ", in: tracks).isEmpty)
+    #expect(TrackList.matching("banda - faixa", in: tracks).count == 1)
+}
+
+@Test func loadBatchesStartSmallAndGrowToALimit() {
+    #expect(LoadBatches.size(afterDelivered: 0) == 100)
+    #expect(LoadBatches.size(afterDelivered: 100) == 100)
+    #expect(LoadBatches.size(afterDelivered: 200) == 200)
+    #expect(LoadBatches.size(afterDelivered: 1500) == 1500)
+    #expect(LoadBatches.size(afterDelivered: 9000) == 2000)
+    var delivered = 0, batches = 0
+    while delivered < 5000 { delivered += LoadBatches.size(afterDelivered: delivered); batches += 1 }
+    #expect(batches == 7)
+}
