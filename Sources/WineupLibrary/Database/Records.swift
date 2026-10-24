@@ -138,28 +138,6 @@ public struct ReleaseTrackRecord: Codable, FetchableRecord, MutablePersistableRe
     public mutating func didInsert(_ inserted: InsertionSuccess) { id = inserted.rowID }
 }
 
-public struct ArtworkRecord: Codable, FetchableRecord, MutablePersistableRecord, Sendable {
-    public static let databaseTableName = "artwork"
-    public var id: Int64?
-    public var audioFileID: Int64?
-    public var releaseID: Int64?
-    public var source: String
-    public var sha256: String?
-    public var byteCount: Int?
-    public var pictureType: Int?
-    public init(id: Int64? = nil, audioFileID: Int64? = nil, releaseID: Int64? = nil, source: String,
-                sha256: String? = nil, byteCount: Int? = nil, pictureType: Int? = nil) {
-        self.id = id; self.audioFileID = audioFileID; self.releaseID = releaseID; self.source = source
-        self.sha256 = sha256; self.byteCount = byteCount; self.pictureType = pictureType
-    }
-    enum CodingKeys: String, CodingKey {
-        case id, source, sha256
-        case audioFileID = "audio_file_id", releaseID = "release_id"
-        case byteCount = "byte_count", pictureType = "picture_type"
-    }
-    public mutating func didInsert(_ inserted: InsertionSuccess) { id = inserted.rowID }
-}
-
 public struct LyricsRecord: Codable, FetchableRecord, MutablePersistableRecord, Sendable {
     public static let databaseTableName = "lyrics"
     public var id: Int64?
@@ -220,68 +198,5 @@ public struct TagSnapshotRecord: Codable, FetchableRecord, MutablePersistableRec
         self.id = id; self.journalID = journalID; self.kind = kind; self.json = json
     }
     enum CodingKeys: String, CodingKey { case id, kind, json; case journalID = "journal_id" }
-    public mutating func didInsert(_ inserted: InsertionSuccess) { id = inserted.rowID }
-}
-
-public struct PlayEventRecord: Codable, FetchableRecord, MutablePersistableRecord, Sendable {
-    public static let databaseTableName = "play_event"
-    public var id: Int64?
-    public var audioFileID: Int64
-    public var playedAt: Date
-    public init(id: Int64? = nil, audioFileID: Int64, playedAt: Date = Date()) {
-        self.id = id; self.audioFileID = audioFileID; self.playedAt = playedAt
-    }
-    enum CodingKeys: String, CodingKey {
-        case id; case audioFileID = "audio_file_id"; case playedAt = "played_at"
-    }
-    public mutating func didInsert(_ inserted: InsertionSuccess) { id = inserted.rowID }
-}
-
-public struct TrackMarkRecord: Codable, FetchableRecord, MutablePersistableRecord, Sendable {
-    public static let databaseTableName = "track_mark"
-    public var id: Int64?
-    public var audioFileID: Int64
-    public var color: String
-    public var updatedAt: Date
-    public init(id: Int64? = nil, audioFileID: Int64, color: String, updatedAt: Date = Date()) {
-        self.id = id; self.audioFileID = audioFileID; self.color = color; self.updatedAt = updatedAt
-    }
-    enum CodingKeys: String, CodingKey {
-        case id, color; case audioFileID = "audio_file_id"; case updatedAt = "updated_at"
-    }
-    public mutating func didInsert(_ inserted: InsertionSuccess) { id = inserted.rowID }
-}
-
-public struct PlaylistRecord: Codable, FetchableRecord, MutablePersistableRecord, Sendable {
-    public static let databaseTableName = "playlist"
-    public var id: Int64?
-    public var uuid: String
-    public var name: String
-    public var createdAt: Date
-    public var updatedAt: Date
-    public init(id: Int64? = nil, uuid: String = UUID().uuidString, name: String,
-                createdAt: Date = Date(), updatedAt: Date = Date()) {
-        self.id = id; self.uuid = uuid; self.name = name
-        self.createdAt = createdAt; self.updatedAt = updatedAt
-    }
-    enum CodingKeys: String, CodingKey {
-        case id, uuid, name; case createdAt = "created_at"; case updatedAt = "updated_at"
-    }
-    public mutating func didInsert(_ inserted: InsertionSuccess) { id = inserted.rowID }
-}
-
-public struct PlaylistItemRecord: Codable, FetchableRecord, MutablePersistableRecord, Sendable {
-    public static let databaseTableName = "playlist_item"
-    public var id: Int64?
-    public var playlistID: Int64
-    public var audioFileID: Int64
-    public var position: Int
-    public init(id: Int64? = nil, playlistID: Int64, audioFileID: Int64, position: Int) {
-        self.id = id; self.playlistID = playlistID; self.audioFileID = audioFileID; self.position = position
-    }
-    enum CodingKeys: String, CodingKey {
-        case id, position
-        case playlistID = "playlist_id", audioFileID = "audio_file_id"
-    }
     public mutating func didInsert(_ inserted: InsertionSuccess) { id = inserted.rowID }
 }

@@ -49,10 +49,9 @@ struct CollectionsStoreTests {
         }
     }
 
-    @Test func foldersAndResolve() async throws {
+    @Test func resolvesByPathOrIdentity() async throws {
         try await withTempDir { dir in
             let (_, store) = try await seed(dir)
-            #expect(try store.folders().map(\.path) == ["/m"])
             #expect(try store.resolvePath(path: "/outro/mac/T2.mp3", title: "T2", artist: "ana") == "/m/c.mp3")
         }
     }

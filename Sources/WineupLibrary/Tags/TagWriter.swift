@@ -102,18 +102,6 @@ public final class TagWriter: Sendable {
         return try write(changes, url: URL(fileURLWithPath: path), fileID: nil)
     }
 
-    // MARK: dryRun
-
-    public func dryRun(_ changes: TagChanges, fileID: Int64) throws -> [TagDiff] {
-        guard !changes.isEmpty else { throw TagWriterError.emptyChanges }
-        let (_, url) = try load(fileID)
-        guard backendFor(url) != nil else { throw TagWriterError.unsupportedFormat }
-        let before = try TagSnapshot.read(url)
-        return Self.effective(changes, before: before, url: url).map {
-            TagDiff(field: $0.field, oldValue: $0.old, newValue: $0.new, confidence: .high)
-        }
-    }
-
     // MARK: apply
 
     @discardableResult
@@ -230,20 +218,6 @@ public final class TagWriter: Sendable {
             try db.execute(sql: "UPDATE journal SET status = 'undone', undone_at = ? WHERE id = ?",
                            arguments: [Date(), rec.id])
             if let fileID, let tags { try Self.updateFile(db, id: fileID, stat: stat, tags: tags, name: url) }
-        }
-    }
-
-    public func journalEntries(fileID: Int64) throws -> [JournalEntry] {
-        let rows = try database.pool.read {
-            try JournalRecord.filter(Column("audio_file_id") == fileID)
-                .order(Column("created_at").desc).fetchAll($0)
-        }
-        return rows.map { r in
-            let dtos = (try? JSONDecoder().decode([DiffDTO].self, from: Data(r.diffsJSON.utf8))) ?? []
-            return JournalEntry(
-                id: UUID(uuidString: r.id) ?? UUID(), fileURL: URL(fileURLWithPath: r.path),
-                diffs: dtos.map { TagDiff(field: $0.field, oldValue: $0.old, newValue: $0.new, confidence: .high) },
-                createdAt: r.createdAt, backupURL: r.backupPath.map { URL(fileURLWithPath: $0) })
         }
     }
 }

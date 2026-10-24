@@ -90,22 +90,6 @@ struct ConfidenceChip: View {
     }
 }
 
-/// Confiança com barra (painel lateral).
-struct ConfidenceBadge: View {
-    let row: MetadataRow
-
-    var body: some View {
-        if let c = row.confidence {
-            HStack(spacing: 4) {
-                Capsule().fill(c >= MetadataFixer.autoApplyConfidence ? Color.green : c >= 0.6 ? .orange : .red)
-                    .frame(width: 30 * c + 4, height: 5)
-                Text("\(Int((c * 100).rounded()))% de confiança").monospacedDigit().foregroundStyle(.secondary)
-            }
-            .help(row.proposal?.match.map { "\($0.source.rawValue): \($0.title) · \($0.artist) · \($0.album ?? String(localized: "sem álbum"))" } ?? "")
-        }
-    }
-}
-
 /// Miniatura da capa com o selo de estado no canto.
 struct RowThumb: View {
     let row: MetadataRow

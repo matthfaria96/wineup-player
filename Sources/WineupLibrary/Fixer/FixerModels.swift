@@ -18,9 +18,6 @@ public enum FixerIssue: String, Sendable, CaseIterable, Codable {
         case .duplicate: String(localized: "Duplicada")
         }
     }
-
-    /// Itens que a busca automática consegue resolver (duplicadas não).
-    public var isFixable: Bool { self != .duplicate }
 }
 
 /// Um arquivo de áudio da pasta, como está no disco.
@@ -73,9 +70,6 @@ public struct AudioTech: Sendable, Equatable {
     public var sampleRateText: String {
         guard let r = sampleRate else { return "" }
         return r.truncatingRemainder(dividingBy: 1000) == 0 ? "\(Int(r / 1000)) kHz" : String(format: "%.1f kHz", r / 1000)
-    }
-    public var channelsText: String {
-        switch channels { case 1: String(localized: "Mono"); case 2: String(localized: "Estéreo"); case let n?: String(localized: "\(n) canais"); default: "" }
     }
 }
 

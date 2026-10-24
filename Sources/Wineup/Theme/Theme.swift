@@ -138,7 +138,6 @@ struct Theme: Identifiable, Equatable {
 
     /// Sem nenhum skin instalado (não deve acontecer): cores neutras, sem arte.
     static let plain = Theme(manifest: SkinManifest(id: "none", name: String(localized: "Sem skin")), art: nil)
-    static let graphite = plain
 
     /// Temas de todos os skins, montados uma vez por versão da loja (e não a cada desenho da janela).
     static var all: [Theme] {

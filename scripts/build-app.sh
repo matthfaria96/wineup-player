@@ -32,6 +32,8 @@ for fw in "$(dirname "$BIN")"/*.framework; do
     [ -d "$fw" ] && cp -R "$fw" "$APP/Contents/Frameworks/"
 done
 install_name_tool -add_rpath "@executable_path/../Frameworks" "$APP/Contents/MacOS/Wineup"
+# Sem os símbolos locais de depuração: o executável cai pela metade (~20 MB -> ~10 MB) e funciona igual.
+strip -x "$APP/Contents/MacOS/Wineup"
 
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>

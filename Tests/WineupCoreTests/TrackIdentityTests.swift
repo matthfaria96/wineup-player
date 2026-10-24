@@ -32,13 +32,6 @@ private func sample() -> [Track] {
     #expect(tracks.count == 3)
 }
 
-@Test func neighborWrapsAndHandlesMissing() {
-    let tracks = sample()
-    #expect(TrackList.neighbor(of: tracks[2].id, offset: 1, in: tracks)?.id == tracks[0].id)
-    #expect(TrackList.neighbor(of: tracks[0].id, offset: -1, in: tracks)?.id == tracks[2].id)
-    #expect(TrackList.neighbor(of: TrackID(), offset: 1, in: tracks) == nil)
-}
-
 @Test func clockFormats() {
     #expect(Clock.format(65) == "1:05")
     #expect(Clock.format(3661) == "1:01:01")

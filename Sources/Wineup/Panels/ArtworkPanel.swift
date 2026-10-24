@@ -85,14 +85,6 @@ struct ArtworkPanel: View {
         .sheet(isPresented: $showVideoSettings) { MotionLibraryView(modeRaw: $modeRaw, videoCategory: $videoCategory) }
     }
 
-    private var currentVideo: VideoCategory? { videoStore.category(videoCategory) ?? videoStore.enabled.first }
-
-    private var isMotion: Bool { ![.cover, .skinArt].contains(mode) }
-
-    private func pick(_ m: VisualMode, _ title: String) -> some View {
-        Button { modeRaw = m.rawValue } label: { Label(title, systemImage: mode == m ? "checkmark" : m.symbol) }
-    }
-
     @ViewBuilder private var videos: some View {
         let category = videoStore.category(videoCategory) ?? videoStore.enabled.first
         let clips = category?.clips ?? []

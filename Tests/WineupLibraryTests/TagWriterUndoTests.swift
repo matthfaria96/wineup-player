@@ -69,15 +69,4 @@ struct TagWriterUndoTests {
             #expect(try WriterHarness.sha(h.file) == sha)
         }
     }
-
-    @Test func journalEntriesAreNewestFirst() async throws {
-        try await withTempDir { dir in
-            let h = try await WriterHarness.make(dir) { try Fixtures.flac($0) }
-            let w = h.writer()
-            let first = try w.apply(TagChanges(title: "A"), fileID: h.fileID)
-            try await Task.sleep(nanoseconds: 20_000_000)
-            let second = try w.apply(TagChanges(title: "B"), fileID: h.fileID)
-            #expect(try w.journalEntries(fileID: h.fileID).map(\.id) == [second.id, first.id])
-        }
-    }
 }

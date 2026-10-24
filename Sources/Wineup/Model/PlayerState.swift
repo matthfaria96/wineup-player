@@ -294,8 +294,6 @@ final class PlayerState: ObservableObject {
         return Int(Double(track.duration) * (1 - progress) / playbackRate)
     }
 
-    var activeLyricIndex: Int { lyricsPosition.index }
-
     /// Recalcula a linha ativa (no tique, ao pular e ao trocar a letra); publica só se mudou.
     func updateLyricIndex() {
         let index: Int
@@ -680,13 +678,16 @@ final class PlayerState: ObservableObject {
         }
     }
 
+    /// Curva "Custom" de exemplo que as primeiras versões usavam como EQ inicial.
+    private static let legacyCustomCurve: [Double] = [-6, 5, 3, -3, 4, -3, -1, 2, 6, 5]
+
     private func restoreEqualizer() {
         guard let store = library.presetStore else { return }
         reloadPresets(store)
         guard let saved = store.loadCurrent() else { return }
         eqBypass = saved.bypass
         // A curva de exemplo das primeiras versões (e os presets antigos, mais fortes) voltam ao padrão atual.
-        if saved.bands == SampleData.legacyCustomCurve {
+        if saved.bands == Self.legacyCustomCurve {
             apply(preset: "Flat")
             return
         }

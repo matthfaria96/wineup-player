@@ -45,8 +45,8 @@ struct LibraryBootstrapTests {
         try await withTempDir { dir in
             let db = try makeTempDatabase(in: dir)
             let music = try makeMusic(dir, files: true)
-            let root = try #require(try LibraryBootstrap.ensureDefaultRoot(database: db, musicDirectory: music))
-            try LibraryRootStore(db: db).removeRoot(id: root.id)
+            _ = try #require(try LibraryBootstrap.ensureDefaultRoot(database: db, musicDirectory: music))
+            try db.pool.write { try $0.execute(sql: "DELETE FROM library_root") }
             #expect(try LibraryBootstrap.ensureDefaultRoot(database: db, musicDirectory: music) == nil)
             #expect(try LibraryRootStore(db: db).roots().isEmpty)
         }

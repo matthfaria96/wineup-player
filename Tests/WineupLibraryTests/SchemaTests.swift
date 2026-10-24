@@ -38,8 +38,7 @@ struct SchemaTests {
             let db = try makeTempDatabase(in: dir)
             try db.pool.write { d in
                 let id = try seedFile(d)
-                var e = PlayEventRecord(audioFileID: id)
-                try e.insert(d)
+                try insertPlayEvent(d, fileID: id)
             }
             #expect(throws: DatabaseError.self) {
                 try db.pool.write { try $0.execute(sql: "DELETE FROM audio_file") }
@@ -52,12 +51,12 @@ struct SchemaTests {
             let db = try makeTempDatabase(in: dir)
             try db.pool.write { d in
                 let id = try seedFile(d)
-                var p = PlaylistRecord(name: "p")
-                try p.insert(d)
-                var item = PlaylistItemRecord(playlistID: p.id!, audioFileID: id, position: 0)
-                try item.insert(d)
-                var m = TrackMarkRecord(audioFileID: id, color: "red")
-                try m.insert(d)
+                try d.execute(sql: "INSERT INTO playlist (uuid, name, created_at, updated_at) VALUES (?, ?, ?, ?)",
+                              arguments: [UUID().uuidString, "p", Date(), Date()])
+                try d.execute(sql: "INSERT INTO playlist_item (playlist_id, audio_file_id, position) VALUES (?, ?, 0)",
+                              arguments: [d.lastInsertedRowID, id])
+                try d.execute(sql: "INSERT INTO track_mark (audio_file_id, color, updated_at) VALUES (?, 'red', ?)",
+                              arguments: [id, Date()])
             }
             #expect(throws: DatabaseError.self) {
                 try db.pool.write { try $0.execute(sql: "DELETE FROM audio_file") }

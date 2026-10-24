@@ -68,18 +68,3 @@ struct Panel<Content: View>: View {
         }
     }
 }
-
-/// Texto "Playlist items: N" da base dos painéis.
-struct ItemsCount: View {
-    let count: Int
-
-    @Environment(\.theme) private var theme
-
-    var body: some View {
-        Text("\(count) itens")
-            .font(.system(size: 10.5))
-            .foregroundStyle(theme.text)
-            .lineLimit(1)
-            .fixedSize()
-    }
-}

@@ -73,11 +73,6 @@ extension PlayerState {
         reenqueue()
         statusMessage = String(localized: "\u{201C}\(track.title)\u{201D} toca a seguir.")
     }
-
-    /// Abre todas as músicas da biblioteca na lista.
-    func showAllTracks() {
-        browser.setView(.songs)
-    }
 }
 
 extension PlayerState {

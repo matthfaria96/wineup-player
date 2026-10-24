@@ -6,7 +6,6 @@ import WineupCore
 public enum LibraryError: Error, Sendable, Equatable {
     case rootNotFound
     case rootNotReadable
-    case rootNotEmpty
     case outsideRoots
 }
 
@@ -40,17 +39,6 @@ public struct LibraryRootStore: Sendable {
     public func roots() throws -> [LibraryRoot] {
         try db.pool.read { d in
             try LibraryRootRecord.order(Column("id")).fetchAll(d).map(Self.root(from:))
-        }
-    }
-
-    public func removeRoot(id: UUID) throws {
-        try db.pool.write { d in
-            guard let rec = try LibraryRootRecord.filter(Column("uuid") == id.uuidString).fetchOne(d),
-                  let rid = rec.id else { return }
-            let count = try Int.fetchOne(d, sql: "SELECT COUNT(*) FROM audio_file WHERE root_id = ?",
-                                         arguments: [rid]) ?? 0
-            guard count == 0 else { throw LibraryError.rootNotEmpty }
-            try d.execute(sql: "DELETE FROM library_root WHERE id = ?", arguments: [rid])
         }
     }
 

@@ -40,10 +40,6 @@ enum TrackLoader {
         return found.sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
     }
 
-    static func tracks(from urls: [URL]) -> [Track] {
-        audioURLs(in: urls).map { track(url: $0) }
-    }
-
     /// Leituras de tags ao mesmo tempo (o TagLib bloqueia a thread; mais que isso só disputa o disco).
     static let maxConcurrentReads = 6
 

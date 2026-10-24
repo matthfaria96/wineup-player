@@ -3,7 +3,7 @@ import Foundation
 import WineupAudio
 import WineupCore
 
-/// Lê o `LevelTap` a 30 Hz e publica níveis VU e bandas de espectro (0...1) com balística.
+/// Lê o `LevelTap` a 30 Hz e publica níveis VU e de barras (0...1) com balística.
 /// Snapshot ausente ou velho conta como silêncio. Em silêncio (pausado/parado) o relógio cai para
 /// 4 Hz só para perceber a volta do som; com a janela principal invisível ele para de vez.
 @MainActor
@@ -11,14 +11,8 @@ final class MeterModel: ObservableObject {
     @Published private(set) var levels: [Double] = [0, 0]
     /// Nível por canal (0...1) do medidor de barras, numa escala que acompanha a dinâmica da música.
     @Published private(set) var bars: [Double] = [0, 0]
-    @Published private(set) var bands: [Double] = Array(repeating: 0, count: MeterModel.bandCount)
-    /// O espectro (FFT) só é calculado se alguma tela o exibe.
-    var computesSpectrum = false
-
-    static let bandCount = 20
     private static let publishThreshold = 0.005
 
-    private let analyzer = SpectrumAnalyzer(size: 1024, bandCount: MeterModel.bandCount, minHz: 40, maxHz: 16_000)
     private var timer: Timer?
     private var lastTick = ProcessInfo.processInfo.systemUptime
     private var barMeters = [BarMeter(), BarMeter()]
@@ -92,7 +86,6 @@ final class MeterModel: ObservableObject {
         lastTick = now
 
         var targetLevels: [Float] = [0, 0]
-        var targetBands = [Float](repeating: 0, count: Self.bandCount)
         // O tap entrega blocos de até ~0,1 s (4 800 quadros a 48 kHz): só conta como silêncio depois de 0,25 s sem dados.
         let fresh = tap.snapshot().flatMap { MeterMath.isStale(timestamp: $0.timestamp, now: now, maxAge: 0.25) ? nil : $0 }
         currentSnapshot = fresh
@@ -105,15 +98,9 @@ final class MeterModel: ObservableObject {
                 let rms = snap.rms.indices.contains(channel) ? snap.rms[channel] : (snap.rms.first ?? 0)
                 return MeterMath.dbToMeter(20 * log10(max(rms, 1e-9)))
             }
-            if computesSpectrum {
-                targetBands = analyzer.bands(samples: snap.samples, sampleRate: snap.sampleRate)
-            }
         }
 
         let nextLevels = zip(levels, targetLevels).map {
-            Double(MeterMath.ballistic(current: Float($0), target: $1, dt: dt))
-        }
-        let nextBands = zip(bands, targetBands).map {
             Double(MeterMath.ballistic(current: Float($0), target: $1, dt: dt))
         }
         if Self.changed(levels, nextLevels) { levels = nextLevels }
@@ -123,8 +110,7 @@ final class MeterModel: ObservableObject {
         }
         let nextBars = (0..<2).map { Double(barMeters[$0].next(rms: rms[$0], dt: dt)) }
         if Self.changed(bars, nextBars) { bars = nextBars }
-        if Self.changed(bands, nextBands) { bands = nextBands }
-        if fresh == nil, Self.isSilent(levels), Self.isSilent(bars), Self.isSilent(bands) { enterIdle() }
+        if fresh == nil, Self.isSilent(levels), Self.isSilent(bars) { enterIdle() }
     }
 
     /// Tudo já caiu a zero sem som chegando: zera de vez e passa ao relógio lento.
@@ -132,7 +118,6 @@ final class MeterModel: ObservableObject {
         idle = true
         if levels.contains(where: { $0 != 0 }) { levels = [0, 0] }
         if bars.contains(where: { $0 != 0 }) { bars = [0, 0] }
-        if bands.contains(where: { $0 != 0 }) { bands = Array(repeating: 0, count: Self.bandCount) }
         schedule(interval: Self.idleInterval)
     }
 

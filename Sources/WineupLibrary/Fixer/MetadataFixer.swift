@@ -42,8 +42,6 @@ public struct MetadataFixer: Sendable {
         self.metadataEnabled = metadataEnabled
     }
 
-    public var canFingerprint: Bool { acoustID != nil && fpcalc != nil }
-
     /// O que se sabe para a busca: tags; o que faltar vem do nome do arquivo.
     public static func query(for file: FixerFile) -> (title: String, artist: String, album: String?) {
         let guess = FilenameGuess.parse(file.url)
@@ -138,10 +136,6 @@ extension TagChanges {
                   discNumber: fields["discNumber"].flatMap { Int($0) },
                   composer: fields["composer"], comment: fields["comment"], cover: cover)
     }
-
-    /// Campos editáveis no gerenciador, na ordem da barra lateral.
-    public static let editableFields = ["title", "artist", "album", "year", "trackNumber", "genre",
-                                        "comment", "albumArtist", "composer", "discNumber"]
 }
 
 /// Grava a letra ao lado da música (.lrc com o mesmo nome), de forma atômica.

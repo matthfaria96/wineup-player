@@ -49,22 +49,8 @@ public protocol AudioEngine: AnyObject {
     func setVolume(_ volume: Double)
     func setRate(_ rate: Double)
     func setBalance(_ pan: Double)
-    func setReplayGain(linear: Double)
     func applyEqualizer(preamp: Double, bands: [Double], bypass: Bool)
     var currentTime: TimeInterval { get }
     var totalTime: TimeInterval { get }
     var isPlaying: Bool { get }
-}
-
-public protocol TagIO: Sendable {
-    func readTags(at url: URL) throws -> [String: String]
-    func writeTags(_ tags: [String: String], at url: URL) throws
-}
-
-public protocol LibraryStore: Sendable {
-    func allTrackURLs() throws -> [URL]
-}
-
-public protocol MetadataProvider: Sendable {
-    func lookup(artist: String, title: String) async throws -> [TagDiff]
 }

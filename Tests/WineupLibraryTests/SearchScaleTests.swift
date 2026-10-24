@@ -21,13 +21,11 @@ struct SearchScaleTests {
             }
             #expect(gen < .seconds(60))
             let search = SearchService(database: db)
-            let browse = BrowseService(database: db)
 
             // Atraso da main enquanto as buscas rodam em segundo plano.
             let worker = Task.detached {
                 for _ in 0..<3 {
                     _ = try await search.search("beyonce"); _ = try await search.search("art")
-                    _ = try await browse.artists()
                 }
             }
             var maxDelay = Duration.zero
@@ -45,10 +43,6 @@ struct SearchScaleTests {
                 #expect(m < .milliseconds(100), "busca \(q): \(m)")
             }
             #expect(try await search.search("beyonce").count == 200)
-            let a = try await median { _ = try await browse.artists() }
-            #expect(a < .milliseconds(200), "artists: \(a)")
-            let p = try await median { _ = try await browse.allTracks(limit: 200, offset: 50_000) }
-            #expect(p < .milliseconds(200), "allTracks: \(p)")
         }
     }
 }

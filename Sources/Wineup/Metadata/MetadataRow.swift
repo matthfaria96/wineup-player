@@ -78,7 +78,6 @@ struct MetadataRow: Identifiable, Equatable {
     var sortGenre: String { keys.genre }
     var sortTrack: Int { keys.track }
     var sortYear: Int { keys.year }
-    var sortConfidence: Double { confidence ?? -1 }
     var sortPath: String { keys.path }
     var sortAlbumArtist: String { keys.albumArtist }
     var sortComment: String { keys.comment }

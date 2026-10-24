@@ -15,7 +15,7 @@ import Testing
         #expect(LevelTap().snapshot() == nil)
     }
 
-    @Test func sineGivesRealRmsAndPeak() throws {
+    @Test func sineGivesRealRms() throws {
         let tap = LevelTap()
         // 1 kHz com 44100/1000 nao inteiro; usa 1024 amostras de uma frequencia com ciclos inteiros: 43 ciclos.
         tap.process(buffer: filled { 0.5 * Float(sin(2 * .pi * 43 * Double($0) / 1024)) })
@@ -23,18 +23,14 @@ import Testing
         for c in 0..<2 {
             let db = 20 * log10(s.rms[c])
             #expect(abs(db - -9.03) < 0.5)
-            #expect(abs(s.peak[c] - 0.5) < 0.02)
         }
-        #expect(s.samples.count == 1024)
-        #expect(s.sampleRate == 44_100)
-        #expect(abs(s.samples[10]) > 0)
     }
 
     @Test func silenceGivesZeros() throws {
         let tap = LevelTap()
         tap.process(buffer: filled({ _ in 0 }))
         let s = try #require(tap.snapshot())
-        #expect(s.rms == [0, 0] && s.peak == [0, 0])
+        #expect(s.rms == [0, 0])
     }
 
     @Test func installTwiceDoesNotThrow() throws {
@@ -52,7 +48,7 @@ import Testing
         }
         // Se o tap nao disparar em render manual, o teste direto acima cobre a medicao.
         let s = try #require(tap.snapshot(), "tap deve disparar em render manual")
-        #expect(s.peak[0] > 0.3)
+        #expect(s.rms[0] > 0.2)
         tap.remove()
     }
 }

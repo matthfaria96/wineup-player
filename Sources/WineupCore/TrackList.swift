@@ -11,11 +11,6 @@ public enum TrackList {
         guard !needle.isEmpty else { return [] }
         return tracks.filter { $0.displayName.localizedCaseInsensitiveContains(needle) }
     }
-
-    public static func neighbor(of id: TrackID, offset: Int, in tracks: [Track]) -> Track? {
-        guard !tracks.isEmpty, let index = tracks.firstIndex(where: { $0.id == id }) else { return nil }
-        return tracks[((index + offset) % tracks.count + tracks.count) % tracks.count]
-    }
 }
 
 /// Tamanho dos lotes ao abrir muitos arquivos: o primeiro é pequeno (a lista aparece e toca logo);

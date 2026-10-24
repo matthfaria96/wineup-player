@@ -505,7 +505,6 @@ final class LibraryBrowser: ObservableObject {
         return (folders, cueTracks.map { Self.withMark($0, marks: marks) } + fileTracks)
     }
 
-
     /// Faixas de uma folha CUE (o arquivo de áudio precisa existir).
     private static func cueTracksFor(_ cueURL: URL) -> [Track] {
         guard let data = try? Data(contentsOf: cueURL),
@@ -530,8 +529,6 @@ final class LibraryBrowser: ObservableObject {
 
     /// As cores serão relidas do banco na próxima carga (fora da thread principal).
     func refreshMarks() { marksStale = true }
-
-    func mark(for url: URL?) -> MarkColor? { url.flatMap { marks[$0.path] } }
 
     /// Roda `work` na fila do banco e entrega o resultado na thread principal.
     private func inBackground<T>(_ work: @escaping (CollectionsStore) -> T?, then done: @escaping (T?) -> Void) {
@@ -639,8 +636,6 @@ final class LibraryBrowser: ObservableObject {
         let roots = (try? collections?.rootPaths()) ?? []
         return roots.contains { key == $0 || key.hasPrefix($0.hasSuffix("/") ? $0 : $0 + "/") }
     }
-
-    func allPlaylists() -> [UserPlaylist] { (try? collections?.playlists()) ?? [] }
 
     func resolvePath(path: String, title: String, artist: String) -> String? {
         (try? collections?.resolvePath(path: path, title: title, artist: artist)) ?? nil

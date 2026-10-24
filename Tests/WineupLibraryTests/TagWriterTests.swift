@@ -84,19 +84,6 @@ struct TagWriterTests {
         }
     }
 
-    @Test func dryRunDoesNotTouchAnything() async throws {
-        try await withTempDir { dir in
-            let h = try await WriterHarness.make(dir) { try Fixtures.flac($0) }
-            let sha = try WriterHarness.sha(h.file)
-            let old = try TagSnapshot.read(h.file).fields["title"]
-            let diffs = try h.writer().dryRun(TagChanges(title: "Novo"), fileID: h.fileID)
-            #expect(diffs == [TagDiff(field: "title", oldValue: old, newValue: "Novo", confidence: .high)])
-            #expect(try WriterHarness.sha(h.file) == sha)
-            #expect(try await h.journalRows().isEmpty)
-            #expect(!FileManager.default.fileExists(atPath: h.backupsDir.path))
-        }
-    }
-
     @Test func verificationFailureLeavesOriginalIntact() async throws {
         try await withTempDir { dir in
             let h = try await WriterHarness.make(dir) { try Fixtures.flac($0) }

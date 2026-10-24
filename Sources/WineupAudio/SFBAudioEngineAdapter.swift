@@ -181,7 +181,6 @@ public final class SFBAudioEngineAdapter: NSObject, AudioEngine, AudioPlayer.Del
             chain.setSide(side, engine: engine, format: format)
         }
     }
-    public func setReplayGain(linear: Double) { chain.setGain(linear: Float(linear)) }
 
     public func applyEqualizer(preamp: Double, bands: [Double], bypass: Bool) {
         state.withLock { $0.eq = (preamp, bands, bypass) }

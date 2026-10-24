@@ -120,29 +120,6 @@ extension View {
     func skinField() -> some View { modifier(SkinFieldBackground()) }
 }
 
-/// Barra do topo da janela com fundo e moldura do skin (estilo "header").
-struct SkinHeaderBackground: View {
-    @Environment(\.theme) private var theme
-
-    var body: some View {
-        if let art = theme.art, let style = art.manifest.panels["header"] {
-            let frame = art.nineSlice(style.frame)
-            ZStack {
-                theme.panelFill
-                SkinFillView(art: art, fill: style.fill, layers: style.layers, energy: SkinEnergy.value)
-                if let frame {
-                    Image(nsImage: frame.image)
-                        .resizable(capInsets: EdgeInsets(top: frame.inset, leading: frame.inset, bottom: frame.inset, trailing: frame.inset),
-                                   resizingMode: .stretch)
-                }
-            }
-            .clipShape(RoundedRectangle(cornerRadius: CGFloat(style.cornerRadius ?? 4)))
-        } else {
-            Color.clear
-        }
-    }
-}
-
 /// Veste um `Menu` já existente com a arte de botão do skin.
 struct SkinMenuChrome: ViewModifier {
     var compact = false

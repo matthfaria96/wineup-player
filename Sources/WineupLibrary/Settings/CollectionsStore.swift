@@ -214,17 +214,7 @@ public struct CollectionsStore: Sendable {
         try database.pool.read { db in try String.fetchAll(db, sql: "SELECT path FROM library_root") }
     }
 
-    // MARK: Pastas e busca por caminho/identidade
-
-    /// Pastas com faixas presentes, em todas as raízes.
-    public func folders() throws -> [FolderSummary] {
-        try database.pool.read { db in
-            try Row.fetchAll(db, sql: """
-                SELECT substr(path, 1, length(rtrim(path, replace(path, '/', ''))) - 1) AS dir, COUNT(*) AS n
-                FROM audio_file WHERE status = 'present' AND hidden = 0 GROUP BY dir ORDER BY dir COLLATE NOCASE
-                """).map { FolderSummary(path: $0["dir"], trackCount: $0["n"]) }
-        }
-    }
+    // MARK: Busca por caminho/identidade
 
     /// Encontra o caminho de uma faixa pelo caminho exato ou, em outra máquina, por título + artista.
     public func resolvePath(path: String, title: String, artist: String) throws -> String? {

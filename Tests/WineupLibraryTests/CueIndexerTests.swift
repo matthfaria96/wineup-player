@@ -30,7 +30,7 @@ struct CueIndexerTests {
         try await withTempDir { dir in
             let (db, root, wav, cue) = try setUp(dir)
             _ = try await Scanner(database: db).scan(rootID: root.id) { _ in }
-            let tracks = try await BrowseService(database: db).allTracks(limit: 100)
+            let tracks = try CollectionsStore(database: db).tracks(under: root.url.path)
             #expect(tracks.map(\.title).sorted() == ["Abertura", "Final"])
             #expect(tracks.allSatisfy { $0.mediaPath == wav.standardizedFileURL.path && $0.url.path == wav.standardizedFileURL.path })
             let final = try #require(tracks.first { $0.title == "Final" })
@@ -41,13 +41,13 @@ struct CueIndexerTests {
 
             // Nova varredura sem mudanças: mesmas faixas, sem duplicar.
             _ = try await Scanner(database: db).scan(rootID: root.id) { _ in }
-            let again = try await BrowseService(database: db).allTracks(limit: 100)
+            let again = try CollectionsStore(database: db).tracks(under: root.url.path)
             #expect(again.map(\.id).sorted() == tracks.map(\.id).sorted())
 
             // CUE apagado: as faixas saem e o arquivo inteiro volta a aparecer.
             try FileManager.default.removeItem(at: cue)
             _ = try await Scanner(database: db).scan(rootID: root.id) { _ in }
-            let after = try await BrowseService(database: db).allTracks(limit: 100)
+            let after = try CollectionsStore(database: db).tracks(under: root.url.path)
             #expect(after.count == 1 && after[0].path == wav.standardizedFileURL.path && after[0].mediaPath == nil)
         }
     }

@@ -21,7 +21,7 @@ struct MissingFilesTests {
             let scanner = Scanner(database: db)
             _ = try await scanner.scan(rootID: id, progress: { _ in })
             let aID = try await db.pool.read { try Int64.fetchOne($0, sql: "SELECT id FROM audio_file WHERE path LIKE '%/a.wav'")! }
-            try await db.pool.write { var e = PlayEventRecord(audioFileID: aID); try e.insert($0) }
+            try await db.pool.write { try insertPlayEvent($0, fileID: aID) }
             try FileManager.default.createDirectory(at: music.appendingPathComponent("sub"), withIntermediateDirectories: true)
             try FileManager.default.moveItem(at: music.appendingPathComponent("a.wav"),
                                              to: music.appendingPathComponent("sub/a2.wav"))
@@ -41,7 +41,7 @@ struct MissingFilesTests {
             let scanner = Scanner(database: db)
             _ = try await scanner.scan(rootID: id, progress: { _ in })
             let aID = try await db.pool.read { try Int64.fetchOne($0, sql: "SELECT id FROM audio_file WHERE path LIKE '%/a.wav'")! }
-            try await db.pool.write { var e = PlayEventRecord(audioFileID: aID); try e.insert($0) }
+            try await db.pool.write { try insertPlayEvent($0, fileID: aID) }
             let backup = dir.appendingPathComponent("a.bak")
             try FileManager.default.moveItem(at: music.appendingPathComponent("a.wav"), to: backup)
             let p = try await scanner.scan(rootID: id, progress: { _ in })

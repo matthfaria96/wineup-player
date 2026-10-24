@@ -211,8 +211,6 @@ struct SkinLayerStage: View {
             .position(x: p.x * size.width, y: p.y * size.height)
     }
 
-    private func usesPointsFor(_ l: SkinManifest.Layer) -> Bool { l.kind != .flow }
-
     // MARK: Mudanças
 
     private func bind<T>(_ i: Int, _ key: WritableKeyPath<SkinManifest.Layer, T>) -> Binding<T> {

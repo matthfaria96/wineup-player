@@ -202,8 +202,6 @@ enum Scenes {
         }
     }
 
-    static func clouds(_ ctx: inout GraphicsContext, _ size: CGSize, _ t: Double, count: Int, band: ClosedRange<Double>, salt: Int, speed: Double) {}
-
     // MARK: Cidade à noite à beira d'água (skyline em silhueta, janelas, reflexo e bokeh)
 
     static func city(_ ctx: inout GraphicsContext, _ size: CGSize, _ t: Double, _ e: Double, _ seed: Int) {
