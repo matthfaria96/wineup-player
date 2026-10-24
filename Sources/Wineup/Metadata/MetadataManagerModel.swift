@@ -63,8 +63,6 @@ final class MetadataManagerModel: ObservableObject {
         didSet { UserDefaults.standard.set(acoustIDKey, forKey: Self.acoustIDKeyDefaults) }
     }
 
-    /// Pausa o player principal antes da prévia do visualizador de letra.
-    var pauseMainPlayback: (() -> Void)?
     private let writer: TagWriter?
     private var work: Task<Void, Never>?
 

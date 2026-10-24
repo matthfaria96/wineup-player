@@ -106,122 +106,221 @@ struct MetadataSidebar: View {
     }
 }
 
-/// Letra: a nova (pendente) ou a atual do .lrc; busca e escolha manual no catálogo online.
+/// Aba Letra: a letra já aberta (com o tempo de cada linha quando sincronizada), etiquetas sobre o .lrc
+/// e dois ícones: editar o texto atual e buscar de novo (pede confirmação se já existe letra).
 struct LyricsBox: View {
     @ObservedObject var model: MetadataManagerModel
     let row: MetadataRow
     @State private var options: [LyricsCandidate] = []
     @State private var searching = false
-    @State private var current: String?
-    @State private var showViewer = false
+    @State private var lrcText: String?
     @State private var editing = false
     @State private var draft = ""
+    @State private var confirmSearch = false
 
-    /// Letras disponíveis para ver, a nova primeiro.
-    private var sources: [LyricsSource] {
-        var out: [LyricsSource] = []
-        if let text = row.lyrics?.text { out.append(LyricsSource(id: "new", title: "Nova", text: text)) }
-        if let current { out.append(LyricsSource(id: "lrc", title: "Atual (.lrc)", text: current)) }
+    /// Letra mostrada: a nova (ainda não gravada), senão a do .lrc, senão a embutida no arquivo.
+    private var shown: (text: String, origin: String)? {
+        if let text = row.lyrics?.text { return (text, "Nova") }
+        if let lrcText, !lrcText.isEmpty { return (lrcText, ".lrc") }
         let embedded = row.file.value("lyrics")
-        if !embedded.isEmpty { out.append(LyricsSource(id: "tag", title: "Embutida", text: embedded)) }
-        return out
+        return embedded.isEmpty ? nil : (embedded, "Embutida")
     }
 
     var body: some View {
-        GroupBox {
-            VStack(alignment: .leading, spacing: 6) {
-                if let first = sources.first {
-                    let info = LyricsInfo(first.text)
-                    HStack(spacing: 6) {
-                        Text(first.title).font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(first.id == "new" ? Color.accentColor : .secondary)
-                        LyricsKindBadge(info: info)
-                    }
-                    Text(info.summary).font(.system(size: 11)).foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    if first.id == "new", row.file.hasSidecarLyrics {
-                        Text("Vai substituir o .lrc atual ao salvar.").font(.system(size: 11)).foregroundStyle(.orange)
-                    }
-                    Button { showViewer = true } label: {
-                        Label("Abrir visualizador", systemImage: "music.note.list")
-                    }
-                    .controlSize(.small)
-                    .help("Tocar a música e ver a letra acompanhando")
-                } else {
-                    Text("Sem letra.").font(.system(size: 11)).foregroundStyle(.secondary)
-                }
-                HStack {
-                    Button(searching ? "Buscando…" : "Buscar letras") { search() }.disabled(searching)
-                    Button(editing ? "Cancelar edição" : "Escrever à mão") {
-                        draft = sources.first?.text ?? ""
-                        withAnimation(.snappy) { editing.toggle() }
-                    }
-                    if row.lyrics != nil { Button("Descartar nova") { model.setLyrics(nil, for: row.id) } }
-                }
-                .controlSize(.small)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .center, spacing: 6) {
+                tags
+                Spacer(minLength: 4)
                 if editing {
-                    VStack(alignment: .leading, spacing: 4) {
-                        TextEditor(text: $draft)
-                            .font(.system(size: 12))
-                            .frame(minHeight: 160)
-                            .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.secondary.opacity(0.3)))
-                        Text("Uma linha por verso. Com marcas como [01:23.45] no início, vira letra sincronizada.")
-                            .font(.system(size: 10)).foregroundStyle(.secondary)
-                        HStack {
-                            Spacer()
-                            Button("Usar esta letra") {
-                                model.setManualLyrics(draft, for: row.id)
-                                withAnimation(.snappy) { editing = false }
-                            }
-                            .buttonStyle(.borderedProminent)
-                        }
-                        .controlSize(.small)
+                    iconButton("xmark", "Cancelar a edição") { withAnimation(.snappy) { editing = false } }
+                    iconButton("checkmark", "Usar este texto (gravado ao salvar)", prominent: true) {
+                        model.setManualLyrics(draft, for: row.id)
+                        withAnimation(.snappy) { editing = false }
                     }
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                }
-                ForEach(options) { option in
-                    Button { model.setLyrics(option, for: row.id) } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: option.isSynced ? "clock.fill" : "text.alignleft")
-                                .foregroundStyle(option.isSynced ? Color.green : Color.orange)
-                            Text("\(option.title) · \(option.artist)").lineLimit(1)
-                            Spacer()
-                            Text(option.isSynced ? "sincronizada" : option.instrumental ? "instrumental" : "estática")
-                                .foregroundStyle(.secondary)
-                            Text(option.duration.map { Self.time($0) } ?? "").monospacedDigit()
-                        }
-                        .font(.system(size: 11))
+                } else {
+                    iconButton("pencil", shown == nil ? "Escrever a letra" : "Editar a letra") {
+                        draft = shown?.text ?? ""
+                        withAnimation(.snappy) { editing = true; options = [] }
                     }
-                    .buttonStyle(.plain)
-                    .disabled(option.text == nil)
-                    .help(option.isSynced ? "Com marcas de tempo: acompanha a música" : "Sem marcas de tempo")
+                    iconButton(searching ? "hourglass" : "magnifyingglass", "Buscar a letra de novo na internet") {
+                        if shown == nil { search() } else { confirmSearch = true }
+                    }
+                    .disabled(searching)
+                    if row.lyrics != nil {
+                        iconButton("arrow.uturn.backward", "Descartar a letra nova e voltar à atual") {
+                            withAnimation(.snappy) { model.setLyrics(nil, for: row.id) }
+                        }
+                    }
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        } label: {
-            Text("Letra").font(.system(size: 11, weight: .semibold))
+            if !options.isEmpty { results.transition(.move(edge: .top).combined(with: .opacity)) }
+            if editing {
+                editor.transition(.opacity)
+            } else if let shown {
+                LyricsText(info: LyricsInfo(shown.text)).transition(.opacity)
+            } else {
+                VStack(spacing: 6) {
+                    Image(systemName: "quote.bubble").font(.system(size: 24)).foregroundStyle(.tertiary)
+                    Text("Esta música não tem letra.").font(.system(size: 12, weight: .medium))
+                    Text("Busque na internet (lupa) ou escreva à mão (lápis).").font(.system(size: 11)).foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity).padding(.vertical, 24)
+            }
+        }
+        .animation(.snappy, value: shown?.text)
+        .confirmationDialog("Buscar a letra de novo?", isPresented: $confirmSearch) {
+            Button("Buscar") { search() }
+            Button("Cancelar", role: .cancel) {}
+        } message: {
+            Text(LyricsInfo(shown?.text ?? "").isSynced
+                 ? "Esta música já tem letra sincronizada. A busca só mostra opções; nada muda até você escolher uma e salvar."
+                 : "A busca só mostra opções; nada muda até você escolher uma e salvar.")
         }
         .task(id: "\(row.id)|\(row.file.hasSidecarLyrics)|\(row.status == .saved)") {
             options = []
-            current = row.file.hasSidecarLyrics ? try? String(contentsOf: row.file.lyricsURL, encoding: .utf8) : nil
+            editing = false
+            let url = row.file.lyricsURL
+            let has = row.file.hasSidecarLyrics
+            lrcText = has ? await Task.detached { try? String(contentsOf: url, encoding: .utf8) }.value : nil
         }
-        .sheet(isPresented: $showViewer) {
-            LyricsViewer(fileURL: row.url, songTitle: [row.value("artist"), row.value("title")]
-                            .filter { !$0.isEmpty }.joined(separator: " – "),
-                         sources: sources, onWillPlay: { model.pauseMainPlayback?() })
+    }
+
+    /// Etiquetas: de onde vem a letra, o tipo e se será gravada.
+    @ViewBuilder private var tags: some View {
+        if let shown {
+            let info = LyricsInfo(shown.text)
+            HStack(spacing: 4) {
+                Tag(text: shown.origin == "Nova" ? "Nova · falta salvar" : shown.origin == ".lrc" ? "Arquivo .lrc" : "Embutida no arquivo",
+                    color: shown.origin == "Nova" ? .accentColor : .secondary)
+                Tag(text: info.isSynced ? "Sincronizada" : "Sem tempo", color: info.isSynced ? .green : .orange,
+                    symbol: info.isSynced ? "clock.fill" : "text.alignleft")
+                    .help(info.summary)
+            }
+            if shown.origin == "Nova", row.file.hasSidecarLyrics {
+                Tag(text: "Substitui o .lrc", color: .orange).help("Ao salvar, o .lrc atual é trocado (com backup)")
+            } else if shown.origin == "Embutida" {
+                Tag(text: "Sem .lrc", color: .secondary).help("A letra está nas tags do arquivo; não há arquivo .lrc ao lado")
+            }
+        } else {
+            Tag(text: "Sem letra", color: .red, symbol: "minus.circle")
         }
+    }
+
+    private var editor: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            TextEditor(text: $draft)
+                .font(.system(size: 12))
+                .frame(minHeight: 300)
+                .scrollContentBackground(.hidden)
+                .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.04)))
+                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.accentColor.opacity(0.5)))
+            Text("Uma linha por verso. Com marcas como [01:23.45] no início das linhas, a letra fica sincronizada.")
+                .font(.system(size: 10)).foregroundStyle(.secondary)
+        }
+    }
+
+    private var results: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text("Escolha uma letra").font(.system(size: 11, weight: .semibold))
+                Spacer()
+                Button { withAnimation(.snappy) { options = [] } } label: { Image(systemName: "xmark.circle.fill") }
+                    .buttonStyle(.borderless).foregroundStyle(.secondary).help("Fechar a lista")
+            }
+            ForEach(options) { option in
+                Button {
+                    model.setLyrics(option, for: row.id)
+                    withAnimation(.snappy) { options = [] }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: option.isSynced ? "clock.fill" : "text.alignleft")
+                            .foregroundStyle(option.isSynced ? Color.green : Color.orange)
+                        Text("\(option.title) · \(option.artist)").lineLimit(1)
+                        Spacer()
+                        Text(option.duration.map { Self.time($0) } ?? "").monospacedDigit().foregroundStyle(.secondary)
+                    }
+                    .font(.system(size: 11))
+                    .padding(.vertical, 3).padding(.horizontal, 6)
+                    .background(RoundedRectangle(cornerRadius: 5).fill(Color.primary.opacity(0.05)))
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(option.text == nil)
+                .help(option.isSynced ? "Sincronizada: acompanha a música" : option.instrumental ? "Instrumental" : "Sem marcas de tempo")
+            }
+        }
+    }
+
+    private func iconButton(_ symbol: String, _ help: String, prominent: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol).frame(width: 16, height: 16)
+                .contentTransition(.symbolEffect(.replace))
+        }
+        .buttonStyle(.bordered)
+        .tint(prominent ? .accentColor : nil)
+        .controlSize(.small)
+        .help(help)
+        .accessibilityLabel(help)
     }
 
     private func search() {
         searching = true
         Task {
-            options = Array(await model.lyricsOptions(for: row).prefix(8))
+            let found = Array(await model.lyricsOptions(for: row).prefix(8))
+            withAnimation(.snappy) { options = found }
             searching = false
-            if options.isEmpty { model.message = "Não encontramos letra para esta faixa." }
+            if found.isEmpty { model.message = "Não encontramos letra para esta faixa." }
         }
     }
 
     static func time(_ s: Double) -> String { String(format: "%d:%02d", Int(s) / 60, Int(s) % 60) }
+}
+
+/// Etiqueta pequena e colorida.
+private struct Tag: View {
+    let text: String
+    let color: Color
+    var symbol: String?
+
+    var body: some View {
+        HStack(spacing: 3) {
+            if let symbol { Image(systemName: symbol).font(.system(size: 9)) }
+            Text(text)
+        }
+        .font(.system(size: 10, weight: .semibold))
+        .padding(.horizontal, 6).padding(.vertical, 2)
+        .foregroundStyle(color)
+        .background(Capsule().fill(color.opacity(0.15)))
+    }
+}
+
+/// A letra na tela: cada verso com o tempo ao lado quando é sincronizada.
+private struct LyricsText: View {
+    let info: LyricsInfo
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(info.summary).font(.system(size: 10)).foregroundStyle(.secondary)
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 3) {
+                    ForEach(info.lines) { line in
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            if let t = line.time {
+                                Text(LyricsBox.time(t)).font(.system(size: 10).monospacedDigit()).foregroundStyle(.tertiary)
+                                    .frame(width: 32, alignment: .trailing)
+                            }
+                            Text(line.text.isEmpty ? " " : line.text).font(.system(size: 12))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(8)
+            }
+            .frame(minHeight: 260, maxHeight: 420)
+            .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.04)))
+        }
+    }
 }
 
 /// Sem seleção: o que a análise encontrou na pasta, com atalho para filtrar.
@@ -312,13 +411,15 @@ struct SelectionHeader: View {
                     Button("Manter a atual") { model.setCover(nil) }
                 }
                 Spacer(minLength: 0)
-                Button { model.searchSelection(data: tab == .general, lyrics: tab == .lyrics) } label: {
-                    Label(model.isBusy ? "Buscando…" : tab == .lyrics ? "Buscar letra" : "Buscar dados",
-                          systemImage: "magnifyingglass")
+                if tab == .general || single == nil {
+                    Button { model.searchSelection(data: tab == .general, lyrics: tab == .lyrics) } label: {
+                        Label(model.isBusy ? "Buscando…" : tab == .lyrics ? "Buscar letras" : "Buscar dados",
+                              systemImage: "magnifyingglass")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(model.isBusy)
+                    .help(tab == .lyrics ? "Procura a letra das selecionadas" : "Procura título, artista, álbum, capa e demais dados da seleção")
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(model.isBusy)
-                .help(tab == .lyrics ? "Procura a letra da seleção" : "Procura título, artista, álbum, capa e demais dados da seleção")
             }
             .controlSize(.small)
         }
