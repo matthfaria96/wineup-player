@@ -185,55 +185,86 @@ struct MetadataManagerView: View {
     }
 }
 
-/// Política de preenchimento e identificação por áudio.
+/// Opções da busca de metadados: como aplicar resultados, consultas online, Musixmatch e AcoustID.
 struct MetadataSettings: View {
     @ObservedObject var model: MetadataManagerModel
 
     var body: some View {
         Form {
-            Picker("Ao usar um resultado", selection: $model.policy) {
-                Text("Preencher só o que falta").tag(FillPolicy.missingOnly)
-                Text("Substituir também o que já existe").tag(FillPolicy.overwrite)
-            }
-            .pickerStyle(.radioGroup)
-            Picker("Capa ao salvar", selection: $model.coverSaveMode) {
-                ForEach(MetadataManagerModel.CoverSaveMode.allCases) { Text($0.title).tag($0) }
-            }
-            Section("Consultas online") {
-                Toggle("Permitir buscar dados, capas e letras na internet", isOn: Binding(
-                    get: { OnlineConsent.isGranted },
-                    set: { OnlineConsent.answer = $0 ? .granted : .denied }))
-                ForEach(OnlineServices.Service.allCases, id: \.self) { service in
-                    Toggle(service.title, isOn: Binding(get: { OnlineServices.isOn(service) },
-                                                        set: { OnlineServices.set(service, $0); model.objectWillChange.send() }))
-                        .padding(.leading, 16)
-                        .disabled(!OnlineConsent.isGranted)
+            Section {
+                Picker("Ao usar um resultado", selection: $model.policy) {
+                    Text("Preencher só o que falta").tag(FillPolicy.missingOnly)
+                    Text("Substituir o que já existe").tag(FillPolicy.overwrite)
                 }
-                Text(OnlineConsent.whatIsSent)
-                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                Picker("Capa ao salvar", selection: $model.coverSaveMode) {
+                    ForEach(MetadataManagerModel.CoverSaveMode.allCases) { Text($0.title).tag($0) }
+                }
+            } header: {
+                Text("Resultados")
+            } footer: {
+                Text("Nada é gravado até você salvar. Antes de gravar, o Wineup guarda um backup de cada arquivo.")
             }
-            Section("Letras: conta Musixmatch (opcional)") {
-                SecureField("Token da sua conta", text: $model.musixmatchToken)
-                Text("Usado só quando o catálogo principal não tem a letra. O Musixmatch bloqueia o acesso sem conta.")
-                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+
+            Section {
+                Toggle("Buscar na internet", isOn: Binding(
+                    get: { OnlineConsent.isGranted },
+                    set: { OnlineConsent.answer = $0 ? .granted : .denied; model.objectWillChange.send() }))
+                ForEach(OnlineServices.Service.allCases, id: \.self) { service in
+                    Toggle(isOn: Binding(get: { OnlineServices.isOn(service) },
+                                         set: { OnlineServices.set(service, $0); model.objectWillChange.send() })) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(Self.title(service))
+                            Text(Self.detail(service)).font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    .disabled(!OnlineConsent.isGranted)
+                }
+            } header: {
+                Text("Consultas online")
+            } footer: {
+                Text("Só consulta quando você pede. Envia título, artista, álbum e duração; o áudio nunca é enviado.")
             }
-            Section("Reconhecer pelo som (AcoustID)") {
-                TextField("Chave de aplicativo", text: $model.acoustIDKey)
+
+            Section {
+                SecureField("Token", text: $model.musixmatchToken, prompt: Text("Opcional"))
+            } header: {
+                Text("Letras: conta Musixmatch")
+            } footer: {
+                Text("Usado só quando o catálogo principal não tem a letra. O Musixmatch exige uma conta.")
+            }
+
+            Section {
+                TextField("Chave", text: $model.acoustIDKey, prompt: Text("Opcional"))
+                LabeledContent("Chromaprint") {
+                    Label(model.fpcalcFound ? "Instalado" : "Não instalado",
+                          systemImage: model.fpcalcFound ? "checkmark.circle.fill" : "xmark.circle")
+                        .foregroundStyle(model.fpcalcFound ? .green : .secondary)
+                }
+            } header: {
+                Text("Reconhecer pelo som (AcoustID)")
+            } footer: {
                 Text(model.fpcalcFound
-                     ? "fpcalc encontrado. Com a chave, músicas sem tags são reconhecidas pelo áudio."
-                     : "Instale o Chromaprint (brew install chromaprint) e informe uma chave grátis de acoustid.org para reconhecer músicas pelo áudio.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                     ? "Com a chave, músicas sem tags são reconhecidas pelo áudio (só a impressão digital do som é enviada)."
+                     : "Instale com brew install chromaprint e crie uma chave grátis em acoustid.org.")
             }
-            Text("Só consulta a internet quando você pede (Corrigir tudo, Buscar, Ver resultados). Envia título, artista, álbum e duração aos serviços de metadados, capas e letras; com AcoustID, também a impressão digital do áudio. Antes de gravar, o Wineup guarda um backup de cada arquivo.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(16)
-        .frame(width: 400)
+        .formStyle(.grouped)
+        .frame(width: 440, height: 560)
     }
 
+    private static func title(_ service: OnlineServices.Service) -> String {
+        switch service {
+        case .metadata: "Dados e capas de álbuns"
+        case .albumHint: "Descobrir o álbum"
+        case .lyrics: "Letras"
+        }
+    }
 
+    private static func detail(_ service: OnlineServices.Service) -> String {
+        switch service {
+        case .metadata: "MusicBrainz e Cover Art Archive"
+        case .albumHint: "Busca do iTunes, também para capas extras"
+        case .lyrics: "Catálogos de letras sincronizadas"
+        }
+    }
 }

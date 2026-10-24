@@ -40,7 +40,7 @@ enum RowLook {
         var parts: [String] = []
         switch RowLook(row) {
         case .searching: parts.append("Buscando dados…")
-        case .complete: parts.append(row.status == .saved ? "Salva e completa" : "Completa: título, artista, álbum, capa e letra")
+        case .complete: parts.append(row.status == .saved ? "Salva e completa" : "Completa: título, artista, álbum, ano, faixa, gênero, capa e letra")
         case .incomplete: parts.append("Falta: " + row.missingEssentials.joined(separator: ", "))
         case .review: parts.append("Encontrada com confiança baixa: confira em Correspondência")
         case .notFound: parts.append("Nada encontrado nas bases")

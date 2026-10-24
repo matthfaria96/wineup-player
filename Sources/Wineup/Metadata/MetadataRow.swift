@@ -71,18 +71,20 @@ struct MetadataRow: Identifiable, Equatable {
     var willHaveCover: Bool { cover != nil || file.hasCover }
     var willHaveLyrics: Bool { lyrics?.text != nil || file.hasLyrics }
 
-    /// Itens essenciais de uma música "ok" que ainda faltam depois das alterações pendentes (nomes visíveis).
+    /// Itens essenciais de uma música "ok" que ainda faltam depois das alterações pendentes (nomes visíveis):
+    /// título, artista, álbum, ano, faixa e gênero, mais capa e letra.
     /// Problema que o usuário mandou ignorar não conta como falta.
     var missingEssentials: [String] {
         let checks: [(String, Bool, FixerIssue)] = [
             ("Título", value("title").isEmpty, .missingTitle), ("Artista", value("artist").isEmpty, .missingArtist),
-            ("Álbum", value("album").isEmpty, .missingAlbum), ("Capa", !willHaveCover, .missingCover),
-            ("Letra", !willHaveLyrics, .missingLyrics),
+            ("Álbum", value("album").isEmpty, .missingAlbum), ("Ano", value("year").isEmpty, .missingYear),
+            ("Faixa", value("trackNumber").isEmpty, .missingTrack), ("Gênero", value("genre").isEmpty, .missingGenre),
+            ("Capa", !willHaveCover, .missingCover), ("Letra", !willHaveLyrics, .missingLyrics),
         ]
         return checks.filter { $0.1 && !ignored.contains($0.2) }.map(\.0)
     }
 
-    /// Título, artista, álbum, capa e letra preenchidos.
+    /// Título, artista, álbum, ano, faixa, gênero, capa e letra preenchidos.
     var isComplete: Bool { missingEssentials.isEmpty }
 
     /// Itens que a busca trouxe e ainda não foram gravados (nomes visíveis).

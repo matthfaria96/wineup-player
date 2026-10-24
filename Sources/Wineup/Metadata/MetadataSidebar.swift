@@ -51,6 +51,7 @@ struct MetadataSidebar: View {
 
     private var fields: some View {
         VStack(alignment: .leading, spacing: 8) {
+            // Essenciais: os que contam para a música ficar completa.
             field("title")
             field("artist")
             field("album")
@@ -59,9 +60,16 @@ struct MetadataSidebar: View {
                 field("trackNumber").frame(width: 56)
                 field("genre")
             }
-            field("comment")
+            HStack(spacing: 6) {
+                Text("Mais informações").font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary)
+                    .textCase(.uppercase)
+                VStack { Divider() }
+            }
+            .padding(.top, 6)
+            .help("Campos opcionais: não contam para a música ficar completa")
             field("albumArtist")
             field("composer")
+            field("comment")
             field("discNumber").frame(width: 70)
         }
     }
