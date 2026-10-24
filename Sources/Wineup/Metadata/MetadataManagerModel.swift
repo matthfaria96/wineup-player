@@ -87,6 +87,7 @@ final class MetadataManagerModel: ObservableObject {
     private var visibleCache: (rows: Int, list: Int, value: [MetadataRow])?
     private var selectedCache: (rows: Int, selection: Int, value: [MetadataRow])?
     private var dirtyCache: (rows: Int, value: Int)?
+    private var reviewCache: (rows: Int, value: Int)?
     private var summaryCache: (rows: Int, value: CollectionCounts)?
     private var groupsCache: (rows: Int, value: [(group: Int, files: [FixerFile])])?
     private var totalCache: (rows: Int, value: String)?
@@ -100,6 +101,8 @@ final class MetadataManagerModel: ObservableObject {
 
     var fpcalcFound: Bool { AcoustIDClient.fpcalcPath() != nil }
     var isBusy: Bool { work != nil }
+    /// Pedido para abrir a escolha de resultado de uma música (a janela mostra a folha e limpa o pedido).
+    @Published var pickRequest: MetadataRow.ID?
     /// Conta as buscas iniciadas: só elas abrem a fila de cards (salvar e desfazer não).
     @Published private(set) var searchRuns = 0
 
@@ -135,6 +138,14 @@ final class MetadataManagerModel: ObservableObject {
         if let c = dirtyCache, c.rows == rowsVersion { return c.value }
         let value = rows.reduce(0) { $0 + ($1.isDirty ? 1 : 0) }
         dirtyCache = (rowsVersion, value)
+        return value
+    }
+
+    /// Encontradas com pouca confiança, à espera de o usuário escolher o resultado.
+    var reviewCount: Int {
+        if let c = reviewCache, c.rows == rowsVersion { return c.value }
+        let value = rows.reduce(0) { $0 + ($1.needsReview ? 1 : 0) }
+        reviewCache = (rowsVersion, value)
         return value
     }
 

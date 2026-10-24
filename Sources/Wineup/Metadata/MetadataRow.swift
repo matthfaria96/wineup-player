@@ -161,8 +161,13 @@ struct MetadataRow: Identifiable, Equatable {
 }
 
 /// Filtro da lista.
+extension MetadataRow {
+    /// Achou resultado com pouca confiança e ainda não foi escolhido: o usuário precisa conferir.
+    var needsReview: Bool { status == .review && !isDirty }
+}
+
 enum MetadataFilter: String, CaseIterable, Identifiable {
-    case all, problems, changed, duplicates
+    case all, problems, review, changed, duplicates
 
     var id: String { rawValue }
 
@@ -170,6 +175,7 @@ enum MetadataFilter: String, CaseIterable, Identifiable {
         switch self {
         case .all: String(localized: "Todas")
         case .problems: String(localized: "Com problemas")
+        case .review: String(localized: "Para revisar")
         case .changed: String(localized: "Alteradas")
         case .duplicates: String(localized: "Duplicadas")
         }
@@ -179,6 +185,7 @@ enum MetadataFilter: String, CaseIterable, Identifiable {
         switch self {
         case .all: true
         case .problems: !row.openIssues.isEmpty
+        case .review: row.needsReview
         case .changed: row.isDirty
         case .duplicates: row.file.duplicateGroup != nil
         }

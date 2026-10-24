@@ -24,7 +24,7 @@ struct MetadataManagerView: View {
             MetadataSidebar(model: model)
                 .frame(minWidth: 250, idealWidth: 280, maxWidth: 360)
             VStack(spacing: 0) {
-                if model.dirtyCount > 0 && !model.isBusy {
+                if SaveBanner.isShown(model) {
                     SaveBanner(model: model).transition(.move(edge: .top).combined(with: .opacity))
                 }
                 MetadataTable(model: model, onPickMatch: { pickerRow = $0 })
@@ -35,7 +35,7 @@ struct MetadataManagerView: View {
                 Divider()
                 statusBar
             }
-            .animation(.snappy, value: model.dirtyCount > 0 && !model.isBusy)
+            .animation(.snappy, value: SaveBanner.isShown(model))
             .animation(.snappy, value: showQueue)
             .frame(minWidth: 560)
         }
@@ -49,6 +49,11 @@ struct MetadataManagerView: View {
         .sheet(item: $model.report) { SearchReportView(report: $0, model: model) }
         // A busca começa: o painel de cards sobe sozinho; ao terminar, fica até o usuário fechar.
         .onChange(of: model.searchRuns) { showQueue = true }
+        .onChange(of: model.pickRequest) { _, id in
+            guard let id else { return }
+            pickerRow = id
+            model.pickRequest = nil
+        }
         .confirmationDialog("Desfazer a última gravação?", isPresented: $confirmUndo) {
             Button("Desfazer") { if let last = model.lastUndoable { model.undo(last) } }
             Button("Cancelar", role: .cancel) {}
@@ -80,19 +85,17 @@ struct MetadataManagerView: View {
                 .disabled(model.folder == nil || model.isLoading)
         }
         ToolbarItemGroup {
+            // A ação principal, com nome: busca tudo o que falta nas músicas com problemas.
             Button { model.autoFix(onlySelection: false) } label: {
                 Label("Corrigir tudo", systemImage: "wand.and.stars")
             }
+            .labelStyle(.titleAndIcon)
             .help("Buscar metadados, capas e letras para todas as músicas com problemas")
             .disabled(model.rows.isEmpty || model.isBusy)
-            Button { showAlbumSearch = true } label: {
-                Label("Buscar álbum", systemImage: "square.stack")
-            }
-            .help("Escolher o álbum no MusicBrainz e preencher todas as faixas de uma vez (seleção ou lista)")
-            .disabled(model.rows.isEmpty || model.isBusy)
             Menu {
-                Button("Buscar dados de cada música selecionada") { model.autoFix(onlySelection: true) }
+                Button("Buscar dados das selecionadas") { model.autoFix(onlySelection: true) }
                     .disabled(model.selection.isEmpty)
+                Button("Buscar o álbum no MusicBrainz…") { showAlbumSearch = true }
                 Button("Procurar capas…") { showCoverSearch = true }
                 Divider()
                 Button("Buscar letras das selecionadas") { model.fetchLyrics(onlySelection: true) }
@@ -101,24 +104,20 @@ struct MetadataManagerView: View {
             } label: {
                 Label("Buscar", systemImage: "magnifyingglass")
             }
+            .help("Buscar só as selecionadas, um álbum inteiro, capas ou letras")
             .disabled(model.rows.isEmpty || model.isBusy)
-            Button { model.save(onlySelection: false) } label: {
-                Label("Salvar tudo", systemImage: "square.and.arrow.down")
+            // Desfazer e o histórico juntos: o desfazer é só o atalho para o último lote do histórico.
+            Menu {
+                Button("Desfazer a última gravação") { confirmUndo = model.lastUndoable != nil }
+                    .keyboardShortcut("z", modifiers: .command)
+                    .disabled(model.lastUndoable == nil || model.isBusy)
+                Button("Ver histórico de gravações…") { showHistory = true }
+            } label: {
+                Label("Histórico", systemImage: "clock.arrow.circlepath")
             }
-            .help("Gravar todas as alterações pendentes (com backup)")
-            .disabled(model.dirtyCount == 0 || model.isBusy)
-            Button { confirmUndo = model.lastUndoable != nil } label: {
-                Label("Desfazer última gravação", systemImage: "arrow.uturn.backward")
-            }
-            .keyboardShortcut("z", modifiers: .command)
-            .help("Desfazer a última gravação (⌘Z): tags, capas e letras voltam ao que eram")
-            .disabled(model.lastUndoable == nil || model.isBusy)
-            Button { showDuplicates = true } label: { Label("Duplicadas", systemImage: "square.on.square") }
-                .help("Comparar duplicadas e mandar as cópias piores para a Lixeira")
-                .disabled(!model.hasDuplicates)
-            Button { showHistory = true } label: { Label("Histórico", systemImage: "clock.arrow.circlepath") }
-                .help("Histórico de gravações, com desfazer por lote")
+            .help("Desfazer a última gravação (⌘Z) ou qualquer lote anterior")
             Button { showSettings.toggle() } label: { Label("Opções", systemImage: "gearshape") }
+                .help("Como aplicar os resultados e quais serviços online usar")
                 .popover(isPresented: $showSettings) { MetadataSettings(model: model) }
         }
         ToolbarItem {
@@ -127,12 +126,15 @@ struct MetadataManagerView: View {
                     ForEach(MetadataFilter.allCases) { Text($0.title).tag($0) }
                 }
                 .pickerStyle(.inline)
+                Divider()
+                Button("Comparar duplicadas…") { showDuplicates = true }
+                    .disabled(!model.hasDuplicates)
             } label: {
                 Label(model.filter.title, systemImage: "line.3.horizontal.decrease.circle")
                     
             }
             .fixedSize()
-            .help("Mostrar todas, só as com problemas, as alteradas ou as duplicadas")
+            .help("Mostrar todas, só as com problemas, para revisar, alteradas ou duplicadas")
         }
         ToolbarItem {
             TextField("Filtrar", text: $model.query)

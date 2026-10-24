@@ -5,30 +5,62 @@ import WineupLibrary
 struct SaveBanner: View {
     @ObservedObject var model: MetadataManagerModel
 
+    /// Aparece quando há algo para aprovar: alterações prontas para salvar ou resultados para conferir.
+    static func isShown(_ model: MetadataManagerModel) -> Bool {
+        !model.isBusy && (model.dirtyCount > 0 || model.reviewCount > 0)
+    }
+
     var body: some View {
-        let count = model.dirtyCount
+        let ready = model.dirtyCount
+        let review = model.reviewCount
         HStack(spacing: 10) {
-            Image(systemName: "arrow.down.circle.fill").font(.system(size: 16)).foregroundStyle(Color.accentColor)
-                .symbolEffect(.bounce, value: count)
+            Image(systemName: ready > 0 ? "checkmark.circle.fill" : "questionmark.circle.fill")
+                .font(.system(size: 16))
+                .foregroundStyle(ready > 0 ? Color.accentColor : .orange)
+                .symbolEffect(.bounce, value: ready)
             VStack(alignment: .leading, spacing: 1) {
-                Text(count == 1 ? "1 música com dados encontrados" : "\(count) músicas com dados encontrados")
+                Text(headline(ready: ready, review: review))
                     .font(.system(size: 12, weight: .semibold))
                     .contentTransition(.numericText())
-                Text("Deseja salvar todas as alterações? Antes de gravar, o Wineup guarda um backup de cada arquivo.")
+                Text(ready > 0
+                     ? "Confira na lista: o ponto azul marca o dado novo. Clique duas vezes numa música para trocar o resultado. Antes de gravar, o Wineup guarda um backup de cada arquivo."
+                     : "Clique duas vezes numa música para escolher o resultado certo. Nada é gravado até você salvar.")
                     .font(.system(size: 11)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
-            Button("Ver alteradas") { withAnimation(.snappy) { model.filter = .changed } }
-                .disabled(model.filter == .changed)
-            Button("Salvar todas") { model.save(onlySelection: false) }
-                .buttonStyle(.borderedProminent)
-                .disabled(model.isBusy)
+            if review > 0 {
+                Button("Revisar (\(review))") { withAnimation(.snappy) { model.filter = .review } }
+                    .disabled(model.filter == .review)
+                    .help("Mostrar só as músicas encontradas com pouca confiança")
+            }
+            if ready > 0 {
+                Button("Ver alteradas") { withAnimation(.snappy) { model.filter = .changed } }
+                    .disabled(model.filter == .changed)
+                    .help("Mostrar só as músicas que vão ser gravadas")
+                Button("Salvar todas") { model.save(onlySelection: false) }
+                    .buttonStyle(.borderedProminent)
+                    .keyboardShortcut("s", modifiers: .command)
+                    .disabled(model.isBusy)
+                    .help("Gravar as alterações de todas as músicas (⌘S)")
+            }
         }
         .controlSize(.small)
         .padding(.horizontal, 12).padding(.vertical, 8)
-        .background(Color.accentColor.opacity(0.1))
+        .background((ready > 0 ? Color.accentColor : Color.orange).opacity(0.1))
         .overlay(alignment: .bottom) { Divider() }
-        .animation(.snappy, value: count)
+        .animation(.snappy, value: ready)
+        .animation(.snappy, value: review)
+    }
+
+    private func headline(ready: Int, review: Int) -> LocalizedStringKey {
+        switch (ready, review) {
+        case (0, 1): "1 música para revisar"
+        case (0, _): "\(review) músicas para revisar"
+        case (1, 0): "1 música pronta para salvar"
+        case (_, 0): "\(ready) músicas prontas para salvar"
+        default: "Prontas para salvar: \(ready) · Para revisar: \(review)"
+        }
     }
 }
 

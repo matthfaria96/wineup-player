@@ -22,6 +22,21 @@ struct WineupApp: App {
                     appDelegate.reopenMain = { [openWindow] in openWindow(id: "main") }
                     ClassicKeys.install(state: state)
                     SkinEnergy.meter = state.meterModel
+                    // Testes: WINEUP_OPEN_WINDOW=metadata abre essa janela ao iniciar (capturas sem clicar).
+                    // (Depois de 1 s: ao abrir, o app fecha as janelas que o sistema tenta restaurar.)
+                    if let id = ProcessInfo.processInfo.environment["WINEUP_OPEN_WINDOW"] {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { openWindow(id: id) }
+                    }
+                    // Testes: WINEUP_TEST_SCREEN=left leva as janelas para a tela mais à esquerda (sem ativar o app).
+                    if ProcessInfo.processInfo.environment["WINEUP_TEST_SCREEN"] == "left" {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                            guard let screen = NSScreen.screens.min(by: { $0.frame.minX < $1.frame.minX }) else { return }
+                            for window in NSApp.windows where window.isVisible && window.frame.width > 400 {
+                                window.setFrameOrigin(NSPoint(x: screen.visibleFrame.minX, y: max(screen.visibleFrame.minY, screen.visibleFrame.maxY - window.frame.height)))
+                                window.orderFrontRegardless()
+                            }
+                        }
+                    }
                 }
                 .task { await state.startLibrary() }
         }

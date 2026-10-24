@@ -442,7 +442,15 @@ struct SelectionHeader: View {
                     Button("Manter a atual") { model.setCover(nil) }
                 }
                 Spacer(minLength: 0)
-                if tab == .general || single == nil {
+                if let row = single, row.needsReview, tab == .general {
+                    // Achou com pouca confiança: o próximo passo é escolher o resultado, não buscar de novo.
+                    Button { model.pickRequest = row.id } label: {
+                        Label("Escolher resultado…", systemImage: "list.bullet.rectangle")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.orange)
+                    .help("Ver os resultados encontrados e escolher o certo para esta música")
+                } else if tab == .general || single == nil {
                     Button { model.searchSelection(data: tab == .general, lyrics: tab == .lyrics) } label: {
                         Label(model.isBusy ? "Buscando…" : tab == .lyrics ? "Buscar letras" : "Buscar dados",
                               systemImage: "magnifyingglass")

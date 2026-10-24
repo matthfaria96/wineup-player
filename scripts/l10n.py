@@ -85,8 +85,12 @@ def build(resources):
         folder = resources / f"{lang}.lproj"
         folder.mkdir(parents=True, exist_ok=True)
         (folder / "Localizable.strings").write_text("\n".join(lines) + "\n", "utf-16")
-    # Português é o texto do código: a pasta só declara o idioma.
-    (resources / f"{SOURCE_LANGUAGE}.lproj").mkdir(parents=True, exist_ok=True)
+    # Português é o texto do código, mas a tabela precisa existir: sem ela o macOS cai no idioma
+    # reserva (inglês) mesmo com o app em português.
+    folder = resources / f"{SOURCE_LANGUAGE}.lproj"
+    folder.mkdir(parents=True, exist_ok=True)
+    lines = [f'"{escape(k)}" = "{escape(k)}";' for k in keys]
+    (folder / "Localizable.strings").write_text("\n".join(lines) + "\n", "utf-16")
     print(f"{len(languages())} idiomas gerados em {resources}")
 
 
