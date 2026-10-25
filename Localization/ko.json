@@ -1006,5 +1006,17 @@
  "Abrindo arquivos: %lld de %lld…": "파일 여는 중: %1$lld/%2$lld…",
  "Animar o fundo do skin": "스킨 배경 애니메이션",
  "Desligada, o fundo do skin fica parado e o Wineup gasta menos bateria. Com \"Reduzir movimento\" ligado no macOS, ele também fica parado.": "끄면 스킨 배경이 멈추고 Wineup의 배터리 사용이 줄어듭니다. macOS에서 ‘동작 줄이기’가 켜져 있어도 멈춥니다.",
- "Estrelas, brilhos e efeitos que se mexem com a música.": "음악에 맞춰 움직이는 별, 빛, 효과."
+ "Estrelas, brilhos e efeitos que se mexem com a música.": "음악에 맞춰 움직이는 별, 빛, 효과.",
+ "Glass": "Glass",
+ "Claro": "라이트",
+ "Escuro": "다크",
+ "Glass (padrão)": "Glass (기본)",
+ "Glass é o padrão, o visual da Apple com vidro e transparência. Sem skin é o visual simples, escuro ou claro. Os skins personalizados trazem cores, molduras e arte de fundo.": "Glass가 기본이며, 유리와 투명도를 갖춘 Apple 스타일입니다. 스킨 없음은 다크 또는 라이트의 단순한 모양입니다. 사용자 스킨은 색상, 프레임, 배경 아트를 더합니다.",
+ "Sem skin claro": "스킨 없음 (라이트)",
+ "Sem skin escuro": "스킨 없음 (다크)",
+ "Skins personalizados": "사용자 스킨",
+ "Troca o visual da janela inteira: Glass (o visual da Apple, padrão), sem skin escuro ou claro, ou um skin personalizado com cores, molduras e arte de fundo. Também dá para editar, criar e importar skins.": "창 전체의 모양을 바꿉니다: Glass(Apple 스타일, 기본), 다크 또는 라이트의 스킨 없음, 또는 색상·프레임·배경 아트가 있는 사용자 스킨. 스킨을 편집, 생성, 가져오기할 수도 있습니다.",
+ "Fechar a busca": "검색 닫기",
+ "Abre a busca na barra do topo: procura músicas por título, artista ou álbum em toda a sua biblioteca. O X ou um clique fora fecha.": "상단 막대에서 검색을 엽니다: 보관함 전체에서 제목, 아티스트 또는 앨범으로 노래를 찾습니다. X 또는 바깥쪽 클릭으로 닫습니다.",
+ "Tocar pela barra de menus, layout da janela e tema (Glass, sem skin ou skins personalizados).": "메뉴 막대에서 재생, 창 레이아웃 및 테마(Glass, 스킨 없음 또는 사용자 스킨)."
 }

@@ -17,12 +17,14 @@ struct SkinChrome: ViewModifier {
     }
 
     @ViewBuilder private var background: some View {
-        if let art = theme.art, let s = art.nineSlice(on ? (art.manifest.controls.buttonOn ?? art.manifest.controls.button) : art.manifest.controls.button) {
+        if theme.isGlass {
+            GlassControlBackground(on: on, radius: radius + 2)
+        } else if let art = theme.art, let s = art.nineSlice(on ? (art.manifest.controls.buttonOn ?? art.manifest.controls.button) : art.manifest.controls.button) {
             Image(nsImage: s.image)
                 .resizable(capInsets: EdgeInsets(top: s.inset, leading: s.inset, bottom: s.inset, trailing: s.inset), resizingMode: .stretch)
         } else {
             RoundedRectangle(cornerRadius: radius)
-                .fill(on ? theme.rowSelection : Color.white.opacity(0.06))
+                .fill(on ? theme.rowSelection : theme.ink.opacity(theme.isLight ? 0.04 : 0.06))
                 .overlay(RoundedRectangle(cornerRadius: radius).stroke(theme.panelBorder, lineWidth: 1))
         }
     }
@@ -104,12 +106,14 @@ struct SkinFieldBackground: ViewModifier {
 
     func body(content: Content) -> some View {
         content.background {
-            if let art = theme.art, let s = art.nineSlice(art.manifest.controls.field) {
+            if theme.isGlass {
+                GlassControlBackground(on: false, radius: 8)
+            } else if let art = theme.art, let s = art.nineSlice(art.manifest.controls.field) {
                 Image(nsImage: s.image)
                     .resizable(capInsets: EdgeInsets(top: s.inset, leading: s.inset, bottom: s.inset, trailing: s.inset), resizingMode: .stretch)
                     .allowsHitTesting(false)
             } else {
-                RoundedRectangle(cornerRadius: 7).fill(Color.white.opacity(0.06))
+                RoundedRectangle(cornerRadius: 7).fill(theme.isLight ? Color.white : theme.ink.opacity(0.06))
                     .overlay(RoundedRectangle(cornerRadius: 7).stroke(theme.panelBorder, lineWidth: 1))
             }
         }

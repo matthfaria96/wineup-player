@@ -103,7 +103,7 @@ struct WorkQueuePanel: View {
             }
             .frame(height: 86)
         }
-        .background(.background.secondary)
+        .themedSurface()
     }
 }
 

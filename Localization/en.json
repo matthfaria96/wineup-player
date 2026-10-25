@@ -1006,5 +1006,17 @@
  "Abrindo arquivos: %lld de %lld…": "Opening files: %1$lld of %2$lld…",
  "Animar o fundo do skin": "Animate Skin Background",
  "Desligada, o fundo do skin fica parado e o Wineup gasta menos bateria. Com \"Reduzir movimento\" ligado no macOS, ele também fica parado.": "When off, the skin background stays still and Wineup uses less battery. It also stays still when “Reduce motion” is on in macOS.",
- "Estrelas, brilhos e efeitos que se mexem com a música.": "Stars, glows and effects that move with the music."
+ "Estrelas, brilhos e efeitos que se mexem com a música.": "Stars, glows and effects that move with the music.",
+ "Glass": "Glass",
+ "Claro": "Light",
+ "Escuro": "Dark",
+ "Glass (padrão)": "Glass (default)",
+ "Glass é o padrão, o visual da Apple com vidro e transparência. Sem skin é o visual simples, escuro ou claro. Os skins personalizados trazem cores, molduras e arte de fundo.": "Glass is the default: the Apple look with glass and transparency. No skin is the simple look, dark or light. Custom skins bring colors, frames and background art.",
+ "Sem skin claro": "No skin, light",
+ "Sem skin escuro": "No skin, dark",
+ "Skins personalizados": "Custom skins",
+ "Troca o visual da janela inteira: Glass (o visual da Apple, padrão), sem skin escuro ou claro, ou um skin personalizado com cores, molduras e arte de fundo. Também dá para editar, criar e importar skins.": "Changes the look of the whole window: Glass (the Apple look, default), no skin in dark or light, or a custom skin with colors, frames and background art. You can also edit, create and import skins.",
+ "Fechar a busca": "Close search",
+ "Abre a busca na barra do topo: procura músicas por título, artista ou álbum em toda a sua biblioteca. O X ou um clique fora fecha.": "Opens search in the top bar: finds songs by title, artist or album across your whole library. The X or a click outside closes it.",
+ "Tocar pela barra de menus, layout da janela e tema (Glass, sem skin ou skins personalizados).": "Play from the menu bar, window layout and theme (Glass, no skin or custom skins)."
 }

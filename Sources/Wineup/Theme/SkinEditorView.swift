@@ -8,7 +8,7 @@ import WineupLibrary
 struct SkinEditorView: View {
     @ObservedObject private var store = SkinStore.shared
     @ObservedObject private var history = SkinHistory.shared
-    @AppStorage("themeID") private var activeID = SkinStore.defaultID
+    @AppStorage(DisplayKeys.theme) private var activeID = Theme.defaultID
     @State private var selectedID: String?
     @State private var error: String?
     @State private var confirmDelete = false
@@ -45,8 +45,8 @@ struct SkinEditorView: View {
         .sheet(isPresented: $showNew) { NewSkinFromImageView { skin in selectedID = skin.id; activeID = skin.id } }
         .onAppear {
             // Skin em uso pode ter sido apagado: cai no primeiro disponível.
-            if activeID != Theme.noneID, store.skin(activeID) == nil { activeID = store.skins.first?.id ?? SkinStore.defaultID }
-            selectedID = selectedID ?? (activeID == Theme.noneID ? store.skins.first?.id : activeID)
+            if !Theme.isBuiltIn(activeID), store.skin(activeID) == nil { activeID = Theme.defaultID }
+            selectedID = selectedID ?? (store.skin(activeID) == nil ? store.skins.first?.id : activeID)
         }
         .alert("Não foi possível", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
             Button("OK") {}
@@ -427,8 +427,8 @@ struct SkinEditorView: View {
             try store.delete(skin.id)
             history.reset(skin.id)
             if store.skin(skin.id) == nil {
-                if activeID == skin.id { activeID = SkinStore.defaultID }
-                selectedID = activeID
+                if activeID == skin.id { activeID = Theme.defaultID }
+                selectedID = store.skin(activeID) == nil ? store.skins.first?.id : activeID
             }
         }
     }

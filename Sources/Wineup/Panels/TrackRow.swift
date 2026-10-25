@@ -8,7 +8,7 @@ struct TrackRow: View {
     private var rowBackground: Color {
         if isCurrent { return theme.currentRow.opacity(0.16) }
         if isSelected { return theme.rowSelection }
-        return index % 2 == 0 ? Color.white.opacity(0.025) : Color.clear
+        return index % 2 == 0 ? theme.ink.opacity(theme.isLight ? 0.03 : 0.025) : Color.clear
     }
 
     let track: Track

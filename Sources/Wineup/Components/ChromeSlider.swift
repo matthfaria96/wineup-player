@@ -10,9 +10,20 @@ struct ChromeSlider: View {
 
     @Environment(\.theme) private var theme
 
+    /// Puxador do Glass: cápsula deitada no slider horizontal (em pé no vertical).
+    private static let glassKnob = CGSize(width: 20, height: 13)
+
     /// Puxador: imagem do skin (centralizada, tamanho do skin) ou o retângulo padrão.
     @ViewBuilder private func knob(horizontal: Bool) -> some View {
-        if let art = theme.art, let image = art.image(art.manifest.controls.knob) {
+        if theme.isGlass {
+            // Glass: puxador branco em cápsula com sombra, como os sliders do macOS.
+            Capsule()
+                .fill(Color.white)
+                .overlay(Capsule().strokeBorder(Color.black.opacity(0.12), lineWidth: 0.5))
+                .shadow(color: .black.opacity(0.28), radius: 2, y: 1)
+                .frame(width: horizontal ? Self.glassKnob.width : Self.glassKnob.height,
+                       height: horizontal ? Self.glassKnob.height : Self.glassKnob.width)
+        } else if let art = theme.art, let image = art.image(art.manifest.controls.knob) {
             let size = CGFloat(art.manifest.controls.knobSize ?? 20)
             Image(nsImage: image).resizable().interpolation(.high).frame(width: size, height: size)
         } else {
@@ -25,6 +36,7 @@ struct ChromeSlider: View {
     /// Comprimento real do puxador no eixo: o do skin quando há imagem (senão o puxador
     /// passava do trilho nos extremos, ex.: presets com bandas em ±12 dB).
     private var effectiveKnobLength: CGFloat {
+        if theme.isGlass { return Self.glassKnob.width }
         if let art = theme.art, art.image(art.manifest.controls.knob) != nil {
             return CGFloat(art.manifest.controls.knobSize ?? 20)
         }
@@ -43,7 +55,7 @@ struct ChromeSlider: View {
 
             ZStack {
                 Capsule()
-                    .fill(theme.mutedText.opacity(0.45))
+                    .fill(theme.isGlass ? theme.ink.opacity(theme.isLight ? 0.14 : 0.2) : theme.mutedText.opacity(0.45))
                     .frame(width: horizontal ? nil : 3, height: horizontal ? 3 : nil)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 knob(horizontal: horizontal)

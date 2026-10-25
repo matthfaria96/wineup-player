@@ -1006,5 +1006,17 @@
  "Abrindo arquivos: %lld de %lld…": "Bestanden openen: %1$lld van %2$lld…",
  "Animar o fundo do skin": "Skin-achtergrond animeren",
  "Desligada, o fundo do skin fica parado e o Wineup gasta menos bateria. Com \"Reduzir movimento\" ligado no macOS, ele também fica parado.": "Uit: de skin-achtergrond staat stil en Wineup verbruikt minder batterij. Hij staat ook stil als ‘Verminder beweging’ in macOS aan staat.",
- "Estrelas, brilhos e efeitos que se mexem com a música.": "Sterren, gloed en effecten die met de muziek bewegen."
+ "Estrelas, brilhos e efeitos que se mexem com a música.": "Sterren, gloed en effecten die met de muziek bewegen.",
+ "Glass": "Glass",
+ "Claro": "Licht",
+ "Escuro": "Donker",
+ "Glass (padrão)": "Glass (standaard)",
+ "Glass é o padrão, o visual da Apple com vidro e transparência. Sem skin é o visual simples, escuro ou claro. Os skins personalizados trazem cores, molduras e arte de fundo.": "Glass is de standaard: de Apple-stijl met glas en transparantie. Geen skin is de eenvoudige stijl, donker of licht. Eigen skins brengen kleuren, kaders en achtergrondkunst.",
+ "Sem skin claro": "Geen skin, licht",
+ "Sem skin escuro": "Geen skin, donker",
+ "Skins personalizados": "Eigen skins",
+ "Troca o visual da janela inteira: Glass (o visual da Apple, padrão), sem skin escuro ou claro, ou um skin personalizado com cores, molduras e arte de fundo. Também dá para editar, criar e importar skins.": "Verandert het uiterlijk van het hele venster: Glass (de Apple-stijl, standaard), geen skin in donker of licht, of een eigen skin met kleuren, kaders en achtergrondkunst. Je kunt skins ook bewerken, maken en importeren.",
+ "Fechar a busca": "Zoeken sluiten",
+ "Abre a busca na barra do topo: procura músicas por título, artista ou álbum em toda a sua biblioteca. O X ou um clique fora fecha.": "Opent zoeken in de bovenbalk: zoekt nummers op titel, artiest of album in je hele bibliotheek. De X of een klik ernaast sluit het.",
+ "Tocar pela barra de menus, layout da janela e tema (Glass, sem skin ou skins personalizados).": "Afspelen vanuit de menubalk, vensterindeling en thema (Glass, geen skin of eigen skins)."
 }

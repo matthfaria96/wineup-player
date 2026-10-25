@@ -43,7 +43,7 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(width: 640, height: 600)
-        .background(Color(red: 0.11, green: 0.11, blue: 0.12))
-        .preferredColorScheme(.dark)
+        .background(SettingsStyle.background)
+        .wineupColorScheme()
     }
 }

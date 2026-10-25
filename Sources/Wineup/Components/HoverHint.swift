@@ -114,7 +114,7 @@ private struct HintBubble: View {
         .frame(width: width, alignment: .leading)
         .padding(.horizontal, 10).padding(.vertical, 7)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(.white.opacity(0.12), lineWidth: 0.5))
+        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5))
         .environment(\.colorScheme, .dark)
         .padding(1)
     }

@@ -20,12 +20,13 @@ Player de música nativo para macOS (Swift + SwiftUI), inspirado na identidade e
 <!-- release-notes-start (manual) -->
 ## Release e testes (manual)
 
-- Versão e build: `VERSION`/`BUILD` no topo de `scripts/build-app.sh` + `WineupCore.version` (teste em SmokeTests). Atual: 1.0.0 (2).
-- Build: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./scripts/build-app.sh` (universal; `UNIVERSAL=0` nativo, `SKIP_TESTS=1`, `VERIFY_LAUNCH=0`). Mínimo macOS 14; o binário fica com SDK 14 (visual compatível, sem Liquid Glass) de propósito.
+- Versão e build: `VERSION`/`BUILD` no topo de `scripts/build-app.sh` + `WineupCore.version` (teste em SmokeTests). Atual: 1.1.0 (3).
+- Build: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./scripts/build-app.sh` (universal; `UNIVERSAL=0` nativo, `SKIP_TESTS=1`, `VERIFY_LAUNCH=0`). Mínimo macOS 14; o binário fica com SDK 14 de propósito: o tema Glass (`.glassEffect`, macOS 26+) funciona assim mesmo, e com o SDK 27 carimbado por vtool o SwiftUI não cria a janela ao abrir em segundo plano (`open -g`) e a janela perde 28 pt de altura.
 - Ícone: `swift scripts/make-icon.swift Resources/wineup_player.png <saida.iconset>` + `iconutil -c icns` → `Resources/WineUp.icns` (corpo 824/1024, superelipse n=5).
 - DMG: `~/Documents/witchmymac-release/make-dmg.sh "build/Wineup Player.app" WineupPlayer-<versão> ~/Documents/witchmymac-release/dist`.
+- Temas internos (`Sources/Wineup/Theme/GlassTheme.swift`): `glass` (padrão, escuro, vidro/transparência), `none` (Sem skin escuro) e `none-light` (Sem skin claro); abaixo deles, os skins personalizados. Só o `none-light` é claro: cor fixa nova usa `theme.ink`/`theme.isLight` (não `Color.white`), e janelas novas usam `.wineupColorScheme()` em vez de `.preferredColorScheme(.dark)`; janelas de trabalho e suas subtelas (Metadados) usam `.themedWindow()` (fundo do tema, vidro, destaque) e superfícies `.themedSurface()`. Captura: `defaults write app.wineup.player.check themeID glass|none|none-light`.
 - README em inglês (`README.md`) + `README.pt-BR.md`; instalação por `curl -fsSL https://witchmymac.com/install.sh | bash -s wineup`. Licença GPL-3.0; créditos em `Resources/THIRD_PARTY_NOTICES.md` (todo clipe, fonte ou arte embutida precisa de fonte e licença lá).
-- Testes visuais sem atrapalhar o usuário: cópia do app com bundle id `app.wineup.player.check`, `open -g -n --env CFFIXED_USER_HOME=<pasta> --env WINEUP_MUTE=1`, biblioteca de demonstração via `wineup-demo <pasta>/Music` com o mesmo `CFFIXED_USER_HOME`, captura `screencapture -x -o -l <id>`. `WINEUP_OPEN_WINDOW=metadata|themes|about|videos` abre janelas. Nunca rodar `scripts/ui-test.sh` (cliques reais) nem testar com o bundle id real.
+- Testes visuais sem atrapalhar o usuário: cópia do app com bundle id `app.wineup.player.check`, `open -g -n --env CFFIXED_USER_HOME=<pasta> --env WINEUP_MUTE=1`, biblioteca de demonstração via `wineup-demo <pasta>/Music` com o mesmo `CFFIXED_USER_HOME`, captura `screencapture -x -o -l <id>`. `WINEUP_OPEN_WINDOW=metadata|themes|about|videos` abre janelas. `WINEUP_METADATA_SHEET=album|cover|history|duplicates` abre uma subtela dos Metadados (álbum e capas pedem antes o consentimento online). Nunca rodar `scripts/ui-test.sh` (cliques reais) nem testar com o bundle id real.
 <!-- release-notes-end -->
 
 <!-- GSD:stack-start source:research/STACK.md -->

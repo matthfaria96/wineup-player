@@ -70,10 +70,13 @@ struct GeneralSettings: View {
                     .settingsMenu()
                 }
                 SettingsSeparator()
-                SettingsRow(title: "Tema (skin)", detail: "Cores, molduras, botões e arte de fundo da janela.",
+                SettingsRow(title: "Tema (skin)", detail: "Glass é o padrão, o visual da Apple com vidro e transparência. Sem skin é o visual simples, escuro ou claro. Os skins personalizados trazem cores, molduras e arte de fundo.",
                             symbol: "swatchpalette") {
                     Picker("Tema", selection: $themeID) {
-                        Text("Sem skin").tag(Theme.noneID)
+                        Text("Glass (padrão)").tag(Theme.glassID)
+                        Divider()
+                        Text("Sem skin escuro").tag(Theme.noneID)
+                        Text("Sem skin claro").tag(Theme.noneLightID)
                         Divider()
                         ForEach(Theme.all) { Text($0.name).tag($0.id) }
                     }

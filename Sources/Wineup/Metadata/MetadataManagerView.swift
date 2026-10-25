@@ -35,6 +35,7 @@ struct MetadataManagerView: View {
                 Divider()
                 statusBar
             }
+            .themedSurface(list: true)
             .animation(.snappy, value: SaveBanner.isShown(model))
             .animation(.snappy, value: showQueue)
             .frame(minWidth: 560)
@@ -42,11 +43,11 @@ struct MetadataManagerView: View {
         .toolbar { toolbar }
         .navigationTitle(model.folder?.lastPathComponent ?? String(localized: "Metadados"))
         .navigationSubtitle(model.folder.map { NavPlaces.displayPath($0) } ?? "")
-        .sheet(isPresented: $showAlbumSearch) { AlbumSearchView(model: model) }
-        .sheet(isPresented: $showCoverSearch) { CoverSearchView(model: model) }
-        .sheet(isPresented: $showHistory) { HistoryView(model: model) }
-        .sheet(isPresented: $showDuplicates) { DuplicatesView(model: model) }
-        .sheet(item: $model.report) { SearchReportView(report: $0, model: model) }
+        .sheet(isPresented: $showAlbumSearch) { AlbumSearchView(model: model).themedWindow() }
+        .sheet(isPresented: $showCoverSearch) { CoverSearchView(model: model).themedWindow() }
+        .sheet(isPresented: $showHistory) { HistoryView(model: model).themedWindow() }
+        .sheet(isPresented: $showDuplicates) { DuplicatesView(model: model).themedWindow() }
+        .sheet(item: $model.report) { SearchReportView(report: $0, model: model).themedWindow() }
         // A busca começa: o painel de cards sobe sozinho; ao terminar, fica até o usuário fechar.
         .onChange(of: model.searchRuns) { showQueue = true }
         .onChange(of: model.pickRequest) { _, id in
@@ -61,13 +62,21 @@ struct MetadataManagerView: View {
             Text("\(model.lastUndoable?.items.count ?? 0) música(s) voltam às tags, capas e letras de antes.")
         }
         .sheet(item: Binding(get: { pickerRow.map(PickerID.init) }, set: { pickerRow = $0?.id })) { item in
-            MatchPicker(model: model, rowID: item.id)
+            MatchPicker(model: model, rowID: item.id).themedWindow()
         }
         .onAppear {
             model.pauseMainPlayback = { [weak state] in if state?.isPlaying == true { state?.pause() } }
             model.openIfNeeded(state.browser.folder)
             if Measure.stress { StressRun.metadata = model }
             model.refreshHistory()
+            // Testes: WINEUP_METADATA_SHEET=album|cover|history|duplicates abre essa tela (capturas sem clicar).
+            switch ProcessInfo.processInfo.environment["WINEUP_METADATA_SHEET"] {
+            case "album": showAlbumSearch = true
+            case "cover": showCoverSearch = true
+            case "history": showHistory = true
+            case "duplicates": showDuplicates = true
+            default: break
+            }
         }
         // Janela fechada: a busca para (o resultado não teria onde aparecer); uma gravação termina o bloco.
         .onDisappear { model.windowClosed() }
@@ -187,6 +196,7 @@ struct MetadataManagerView: View {
         .foregroundStyle(.secondary)
         .padding(.horizontal, 10)
         .frame(height: 24)
+        .themedSurface()
     }
 }
 

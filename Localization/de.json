@@ -1006,5 +1006,17 @@
  "Abrindo arquivos: %lld de %lld…": "Dateien werden geöffnet: %1$lld von %2$lld …",
  "Animar o fundo do skin": "Skin-Hintergrund animieren",
  "Desligada, o fundo do skin fica parado e o Wineup gasta menos bateria. Com \"Reduzir movimento\" ligado no macOS, ele também fica parado.": "Wenn aus, bleibt der Skin-Hintergrund still und Wineup braucht weniger Batterie. Er bleibt auch still, wenn „Bewegung reduzieren“ in macOS aktiv ist.",
- "Estrelas, brilhos e efeitos que se mexem com a música.": "Sterne, Leuchten und Effekte, die sich mit der Musik bewegen."
+ "Estrelas, brilhos e efeitos que se mexem com a música.": "Sterne, Leuchten und Effekte, die sich mit der Musik bewegen.",
+ "Glass": "Glass",
+ "Claro": "Hell",
+ "Escuro": "Dunkel",
+ "Glass (padrão)": "Glass (Standard)",
+ "Glass é o padrão, o visual da Apple com vidro e transparência. Sem skin é o visual simples, escuro ou claro. Os skins personalizados trazem cores, molduras e arte de fundo.": "Glass ist der Standard: der Apple-Look mit Glas und Transparenz. Kein Skin ist der schlichte Look, dunkel oder hell. Eigene Skins bringen Farben, Rahmen und Hintergrundbilder.",
+ "Sem skin claro": "Kein Skin, hell",
+ "Sem skin escuro": "Kein Skin, dunkel",
+ "Skins personalizados": "Eigene Skins",
+ "Troca o visual da janela inteira: Glass (o visual da Apple, padrão), sem skin escuro ou claro, ou um skin personalizado com cores, molduras e arte de fundo. Também dá para editar, criar e importar skins.": "Ändert das Aussehen des ganzen Fensters: Glass (der Apple-Look, Standard), kein Skin in dunkel oder hell oder ein eigener Skin mit Farben, Rahmen und Hintergrundbild. Skins lassen sich auch bearbeiten, erstellen und importieren.",
+ "Fechar a busca": "Suche schließen",
+ "Abre a busca na barra do topo: procura músicas por título, artista ou álbum em toda a sua biblioteca. O X ou um clique fora fecha.": "Öffnet die Suche in der oberen Leiste: findet Songs nach Titel, Künstler oder Album in der ganzen Mediathek. Das X oder ein Klick daneben schließt sie.",
+ "Tocar pela barra de menus, layout da janela e tema (Glass, sem skin ou skins personalizados).": "In der Menüleiste abspielen, Fensterlayout und Thema (Glass, kein Skin oder eigene Skins)."
 }

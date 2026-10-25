@@ -8,7 +8,7 @@ struct WineupApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var state = PlayerState()
     @AppStorage(DisplayKeys.layout) private var layoutRaw = LayoutMode.firstUse.rawValue
-    @AppStorage("themeID") private var themeID = SkinStore.defaultID
+    @AppStorage(DisplayKeys.theme) private var themeID = Theme.defaultID
     @ObservedObject private var skinStore = SkinStore.shared
     @Environment(\.openWindow) private var openWindow
 
@@ -127,8 +127,11 @@ struct WineupApp: App {
                 }
                 Divider()
                 // Atalhos ⌥⌘1…9 para os 9 primeiros temas; os demais ficam no editor.
-                Button("Sem skin") { themeID = Theme.noneID }
+                Button("Glass (padrão)") { themeID = Theme.glassID }
+                    .keyboardShortcut("g", modifiers: [.command, .option, .shift])
+                Button("Sem skin escuro") { themeID = Theme.noneID }
                     .keyboardShortcut("0", modifiers: [.command, .option, .shift])
+                Button("Sem skin claro") { themeID = Theme.noneLightID }
                 ForEach(Array(skinStore.skins.prefix(9).enumerated()), id: \.element.id) { index, skin in
                     Button("Skin \(skin.name)") { themeID = skin.id }
                         .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: [.command, .option])
@@ -141,20 +144,20 @@ struct WineupApp: App {
 
         Window("Metadados", id: "metadata") {
             MetadataManagerView(state: state)
-                .preferredColorScheme(.dark)
+                .themedWindow()
         }
         .defaultSize(width: 1240, height: 760)
         .handlesExternalEvents(matching: [])
 
         Window("Categorias de vídeo", id: "videos") {
-            VideoCategoriesView().preferredColorScheme(.dark)
+            VideoCategoriesView().wineupColorScheme()
         }
         .windowResizability(.contentSize)
         .handlesExternalEvents(matching: [])
 
         Window("Skins", id: "themes") {
             SkinEditorView()
-                .preferredColorScheme(.dark)
+                .wineupColorScheme()
         }
         .defaultSize(width: 900, height: 640)
         .handlesExternalEvents(matching: [])

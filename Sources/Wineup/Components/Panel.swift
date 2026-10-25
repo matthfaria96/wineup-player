@@ -14,6 +14,11 @@ enum SkinEnergy {
     }
 }
 
+enum PanelMetrics {
+    /// Cantos do painel de vidro (os do macOS atual).
+    static let glassRadius: CGFloat = 16
+}
+
 /// Moldura de painel: barra de título, fundo e borda. Com skin, o fundo é a arte do painel
 /// (textura escurecida + camadas animadas) e a borda é a moldura de 9 fatias do skin.
 struct Panel<Content: View>: View {
@@ -28,6 +33,30 @@ struct Panel<Content: View>: View {
     private var radius: CGFloat { CGFloat(style?.cornerRadius ?? 9) }
 
     var body: some View {
+        if theme.isGlass { glassBody } else { skinBody }
+    }
+
+    /// Glass: painel de vidro com cantos contínuos e título discreto, como as janelas do macOS.
+    private var glassBody: some View {
+        VStack(spacing: 0) {
+            if title != "" {
+                Text(title)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(theme.mutedText)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 10)
+                    .frame(height: 24)
+            }
+            content
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipShape(RoundedRectangle(cornerRadius: PanelMetrics.glassRadius, style: .continuous))
+        .glassPanel(radius: PanelMetrics.glassRadius, dark: !theme.isLight)
+    }
+
+    @ViewBuilder private var skinBody: some View {
         let inset = frame?.inset ?? 0
         VStack(spacing: 0) {
             if title != "" {

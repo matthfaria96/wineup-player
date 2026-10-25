@@ -46,7 +46,7 @@ struct MetadataSidebar: View {
             .padding(12)
             .animation(.snappy, value: model.selection.isEmpty)
         }
-        .background(.background.secondary)
+        .themedSurface()
     }
 
     private var fields: some View {

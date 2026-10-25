@@ -50,7 +50,7 @@ struct SpeedMenu: View {
                                 .frame(minWidth: 40)
                                 .padding(.vertical, 6)
                                 .background(Capsule().fill(abs(state.playbackRate - rate) < 0.001
-                                                           ? Color.accentColor.opacity(0.35) : Color.white.opacity(0.1)))
+                                                           ? Color.accentColor.opacity(0.35) : Color.primary.opacity(0.1)))
                         }
                         .buttonStyle(.plain)
                         Text(rate == 1 ? "Normal" : " ").font(.system(size: 10)).foregroundStyle(.secondary)
@@ -73,7 +73,7 @@ struct SpeedMenu: View {
         Button(action: action) {
             Image(systemName: symbol).font(.system(size: 12, weight: .bold))
                 .frame(width: 28, height: 28)
-                .background(Circle().fill(Color.white.opacity(0.1)))
+                .background(Circle().fill(Color.primary.opacity(0.1)))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(symbol == "minus" ? "Mais devagar" : "Mais rápido")

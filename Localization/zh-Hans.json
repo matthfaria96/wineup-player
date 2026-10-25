@@ -1006,5 +1006,17 @@
  "Abrindo arquivos: %lld de %lld…": "正在打开文件：%1$lld / %2$lld…",
  "Animar o fundo do skin": "动画显示皮肤背景",
  "Desligada, o fundo do skin fica parado e o Wineup gasta menos bateria. Com \"Reduzir movimento\" ligado no macOS, ele também fica parado.": "关闭后，皮肤背景保持静止，Wineup 更省电。macOS 中开启“减弱动态效果”时也会保持静止。",
- "Estrelas, brilhos e efeitos que se mexem com a música.": "随音乐律动的星光、辉光和特效。"
+ "Estrelas, brilhos e efeitos que se mexem com a música.": "随音乐律动的星光、辉光和特效。",
+ "Glass": "Glass",
+ "Claro": "浅色",
+ "Escuro": "深色",
+ "Glass (padrão)": "Glass（默认）",
+ "Glass é o padrão, o visual da Apple com vidro e transparência. Sem skin é o visual simples, escuro ou claro. Os skins personalizados trazem cores, molduras e arte de fundo.": "Glass 是默认外观：带有玻璃和透明效果的 Apple 风格。无皮肤是简洁外观，有深色和浅色。自定皮肤提供颜色、边框和背景图。",
+ "Sem skin claro": "无皮肤（浅色）",
+ "Sem skin escuro": "无皮肤（深色）",
+ "Skins personalizados": "自定皮肤",
+ "Troca o visual da janela inteira: Glass (o visual da Apple, padrão), sem skin escuro ou claro, ou um skin personalizado com cores, molduras e arte de fundo. Também dá para editar, criar e importar skins.": "更改整个窗口的外观：Glass（Apple 风格，默认）、深色或浅色的无皮肤，或带有颜色、边框和背景图的自定皮肤。也可以编辑、创建和导入皮肤。",
+ "Fechar a busca": "关闭搜索",
+ "Abre a busca na barra do topo: procura músicas por título, artista ou álbum em toda a sua biblioteca. O X ou um clique fora fecha.": "在顶部栏打开搜索：按标题、艺人或专辑在整个资料库中查找歌曲。点 X 或点击外部即可关闭。",
+ "Tocar pela barra de menus, layout da janela e tema (Glass, sem skin ou skins personalizados).": "从菜单栏播放、窗口布局和主题（Glass、无皮肤或自定皮肤）。"
 }

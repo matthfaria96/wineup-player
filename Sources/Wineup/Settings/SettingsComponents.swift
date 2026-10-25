@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// Peças da janela de Ajustes, no jeito dos Ajustes do Sistema (e do MacDash): grupos de linhas sobre o
@@ -6,11 +7,14 @@ enum SettingsStyle {
     static let columnWidth: CGFloat = 560
     static let sectionSpacing: CGFloat = 24
     static let corner: CGFloat = 10
-    static let rowFill = Color.white.opacity(0.055)
-    static let rowStroke = Color.white.opacity(0.06)
-    static let separator = Color.white.opacity(0.08)
-    static let primary = Color.white.opacity(0.92)
-    static let secondary = Color.white.opacity(0.5)
+    // Claro só com o tema Glass claro; o escuro é o de sempre.
+    static let rowFill = Color.adaptive(dark: .white.withAlphaComponent(0.055), light: .white.withAlphaComponent(0.75))
+    static let rowStroke = Color.adaptive(dark: .white.withAlphaComponent(0.06), light: .black.withAlphaComponent(0.07))
+    static let separator = Color.adaptive(dark: .white.withAlphaComponent(0.08), light: .black.withAlphaComponent(0.08))
+    static let primary = Color.adaptive(dark: .white.withAlphaComponent(0.92), light: .black.withAlphaComponent(0.88))
+    static let secondary = Color.adaptive(dark: .white.withAlphaComponent(0.5), light: .black.withAlphaComponent(0.5))
+    static let background = Color.adaptive(dark: NSColor(red: 0.11, green: 0.11, blue: 0.12, alpha: 1),
+                                           light: NSColor(red: 0.95, green: 0.95, blue: 0.96, alpha: 1))
 }
 
 /// Coluna rolável de seções, centralizada.
@@ -105,4 +109,11 @@ struct SettingsSeparator: View {
 extension View {
     func settingsSwitch() -> some View { labelsHidden().toggleStyle(.switch).controlSize(.small) }
     func settingsMenu() -> some View { labelsHidden().pickerStyle(.menu).fixedSize() }
+}
+
+extension Color {
+    /// Cor que muda com o claro/escuro da janela.
+    static func adaptive(dark: NSColor, light: NSColor) -> Color {
+        Color(nsColor: NSColor(name: nil) { $0.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light })
+    }
 }

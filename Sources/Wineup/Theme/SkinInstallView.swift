@@ -7,7 +7,7 @@ struct SkinInstallView: View {
     let archive: URL
     let preview: Skin
     let onClose: () -> Void
-    @AppStorage("themeID") private var activeID = SkinStore.defaultID
+    @AppStorage(DisplayKeys.theme) private var activeID = Theme.defaultID
     @State private var error: String?
 
     var body: some View {

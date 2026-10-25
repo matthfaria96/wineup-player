@@ -13,7 +13,7 @@ struct ColorDots: View {
                 Circle()
                     .fill(mark.color)
                     .frame(width: 13, height: 13)
-                    .overlay(Circle().stroke(Color.white.opacity(selection == mark ? 0.95 : 0), lineWidth: 2))
+                    .overlay(Circle().stroke(theme.text.opacity(selection == mark ? 0.95 : 0), lineWidth: 2))
                     .onTapGesture { selection = selection == mark ? nil : mark }
                     .accessibilityElement()
                     .accessibilityLabel("Filtrar pela cor \(mark.displayName)")

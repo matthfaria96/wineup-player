@@ -116,8 +116,27 @@ struct Theme: Identifiable, Equatable {
     let meterMid: Color
     let meterPeak: Color
     let art: SkinArt?
+    /// Tema nativo da Apple (vidro e transparência), sem arte de skin.
+    let isGlass: Bool
+    /// Fundo claro e texto escuro (só o "Sem skin claro"; os demais temas são escuros).
+    let isLight: Bool
+
+    /// Tinta neutra para realces, linhas zebradas e bordas: branco no escuro, preto no claro.
+    var ink: Color { isLight ? .black : .white }
 
     init(manifest: SkinManifest, art: SkinArt?) {
+        self.init(manifest: manifest, art: art, glass: false, light: false)
+    }
+
+    init(glass manifest: SkinManifest) {
+        self.init(manifest: manifest, art: nil, glass: true, light: false)
+    }
+
+    init(plainLight manifest: SkinManifest) {
+        self.init(manifest: manifest, art: nil, glass: false, light: true)
+    }
+
+    private init(manifest: SkinManifest, art: SkinArt?, glass: Bool, light: Bool) {
         func c(_ key: SkinManifest.ColorToken) -> Color {
             Color(hexString: manifest.colors[key.rawValue] ?? "") ?? Color(hexString: SkinManifest.fallbackColors[key.rawValue]!)!
         }
@@ -130,11 +149,13 @@ struct Theme: Identifiable, Equatable {
         buttonTextOn = manifest.colors["buttonTextOn"].flatMap(Color.init(hexString:)) ?? buttonText
         meterLow = c(.meterLow); meterMid = c(.meterMid); meterPeak = c(.meterPeak)
         self.art = art
+        isGlass = glass
+        isLight = light
     }
 
     init(_ skin: Skin) { self.init(manifest: skin.manifest, art: SkinArt.of(skin)) }
 
-    static func == (a: Theme, b: Theme) -> Bool { a.id == b.id && a.art === b.art }
+    static func == (a: Theme, b: Theme) -> Bool { a.id == b.id && a.art === b.art && a.isLight == b.isLight }
 
     /// Sem nenhum skin instalado (não deve acontecer): cores neutras, sem arte.
     static let plain = Theme(manifest: SkinManifest(id: "none", name: String(localized: "Sem skin")), art: nil)
@@ -155,8 +176,10 @@ struct Theme: Identifiable, Equatable {
 
     static func named(_ id: String) -> Theme {
         if id == noneID { return plain }
+        if id == noneLightID { return plainLight }
+        if id == glassID { return glass }
         let themes = all
-        return themes.first { $0.id == id } ?? themes.first { $0.id == SkinStore.defaultID } ?? themes.first ?? plain
+        return themes.first { $0.id == id } ?? glass
     }
 
     /// Fonte dos títulos do skin (ou a do sistema).

@@ -1006,5 +1006,17 @@
  "Abrindo arquivos: %lld de %lld…": "Открытие файлов: %1$lld из %2$lld…",
  "Animar o fundo do skin": "Анимировать фон скина",
  "Desligada, o fundo do skin fica parado e o Wineup gasta menos bateria. Com \"Reduzir movimento\" ligado no macOS, ele também fica parado.": "Если выключено, фон скина неподвижен и Wineup тратит меньше заряда. Он также неподвижен, если в macOS включено «Уменьшение движения».",
- "Estrelas, brilhos e efeitos que se mexem com a música.": "Звёзды, свечение и эффекты, движущиеся под музыку."
+ "Estrelas, brilhos e efeitos que se mexem com a música.": "Звёзды, свечение и эффекты, движущиеся под музыку.",
+ "Glass": "Glass",
+ "Claro": "Светлое",
+ "Escuro": "Тёмное",
+ "Glass (padrão)": "Glass (по умолчанию)",
+ "Glass é o padrão, o visual da Apple com vidro e transparência. Sem skin é o visual simples, escuro ou claro. Os skins personalizados trazem cores, molduras e arte de fundo.": "Glass — стиль по умолчанию: оформление Apple со стеклом и прозрачностью. «Без скина» — простой вид, тёмный или светлый. Свои скины добавляют цвета, рамки и фоновое изображение.",
+ "Sem skin claro": "Без скина, светлое",
+ "Sem skin escuro": "Без скина, тёмное",
+ "Skins personalizados": "Свои скины",
+ "Troca o visual da janela inteira: Glass (o visual da Apple, padrão), sem skin escuro ou claro, ou um skin personalizado com cores, molduras e arte de fundo. Também dá para editar, criar e importar skins.": "Меняет вид всего окна: Glass (стиль Apple, по умолчанию), без скина в тёмном или светлом виде или свой скин с цветами, рамками и фоновым изображением. Скины также можно редактировать, создавать и импортировать.",
+ "Fechar a busca": "Закрыть поиск",
+ "Abre a busca na barra do topo: procura músicas por título, artista ou álbum em toda a sua biblioteca. O X ou um clique fora fecha.": "Открывает поиск в верхней панели: ищет песни по названию, исполнителю или альбому во всей медиатеке. Крестик или щелчок мимо закрывает его.",
+ "Tocar pela barra de menus, layout da janela e tema (Glass, sem skin ou skins personalizados).": "Воспроизведение из строки меню, раскладка окна и тема (Glass, без скина или свои скины)."
 }

@@ -1006,5 +1006,17 @@
  "Abrindo arquivos: %lld de %lld…": "Otwieranie plików: %1$lld z %2$lld…",
  "Animar o fundo do skin": "Animuj tło skórki",
  "Desligada, o fundo do skin fica parado e o Wineup gasta menos bateria. Com \"Reduzir movimento\" ligado no macOS, ele também fica parado.": "Po wyłączeniu tło skórki stoi w miejscu, a Wineup zużywa mniej baterii. Tło stoi też, gdy w macOS włączone jest „Ogranicz ruch”.",
- "Estrelas, brilhos e efeitos que se mexem com a música.": "Gwiazdy, poświaty i efekty poruszające się z muzyką."
+ "Estrelas, brilhos e efeitos que se mexem com a música.": "Gwiazdy, poświaty i efekty poruszające się z muzyką.",
+ "Glass": "Glass",
+ "Claro": "Jasny",
+ "Escuro": "Ciemny",
+ "Glass (padrão)": "Glass (domyślny)",
+ "Glass é o padrão, o visual da Apple com vidro e transparência. Sem skin é o visual simples, escuro ou claro. Os skins personalizados trazem cores, molduras e arte de fundo.": "Glass to motyw domyślny: styl Apple ze szkłem i przezroczystością. Bez skórki to prosty wygląd, ciemny lub jasny. Własne skórki dodają kolory, ramki i grafikę tła.",
+ "Sem skin claro": "Bez skórki, jasny",
+ "Sem skin escuro": "Bez skórki, ciemny",
+ "Skins personalizados": "Własne skórki",
+ "Troca o visual da janela inteira: Glass (o visual da Apple, padrão), sem skin escuro ou claro, ou um skin personalizado com cores, molduras e arte de fundo. Também dá para editar, criar e importar skins.": "Zmienia wygląd całego okna: Glass (styl Apple, domyślny), bez skórki w wersji ciemnej lub jasnej albo własna skórka z kolorami, ramkami i grafiką tła. Skórki można też edytować, tworzyć i importować.",
+ "Fechar a busca": "Zamknij wyszukiwanie",
+ "Abre a busca na barra do topo: procura músicas por título, artista ou álbum em toda a sua biblioteca. O X ou um clique fora fecha.": "Otwiera wyszukiwanie na górnym pasku: szuka utworów po tytule, wykonawcy lub albumie w całej bibliotece. X lub kliknięcie obok je zamyka.",
+ "Tocar pela barra de menus, layout da janela e tema (Glass, sem skin ou skins personalizados).": "Odtwarzanie z paska menu, układ okna i motyw (Glass, bez skórki lub własne skórki)."
 }

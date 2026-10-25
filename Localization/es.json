@@ -1006,5 +1006,17 @@
  "Abrindo arquivos: %lld de %lld…": "Abriendo archivos: %1$lld de %2$lld…",
  "Animar o fundo do skin": "Animar el fondo del skin",
  "Desligada, o fundo do skin fica parado e o Wineup gasta menos bateria. Com \"Reduzir movimento\" ligado no macOS, ele também fica parado.": "Si se desactiva, el fondo del skin queda quieto y Wineup gasta menos batería. También queda quieto si “Reducir movimiento” está activado en macOS.",
- "Estrelas, brilhos e efeitos que se mexem com a música.": "Estrellas, brillos y efectos que se mueven con la música."
+ "Estrelas, brilhos e efeitos que se mexem com a música.": "Estrellas, brillos y efectos que se mueven con la música.",
+ "Glass": "Glass",
+ "Claro": "Claro",
+ "Escuro": "Oscuro",
+ "Glass (padrão)": "Glass (predeterminado)",
+ "Glass é o padrão, o visual da Apple com vidro e transparência. Sem skin é o visual simples, escuro ou claro. Os skins personalizados trazem cores, molduras e arte de fundo.": "Glass es el predeterminado: el aspecto de Apple con vidrio y transparencia. Sin skin es el aspecto simple, oscuro o claro. Los skins personalizados traen colores, marcos y arte de fondo.",
+ "Sem skin claro": "Sin skin claro",
+ "Sem skin escuro": "Sin skin oscuro",
+ "Skins personalizados": "Skins personalizados",
+ "Troca o visual da janela inteira: Glass (o visual da Apple, padrão), sem skin escuro ou claro, ou um skin personalizado com cores, molduras e arte de fundo. Também dá para editar, criar e importar skins.": "Cambia el aspecto de toda la ventana: Glass (el aspecto de Apple, predeterminado), sin skin oscuro o claro, o un skin personalizado con colores, marcos y arte de fondo. También puedes editar, crear e importar skins.",
+ "Fechar a busca": "Cerrar la búsqueda",
+ "Abre a busca na barra do topo: procura músicas por título, artista ou álbum em toda a sua biblioteca. O X ou um clique fora fecha.": "Abre la búsqueda en la barra superior: busca canciones por título, artista o álbum en toda tu biblioteca. La X o un clic fuera la cierra.",
+ "Tocar pela barra de menus, layout da janela e tema (Glass, sem skin ou skins personalizados).": "Reproducir desde la barra de menús, disposición de la ventana y tema (Glass, sin skin o skins personalizados)."
 }

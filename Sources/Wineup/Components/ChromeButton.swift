@@ -19,11 +19,13 @@ struct ChromeButton<Label: View>: View {
     }
 
     @ViewBuilder private var skinBackground: some View {
-        if let s = skinSlice {
+        if theme.isGlass {
+            GlassControlBackground(on: isOn, radius: 8)
+        } else if let s = skinSlice {
             Image(nsImage: s.image)
                 .resizable(capInsets: EdgeInsets(top: s.inset, leading: s.inset, bottom: s.inset, trailing: s.inset), resizingMode: .stretch)
         } else {
-            RoundedRectangle(cornerRadius: 6).fill(isOn ? theme.rowSelection : Color.white.opacity(0.04))
+            RoundedRectangle(cornerRadius: 6).fill(isOn ? theme.rowSelection : theme.ink.opacity(0.04))
         }
     }
 
@@ -31,14 +33,14 @@ struct ChromeButton<Label: View>: View {
         Button(action: action) {
             label
                 .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(theme.art == nil ? theme.text : (isOn ? theme.buttonTextOn : theme.buttonText))
+                .foregroundStyle(theme.art == nil && !(theme.isGlass && isOn) ? theme.text : (isOn ? theme.buttonTextOn : theme.buttonText))
                 .lineLimit(1)
                 .padding(.horizontal, 7)
                 .frame(minHeight: 22)
                 .frame(maxWidth: .infinity)
                 .background { skinBackground }
                 .overlay {
-                    if skinSlice == nil {
+                    if skinSlice == nil, !theme.isGlass {
                         RoundedRectangle(cornerRadius: 6).stroke(theme.control.opacity(0.75), lineWidth: 1)
                     }
                 }

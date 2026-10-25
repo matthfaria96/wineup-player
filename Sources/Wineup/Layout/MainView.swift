@@ -8,6 +8,8 @@ struct MainView: View {
     @Binding var layoutRaw: String
     @Binding var themeID: String
     @StateObject private var model = MainViewModel()
+    /// Compacto: a busca aberta ocupa a barra do topo inteira (os botões voltam ao fechar).
+    @State private var searchExpanded = false
     @AppStorage(WindowVisibility.skinAnimationKey) private var skinAnimation = true
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openWindow) private var openWindow
@@ -17,6 +19,7 @@ struct MainView: View {
     @ObservedObject private var visibility = WindowVisibility.shared
 
     var body: some View {
+        let scheme = Theme.colorScheme(themeID: themeID)
         let theme = Theme.named(themeID)
         let layout = LayoutMode.named(layoutRaw)
 
@@ -27,25 +30,7 @@ struct MainView: View {
         }
         .ignoresSafeArea(.container, edges: .top)
         .environment(\.theme, theme)
-        .background {
-            ZStack {
-                LinearGradient(colors: [theme.windowTop, theme.windowBottom], startPoint: .top, endPoint: .bottom)
-                // Skin: arte de fundo da janela e as camadas animadas (estrelas, redemoinhos...).
-                if let art = theme.art, art.manifest.window.background != nil || !art.manifest.window.layers.isEmpty {
-                    SkinFillView(art: art, fill: art.manifest.window.background, layers: art.manifest.window.layers,
-                                 energy: SkinEnergy.value)
-                    // Leve escurecimento no topo (sem contorno): título e botões legíveis sobre a arte.
-                    VStack(spacing: 0) {
-                        LinearGradient(colors: [.black.opacity(0.55), .black.opacity(0)], startPoint: .top, endPoint: .bottom)
-                            .frame(height: 64)
-                        Spacer(minLength: 0)
-                    }
-                }
-            }
-            // Arte e animação do fundo nunca recebem cliques (o desenho assíncrono cria uma camada própria).
-            .allowsHitTesting(false)
-            .ignoresSafeArea()
-        }
+        .background { ThemeBackground(theme: theme) }
         // Depois do fundo: assim a arte animada da janela também pausa e muda de ritmo.
         .environment(\.animationsPaused, !visibility.mainVisible || (skinAnimation == false) || reduceMotion)
         .environment(\.animationFPS, visibility.animationFPS)
@@ -54,21 +39,30 @@ struct MainView: View {
             let first = model.window == nil
             model.window = window
             WindowVisibility.shared.track(window)
+            GlassWindow.apply(window, glass: theme.isGlass)
             // Ao abrir, ninguém fica com o foco (a busca não captura o teclado).
-            if first { DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { window.makeFirstResponder(nil) } }
+            if first {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    window.makeFirstResponder(nil)
+                    searchExpanded = false
+                }
+            }
         }))
         .onAppear {
             model.columns = layout.columns()
             resizeWindow(for: layout)
             // A janela não abre com o foco na busca (não captura o teclado sozinha).
-            DispatchQueue.main.async { model.window?.makeFirstResponder(nil) }
+            DispatchQueue.main.async {
+                model.window?.makeFirstResponder(nil)
+                searchExpanded = false
+            }
         }
         .onChange(of: layoutRaw) { _, raw in
             let mode = LayoutMode.named(raw)
             model.columns = mode.columns()
             resizeWindow(for: mode)
         }
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(scheme)
         .dropDestination(for: URL.self) { urls, _ in
             state.load(urls: urls)
             return true
@@ -89,16 +83,47 @@ struct MainView: View {
 
     /// A faixa decorada do topo: começa depois dos botões da janela.
     private func headerBar(theme: Theme, compact: Bool) -> some View {
-        HStack(spacing: 8) {
-            HistoryButtons(browser: state.browser)
-            Button { openWindow(id: "metadata") } label: {
-                if compact { Image(systemName: "tag") }
-                else { Label("Metadados", systemImage: "tag").labelStyle(.titleAndIcon) }
+        let searchOnly = compact && searchExpanded
+        return HStack(spacing: 8) {
+            if !searchOnly { leadingControls(compact: compact) }
+            SearchBox(search: state.search, compact: compact, expanded: $searchExpanded)
+            if !searchOnly { trailingControls(compact: compact) }
+        }
+        .font(.system(size: 11))
+        .padding(.trailing, 10)
+        .frame(height: 34)
+        // No Glass, os botões do topo são de vidro (estão sobre o fundo da janela, não num painel).
+        .environment(\.onWindowChrome, true)
+        .animation(.easeOut(duration: 0.18), value: searchOnly)
+        .onChange(of: compact) { _, isCompact in if !isCompact { searchExpanded = false } }
+    }
+
+    /// Voltar/Avançar e Metadados; depois deles, o espaço livre do topo (arrasta a janela).
+    @ViewBuilder private func leadingControls(compact: Bool) -> some View {
+        HistoryButtons(browser: state.browser)
+        Button { openWindow(id: "metadata") } label: {
+            if compact { Image(systemName: "tag") }
+            else { Label("Metadados", systemImage: "tag").labelStyle(.titleAndIcon) }
+        }
+        .buttonStyle(SkinButtonStyle())
+        .hint("Metadados", "Abre o gerenciador de tags: título, artista, álbum, capas e letras das músicas. Busca dados online e salva nos arquivos.")
+        Spacer(minLength: 8)
+    }
+
+    /// Barra de menus, tema e layout. No Compacto, tudo num único menu (⋯), para sobrar espaço no topo.
+    @ViewBuilder private func trailingControls(compact: Bool) -> some View {
+        if compact {
+            SkinMenu(minWidth: Self.iconButtonWidth - 16) {
+                Button("Tocar pela barra de menus") { TrayMode.enter(state: state, openWindow: openWindow) }
+                Divider()
+                Section("Layout") { layoutPicker }
+                Divider()
+                Section("Tema") { themeItems }
+            } label: {
+                Image(systemName: "ellipsis")
             }
-            .buttonStyle(SkinButtonStyle())
-            .hint("Metadados", "Abre o gerenciador de tags: título, artista, álbum, capas e letras das músicas. Busca dados online e salva nos arquivos.")
-            Spacer(minLength: 8)
-            SearchBox(search: state.search, compact: compact)
+            .hint("Mais opções", "Tocar pela barra de menus, layout da janela e tema (Glass, sem skin ou skins personalizados).")
+        } else {
             Spacer(minLength: 8)
             Button { TrayMode.enter(state: state, openWindow: openWindow) } label: {
                 Image(systemName: "menubar.arrow.up.rectangle").frame(width: Self.iconButtonWidth - 12)
@@ -107,41 +132,50 @@ struct MainView: View {
             .hint("Tocar pela barra de menus (⌥⌘M)", "Fecha a janela e deixa um player pequeno no topo do Mac, ao lado do relógio. A música continua tocando.")
             .accessibilityLabel("Tocar pela barra de menus")
             // Skin: entre a barra de menus e o layout, com a mesma largura do botão da barra de menus.
-            SkinMenu(minWidth: Self.iconButtonWidth - 16) {
-                Button { themeID = Theme.noneID } label: {
-                    Label("Sem skin (visual padrão)", systemImage: themeID == Theme.noneID ? "checkmark" : "circle.slash")
-                }
-                Divider()
-                ForEach(Theme.all) { skin in
-                    Button { themeID = skin.id } label: {
-                        Label(skin.name, systemImage: themeID == skin.id ? "checkmark" : "paintpalette")
-                    }
-                }
-                Divider()
-                Button("Editar, criar, importar ou exportar skins…") { openWindow(id: "themes") }
-            } label: {
+            SkinMenu(minWidth: Self.iconButtonWidth - 16) { themeItems } label: {
                 Image(systemName: "swatchpalette")
             }
-            .hint("Tema (skin)", "Troca o visual da janela inteira: cores, molduras, botões e arte de fundo. Também dá para editar, criar e importar temas.")
-            // Seletor de layout que mostra o modo atual (no Compacto, só o ícone).
-            SkinMenu {
-                Picker("Layout", selection: $layoutRaw) {
-                    ForEach(LayoutMode.allCases) { Text($0.name).tag($0.rawValue) }
-                }
-                .pickerStyle(.inline)
-                .labelsHidden()
-            } label: {
-                if compact {
-                    Image(systemName: "square.grid.2x2")
-                } else {
-                    Label(LayoutMode.named(layoutRaw).name, systemImage: "square.grid.2x2").labelStyle(.titleAndIcon)
-                }
+            .hint("Tema (skin)", "Troca o visual da janela inteira: Glass (o visual da Apple, padrão), sem skin escuro ou claro, ou um skin personalizado com cores, molduras e arte de fundo. Também dá para editar, criar e importar skins.")
+            // Seletor de layout que mostra o modo atual.
+            SkinMenu { layoutPicker } label: {
+                Label(LayoutMode.named(layoutRaw).name, systemImage: "square.grid.2x2").labelStyle(.titleAndIcon)
             }
             .hint("Layout: \(LayoutMode.named(layoutRaw).name)", "Compacto: só o player e a lista, numa coluna. Padrão: lista, player, FX e capa. Completo: tudo isso e a letra ao lado. Arraste o título de um painel para trocá-lo de lugar.")
         }
-        .font(.system(size: 11))
-        .padding(.trailing, 10)
-        .frame(height: 34)
+    }
+
+    /// Temas: o padrão (Glass), o visual simples escuro/claro e, abaixo, os skins personalizados.
+    @ViewBuilder private var themeItems: some View {
+        Button { themeID = Theme.glassID } label: {
+            Label("Glass (padrão)", systemImage: themeID == Theme.glassID ? "checkmark" : "drop.halffull")
+        }
+        Divider()
+        Section("Sem skin") {
+            Button { themeID = Theme.noneID } label: {
+                Label("Escuro", systemImage: themeID == Theme.noneID ? "checkmark" : "moon")
+            }
+            Button { themeID = Theme.noneLightID } label: {
+                Label("Claro", systemImage: themeID == Theme.noneLightID ? "checkmark" : "sun.max")
+            }
+        }
+        Divider()
+        Section("Skins personalizados") {
+            ForEach(Theme.all) { skin in
+                Button { themeID = skin.id } label: {
+                    Label(skin.name, systemImage: themeID == skin.id ? "checkmark" : "paintpalette")
+                }
+            }
+        }
+        Divider()
+        Button("Editar, criar, importar ou exportar skins…") { openWindow(id: "themes") }
+    }
+
+    private var layoutPicker: some View {
+        Picker("Layout", selection: $layoutRaw) {
+            ForEach(LayoutMode.allCases) { Text($0.name).tag($0.rawValue) }
+        }
+        .pickerStyle(.inline)
+        .labelsHidden()
     }
 }
 
@@ -181,35 +215,101 @@ extension MainView {
 private struct SearchBox: View {
     @ObservedObject var search: SearchModel
     let compact: Bool
+    /// Compacto: aberta, a busca ocupa a barra inteira; o X no fim ou um clique fora fecha.
+    @Binding var expanded: Bool
     @Environment(\.theme) private var theme
     /// Foco da busca: clicar na caixa (ou ⌘F) põe o cursor no campo.
     @FocusState private var searchFocused: Bool
+    /// Área da caixa na janela e o vigia de cliques fora dela (só com a busca aberta).
+    @State private var fieldFrame: CGRect = .zero
+    @State private var clickMonitor: Any?
 
     var body: some View {
+        Group {
+            // Compacto fechado: só o ícone (o topo fica livre para arrastar a janela).
+            if compact && !expanded { iconButton } else { field }
+        }
+        .background {
+            // ⌘F: vai para a busca.
+            Button("") { open() }.keyboardShortcut("f", modifiers: .command).opacity(0).allowsHitTesting(false)
+        }
+        // Com foco, a busca do Compacto abre; sem foco (clique em outro lugar), fecha.
+        .onChange(of: searchFocused) { _, focused in
+            if compact { expanded = focused }
+        }
+        .onChange(of: expanded) { _, isOpen in isOpen ? watchClicksOutside() : stopWatching() }
+        .onDisappear { stopWatching() }
+    }
+
+    /// Ícone da busca no Compacto; aceso quando há uma busca em uso.
+    private var iconButton: some View {
+        Button { open() } label: {
+            Image(systemName: "magnifyingglass").frame(width: MainView.iconButtonWidth - 12)
+        }
+        .buttonStyle(SkinButtonStyle(on: !search.query.isEmpty, compact: true))
+        .hint("Buscar (⌘F)", "Abre a busca na barra do topo: procura músicas por título, artista ou álbum em toda a sua biblioteca. O X ou um clique fora fecha.")
+        .accessibilityLabel("Buscar")
+    }
+
+    private var field: some View {
         HStack(spacing: 6) {
             Image(systemName: "magnifyingglass").foregroundStyle(theme.mutedText)
             TextField(compact ? "Buscar" : "Buscar em sua biblioteca…", text: $search.query)
                 .textFieldStyle(.plain)
                 .foregroundStyle(theme.text)
                 .focused($searchFocused)
-                .onExitCommand { search.query = ""; searchFocused = false }
-            if !search.query.isEmpty {
+                .onExitCommand { close() }
+            // O X limpa a busca; no Compacto aberto, também fecha e devolve os botões.
+            if !search.query.isEmpty || expanded {
                 Image(systemName: "xmark.circle.fill").foregroundStyle(theme.mutedText)
-                    .onTapGesture { search.query = "" }
+                    .onTapGesture { close() }
+                    .accessibilityLabel("Fechar a busca")
             }
         }
         .font(.system(size: 12))
         .padding(.horizontal, 10)
-        .frame(maxWidth: compact ? 150 : 340)
+        .frame(maxWidth: compact ? .infinity : 340)
         .frame(height: 24)
         .skinField()
         .contentShape(Rectangle())
         .onTapGesture { searchFocused = true }
         .hint("Buscar (⌘F)", "Procura músicas por título, artista ou álbum em toda a sua biblioteca. Esc limpa.")
-        .background {
-            // ⌘F: vai para a busca.
-            Button("") { searchFocused = true }.keyboardShortcut("f", modifiers: .command).opacity(0).allowsHitTesting(false)
+        .background { GeometryReader { geo in Color.clear.onChange(of: geo.frame(in: .global), initial: true) { _, f in fieldFrame = f } } }
+    }
+
+    /// Abre a busca (no Compacto, ela ocupa a barra) e põe o cursor no campo.
+    private func open() {
+        if compact { expanded = true }
+        DispatchQueue.main.async { searchFocused = true }
+    }
+
+    /// Limpa, tira o foco e (no Compacto) fecha a busca.
+    private func close() {
+        search.query = ""
+        collapse()
+    }
+
+    /// Fecha a busca aberta sem apagar o que foi digitado (o resultado continua na lista).
+    private func collapse() {
+        searchFocused = false
+        expanded = false
+        NSApp.keyWindow?.makeFirstResponder(nil)
+    }
+
+    /// Clique em qualquer lugar fora da caixa fecha a busca aberta (o clique segue para onde foi dado).
+    private func watchClicksOutside() {
+        stopWatching()
+        clickMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { event in
+            guard let height = event.window?.contentView?.bounds.height else { return event }
+            let point = CGPoint(x: event.locationInWindow.x, y: height - event.locationInWindow.y)
+            if !fieldFrame.contains(point) { DispatchQueue.main.async { collapse() } }
+            return event
         }
+    }
+
+    private func stopWatching() {
+        if let clickMonitor { NSEvent.removeMonitor(clickMonitor) }
+        clickMonitor = nil
     }
 }
 
@@ -229,21 +329,6 @@ private struct HistoryButtons: View {
                 .hint("Avançar (⌘])", "Vai de novo para onde você estava antes de voltar.")
         }
         .buttonStyle(SkinButtonStyle(compact: true))
-    }
-}
-
-/// Dá acesso à NSWindow que hospeda a view.
-private struct WindowAccessor: NSViewRepresentable {
-    let onWindow: (NSWindow) -> Void
-
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        DispatchQueue.main.async { if let w = view.window { onWindow(w) } }
-        return view
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        DispatchQueue.main.async { if let w = nsView.window { onWindow(w) } }
     }
 }
 

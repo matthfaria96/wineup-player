@@ -1006,5 +1006,17 @@
  "Abrindo arquivos: %lld de %lld…": "Ouverture des fichiers : %1$lld sur %2$lld…",
  "Animar o fundo do skin": "Animer le fond du skin",
  "Desligada, o fundo do skin fica parado e o Wineup gasta menos bateria. Com \"Reduzir movimento\" ligado no macOS, ele também fica parado.": "Désactivé, le fond du skin reste fixe et Wineup consomme moins de batterie. Il reste aussi fixe si « Réduire les animations » est activé dans macOS.",
- "Estrelas, brilhos e efeitos que se mexem com a música.": "Étoiles, lueurs et effets qui bougent avec la musique."
+ "Estrelas, brilhos e efeitos que se mexem com a música.": "Étoiles, lueurs et effets qui bougent avec la musique.",
+ "Glass": "Glass",
+ "Claro": "Clair",
+ "Escuro": "Sombre",
+ "Glass (padrão)": "Glass (par défaut)",
+ "Glass é o padrão, o visual da Apple com vidro e transparência. Sem skin é o visual simples, escuro ou claro. Os skins personalizados trazem cores, molduras e arte de fundo.": "Glass est le thème par défaut : le style Apple, avec verre et transparence. Sans skin est le style simple, sombre ou clair. Les skins personnalisés apportent couleurs, cadres et illustration de fond.",
+ "Sem skin claro": "Sans skin clair",
+ "Sem skin escuro": "Sans skin sombre",
+ "Skins personalizados": "Skins personnalisés",
+ "Troca o visual da janela inteira: Glass (o visual da Apple, padrão), sem skin escuro ou claro, ou um skin personalizado com cores, molduras e arte de fundo. Também dá para editar, criar e importar skins.": "Change l’apparence de toute la fenêtre : Glass (le style Apple, par défaut), sans skin sombre ou clair, ou un skin personnalisé avec couleurs, cadres et illustration de fond. Vous pouvez aussi modifier, créer et importer des skins.",
+ "Fechar a busca": "Fermer la recherche",
+ "Abre a busca na barra do topo: procura músicas por título, artista ou álbum em toda a sua biblioteca. O X ou um clique fora fecha.": "Ouvre la recherche dans la barre du haut : trouve des morceaux par titre, artiste ou album dans toute votre bibliothèque. Le X ou un clic à côté la ferme.",
+ "Tocar pela barra de menus, layout da janela e tema (Glass, sem skin ou skins personalizados).": "Lire depuis la barre des menus, disposition de la fenêtre et thème (Glass, sans skin ou skins personnalisés)."
 }

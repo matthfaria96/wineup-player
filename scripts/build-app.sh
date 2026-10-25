@@ -5,8 +5,8 @@ cd "$(dirname "$0")/.."
 
 APP="build/Wineup Player.app"
 # Versão pública (CFBundleShortVersionString) e número do build (CFBundleVersion).
-VERSION="1.0.0"
-BUILD="2"
+VERSION="1.1.0"
+BUILD="3"
 # Universal (Apple Silicon + Intel) por padrão; UNIVERSAL=0 compila só a arquitetura desta máquina (mais rápido).
 if [ "${UNIVERSAL:-1}" = "1" ]; then
     ARCH_FLAGS=(--arch arm64 --arch x86_64)

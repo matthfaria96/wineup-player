@@ -22,6 +22,16 @@ diretos do usuário, fora dos planos, e entregou na prática quase tudo das fase
 
 Última atividade: 2026-10-24 — preparação do 1.0.0 (ícone, versão, build universal, README, correções visuais).
 
+## Temas internos: Glass e Sem skin claro/escuro (2026-10-25, pedido do usuário)
+
+- Ordem pedida pelo usuário: **Glass** (padrão, vidro escuro da Apple com transparência), **Sem skin** com
+  **Escuro** (o de sempre) e **Claro** (novo), e abaixo os **skins personalizados**. O Glass é o padrão do
+  primeiro uso; quem já usa outro tema não muda.
+- Glass: janela transparente (NSVisualEffectView atrás da janela + brilho vinho), painéis e botões com
+  `.glassEffect` no macOS 26+ e material translúcido no 14/15. Visor LCD, medidor, EQ e layout mantidos.
+- Escolha: menu do tema no topo, Ajustes › Geral, menu Exibição (⌥⇧⌘G Glass, ⌥⇧⌘0 Sem skin escuro).
+- Metadados, Ajustes, Skins e Vídeos ficam claros com o Sem skin claro. Traduções nas 16 línguas.
+
 ## Release 1.0.0 (2026-10-24, tag v1.0.0)
 
 - Versão 1.0.0 (build 2) em `scripts/build-app.sh` (VERSION/BUILD) e `WineupCore.version`.

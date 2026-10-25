@@ -8,10 +8,12 @@ import WineupLibrary
 struct MetadataTable: View {
     @ObservedObject var model: MetadataManagerModel
     let onPickMatch: (MetadataRow.ID) -> Void
+    @Environment(\.theme) private var theme
 
     var body: some View {
         MetadataNativeTable(model: model, rows: model.visibleRows, stamp: model.listStamp,
-                            selection: model.selection, sortOrder: model.sortOrder, onPickMatch: onPickMatch)
+                            selection: model.selection, sortOrder: model.sortOrder, onPickMatch: onPickMatch,
+                            transparent: !theme.isPlain)
             .overlay {
                 if model.rows.isEmpty && !model.isLoading {
                     ContentUnavailableView("Nenhuma música", systemImage: "music.note",
@@ -28,6 +30,8 @@ private struct MetadataNativeTable: NSViewRepresentable {
     let selection: Set<MetadataRow.ID>
     let sortOrder: [KeyPathComparator<MetadataRow>]
     let onPickMatch: (MetadataRow.ID) -> Void
+    /// Com tema (Glass ou skin): sem fundo nem listras, o fundo da janela aparece atrás das linhas.
+    let transparent: Bool
 
     func makeCoordinator() -> MetadataTableCoordinator { MetadataTableCoordinator(model: model) }
 
@@ -44,6 +48,12 @@ private struct MetadataNativeTable: NSViewRepresentable {
 
     func updateNSView(_ scroll: NSScrollView, context: Context) {
         context.coordinator.onPickMatch = onPickMatch
+        if let table = scroll.documentView as? NSTableView, table.usesAlternatingRowBackgroundColors == transparent {
+            table.usesAlternatingRowBackgroundColors = !transparent
+            table.backgroundColor = transparent ? .clear : .controlBackgroundColor
+            table.gridStyleMask = transparent ? .solidHorizontalGridLineMask : []
+            table.gridColor = NSColor.labelColor.withAlphaComponent(0.06)
+        }
         context.coordinator.update(rows: rows, stamp: stamp, selection: selection, sortOrder: sortOrder)
     }
 }

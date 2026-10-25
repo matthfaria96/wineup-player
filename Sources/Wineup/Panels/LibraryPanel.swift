@@ -98,7 +98,7 @@ private struct GroupRow: View {
         .foregroundStyle(theme.text)
         .padding(.horizontal, 14)
         .frame(height: 44)
-        .background(index % 2 == 0 ? Color.white.opacity(0.025) : Color.clear)
+        .background(index % 2 == 0 ? theme.ink.opacity(theme.isLight ? 0.03 : 0.025) : Color.clear)
         .padding(.horizontal, 6)
         .onAppear { covers.load(group.coverURL) }
     }
