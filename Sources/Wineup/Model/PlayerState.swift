@@ -356,10 +356,20 @@ final class PlayerState: ObservableObject {
             // por showTracks: a sessão anterior é retomada mesmo assim (fila salva ou só a faixa).
             DispatchQueue.main.async { [weak self] in
                 guard let self, !self.restoredOnce, !self.openedFilesFirst, self.browser.group == nil,
-                      [.albums, .artists, .genres, .playlists].contains(self.browser.view),
-                      ProcessInfo.processInfo.environment["WINEUP_AUTOPLAY"] == nil else { return }
+                      [.albums, .artists, .genres, .playlists].contains(self.browser.view) else { return }
                 self.restoredOnce = true
-                self.restoreSession(in: [])
+                // Capturas: WINEUP_AUTOPLAY_FILE=<caminho> toca esse arquivo mesmo com a tela aberta em grupos.
+                if let file = ProcessInfo.processInfo.environment["WINEUP_AUTOPLAY_FILE"] {
+                    self.browser.tracks(atPaths: [file]) { found in
+                        guard let track = found.first else { return }
+                        self.play(track, from: found)
+                        if let seek = ProcessInfo.processInfo.environment["WINEUP_SEEK"].flatMap(Double.init) {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self.seek(to: seek) }
+                        }
+                    }
+                } else if ProcessInfo.processInfo.environment["WINEUP_AUTOPLAY"] == nil {
+                    self.restoreSession(in: [])
+                }
             }
         } else {
             browser.libraryChanged()
@@ -384,8 +394,12 @@ final class PlayerState: ObservableObject {
         if !browser.isBackgroundRefresh || !items.contains(where: { $0.id == selectedID }) { selectedID = nil }
         if !restoredOnce {
             restoredOnce = true
-            if ProcessInfo.processInfo.environment["WINEUP_AUTOPLAY"] != nil, let first = items.first {
-                play(first, from: items)
+            if let want = ProcessInfo.processInfo.environment["WINEUP_AUTOPLAY"], let first = items.first {
+                // Testes/capturas: WINEUP_AUTOPLAY=<parte do título> escolhe a faixa; WINEUP_SEEK=<0…1> pula para esse ponto.
+                play(items.first { $0.title.localizedCaseInsensitiveContains(want) } ?? first, from: items)
+                if let seek = ProcessInfo.processInfo.environment["WINEUP_SEEK"].flatMap(Double.init) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in self?.seek(to: seek) }
+                }
             } else {
                 restoreSession(in: items)
             }

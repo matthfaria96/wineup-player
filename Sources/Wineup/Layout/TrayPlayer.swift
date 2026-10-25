@@ -77,6 +77,30 @@ final class TrayController: NSObject {
         button.title = status.title.map { " " + $0 } ?? ""
     }
 
+    /// Abre o player da barra de menus (capturas de tela).
+    func openPopover() {
+        guard !popover.isShown else { return }
+        // Fica aberto mesmo com o app em segundo plano (senão o popover se fecha antes da captura).
+        popover.behavior = .applicationDefined
+        toggle()
+        // Sem o ícone visível (barra de menus cheia), o mesmo painel abre numa janela na tela da esquerda.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self, self.popover.contentViewController?.view.window?.isVisible != true,
+                  let content = self.popover.contentViewController else { return }
+            self.popover.contentViewController = nil
+            let window = NSWindow(contentViewController: content)
+            window.styleMask = [.titled, .fullSizeContentView]
+            window.titlebarAppearsTransparent = true
+            window.titleVisibility = .hidden
+            let screen = NSScreen.screens.min(by: { $0.frame.minX < $1.frame.minX }) ?? NSScreen.main
+            if let f = screen?.visibleFrame { window.setFrameTopLeftPoint(NSPoint(x: f.minX + 40, y: f.maxY - 40)) }
+            window.orderFrontRegardless()
+            self.previewWindow = window
+        }
+    }
+
+    private var previewWindow: NSWindow?
+
     @objc private func toggle() {
         guard let button = item?.button else { return }
         if popover.isShown {

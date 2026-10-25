@@ -104,6 +104,7 @@ public final class SFBAudioEngineAdapter: NSObject, AudioEngine, AudioPlayer.Del
             chain.connect(engine, from: source, to: mixer, format: source.outputFormat(forBus: 0))
         }
         chain.setLimiter(on: true)
+        if Self.silent { mixer.outputVolume = 0 }
         // Medidor no fim da cadeia (com EQ e Correção de Som), antes do volume do app: as barras mostram a
         // música, e não somem quando o volume do Wineup está baixo.
         meter.install(on: chain.limiter)
@@ -163,8 +164,11 @@ public final class SFBAudioEngineAdapter: NSObject, AudioEngine, AudioPlayer.Del
     /// Volume do app no mixer principal. Nunca `player.setVolume` (altera o volume do dispositivo).
     public func setVolume(_ volume: Double) {
         let v = volume.isFinite ? min(max(volume, 0), 1) : 1
-        player.mainMixerNode.outputVolume = Float(v)
+        player.mainMixerNode.outputVolume = Self.silent ? 0 : Float(v)
     }
+
+    /// Capturas de tela (WINEUP_SILENT=1): toca sem sair som, com o volume da tela intacto.
+    private static let silent = ProcessInfo.processInfo.environment["WINEUP_SILENT"] != nil
 
     public func setRate(_ rate: Double) { chain.setRate(Float(rate)) }
     public func setBalance(_ pan: Double) { chain.setPan(Float(pan)) }

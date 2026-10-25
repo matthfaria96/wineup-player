@@ -4,7 +4,7 @@ import Foundation
 import SFBAudioEngine
 import WineupLibrary
 
-// wineup-demo [pasta]
+// wineup-demo [pasta] · wineup-demo --showcase <pasta> (vitrine para as capturas do site)
 // Gera faixas sintetizadas com tags e capas, varre a biblioteca do app e cria playlists e tags de cor.
 
 struct DemoTrack {
@@ -145,8 +145,10 @@ func write(_ t: DemoTrack, index: Int, to dir: URL) throws -> URL {
     meta.trackNumber = t.album == nil ? nil : t.number
     meta.lyrics = t.lyrics?.joined(separator: "\n")
     let hue = CGFloat((t.album ?? t.title).unicodeScalars.reduce(0) { $0 + Int($1.value) } % 100) / 100
-    meta.attachPicture(AttachedPicture(imageData: cover(title: t.album ?? t.title, hue: hue), type: .frontCover))
+    let art = showcaseCover(for: t) ?? cover(title: t.album ?? t.title, hue: hue)
+    meta.attachPicture(AttachedPicture(imageData: art, type: .frontCover))
     try audio.writeMetadata()
+    try writeShowcaseLyrics(for: t, audio: out)
     return out
 }
 
@@ -254,12 +256,14 @@ if CommandLine.arguments.count == 4, CommandLine.arguments[1] == "--fixtures", l
 }
 
 let music = FileManager.default.urls(for: .musicDirectory, in: .userDomainMask)[0]
-let target = CommandLine.arguments.count > 1 ? URL(fileURLWithPath: CommandLine.arguments[1])
-                                              : music.appendingPathComponent("Wineup Demo", isDirectory: true)
+var arguments = Array(CommandLine.arguments.dropFirst())
+if arguments.first == "--showcase" { showcaseMode = true; arguments.removeFirst() }
+let target = arguments.first.map { URL(fileURLWithPath: $0) }
+    ?? music.appendingPathComponent("Wineup Demo", isDirectory: true)
 try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true)
 
 var made: [String: URL] = [:]
-for (i, t) in catalog.enumerated() {
+for (i, t) in (showcaseMode ? showcaseCatalog : catalog).enumerated() {
     let url = try write(t, index: i, to: target)
     made[t.title] = url
     print("faixa: \(url.lastPathComponent)")
@@ -286,7 +290,7 @@ for root in roots {
 
 let collections = CollectionsStore(database: db)
 func paths(_ titles: [String]) -> [String] { titles.compactMap { made[$0]?.standardizedFileURL.path } }
-for existing in try collections.playlists() where ["Para Dirigir", "Relax de Domingo"].contains(existing.name) {
+for existing in try collections.playlists() where ["Para Dirigir", "Relax de Domingo", "Noite de Sexta"].contains(existing.name) {
     try collections.deletePlaylist(id: existing.id)
 }
 let drive = try collections.createPlaylist(named: "Para Dirigir")
@@ -294,9 +298,16 @@ let added1 = try collections.append(paths: paths(["Rolha Solta", "Ondas Curtas",
 let relax = try collections.createPlaylist(named: "Relax de Domingo")
 let added2 = try collections.append(paths: paths(["Decantar", "Ladeira", "Estática Azul", "Última Taça"]), toPlaylist: relax.id)
 print("playlists: Para Dirigir (\(added1)), Relax de Domingo (\(added2))")
+if showcaseMode {
+    let friday = try collections.createPlaylist(named: "Noite de Sexta")
+    let added3 = try collections.append(paths: paths(["Céu de Neon", "Avenida 80", "Faísca", "Holograma", "Ruído Branco", "Chuva Ácida"]),
+                                        toPlaylist: friday.id)
+    print("playlist: Noite de Sexta (\(added3))")
+}
 
 let marks: [(String, String)] = [("Abertura do Vinho", "purple"), ("Última Taça", "purple"), ("Ondas Curtas", "blue"),
-                                  ("Café às Três", "yellow"), ("Ladeira", "green")]
+                                  ("Café às Três", "yellow"), ("Ladeira", "green"), ("Céu de Neon", "orange"),
+                                  ("Varanda", "green"), ("Faísca", "red"), ("Holograma", "blue")]
 for (title, color) in marks {
     if let path = paths([title]).first { try collections.setMark(path: path, color: color) }
 }

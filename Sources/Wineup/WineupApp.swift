@@ -11,6 +11,7 @@ struct WineupApp: App {
     @AppStorage(DisplayKeys.theme) private var themeID = Theme.defaultID
     @ObservedObject private var skinStore = SkinStore.shared
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.openSettings) private var openSettings
 
     var body: some Scene {
         // Uma janela principal: sem restauração da sessão anterior, sem "Nova janela" e arquivos abertos
@@ -27,7 +28,17 @@ struct WineupApp: App {
                     // Testes: WINEUP_OPEN_WINDOW=metadata abre essa janela ao iniciar (capturas sem clicar).
                     // (Depois de 1 s: ao abrir, o app fecha as janelas que o sistema tenta restaurar.)
                     if let id = ProcessInfo.processInfo.environment["WINEUP_OPEN_WINDOW"] {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { openWindow(id: id) }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                            if id == "settings" { openSettings() }
+                            else { openWindow(id: id) }
+                        }
+                    }
+                    // Testes: WINEUP_TRAY=1 passa para a barra de menus e abre o player dela.
+                    if ProcessInfo.processInfo.environment["WINEUP_TRAY"] != nil {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                            TrayMode.enter(state: state, openWindow: openWindow)
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { TrayController.shared.openPopover() }
+                        }
                     }
                     // Testes: WINEUP_TEST_SCREEN=left leva as janelas para a tela mais à esquerda (sem ativar o app).
                     if ProcessInfo.processInfo.environment["WINEUP_TEST_SCREEN"] == "left" {

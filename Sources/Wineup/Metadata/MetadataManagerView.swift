@@ -69,14 +69,7 @@ struct MetadataManagerView: View {
             model.openIfNeeded(state.browser.folder)
             if Measure.stress { StressRun.metadata = model }
             model.refreshHistory()
-            // Testes: WINEUP_METADATA_SHEET=album|cover|history|duplicates abre essa tela (capturas sem clicar).
-            switch ProcessInfo.processInfo.environment["WINEUP_METADATA_SHEET"] {
-            case "album": showAlbumSearch = true
-            case "cover": showCoverSearch = true
-            case "history": showHistory = true
-            case "duplicates": showDuplicates = true
-            default: break
-            }
+            applyTestHooks()
         }
         // Janela fechada: a busca para (o resultado não teria onde aparecer); uma gravação termina o bloco.
         .onDisappear { model.windowClosed() }
@@ -84,6 +77,26 @@ struct MetadataManagerView: View {
     }
 
     private struct PickerID: Identifiable { let id: MetadataRow.ID }
+
+    /// Testes e capturas: abre uma subtela ou seleciona uma música ao abrir (sem cliques).
+    private func applyTestHooks() {
+        // Testes: WINEUP_METADATA_SHEET=album|cover|history|duplicates abre essa tela (capturas sem clicar).
+        switch ProcessInfo.processInfo.environment["WINEUP_METADATA_SHEET"] {
+        case "album": showAlbumSearch = true
+        case "cover": showCoverSearch = true
+        case "history": showHistory = true
+        case "duplicates": showDuplicates = true
+        default: break
+        }
+        // Testes: WINEUP_METADATA_SELECT=<parte do nome do arquivo> seleciona essa música (mostra o editor ao lado).
+        if let want = ProcessInfo.processInfo.environment["WINEUP_METADATA_SELECT"] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                if let row = model.visibleRows.first(where: { $0.fileName.localizedCaseInsensitiveContains(want) }) {
+                    model.selection = [row.id]
+                }
+            }
+        }
+    }
 
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
