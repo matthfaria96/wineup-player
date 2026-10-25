@@ -352,6 +352,15 @@ final class PlayerState: ObservableObject {
             usingSampleTracks = false
             if NavPlaces.defaultFolder == nil { askDefaultFolder() }
             browser.load()
+            // Visões que abrem numa lista de grupos (Artistas, Álbuns, Estilos, Playlists) não passam
+            // por showTracks: a sessão anterior é retomada mesmo assim (fila salva ou só a faixa).
+            DispatchQueue.main.async { [weak self] in
+                guard let self, !self.restoredOnce, !self.openedFilesFirst, self.browser.group == nil,
+                      [.albums, .artists, .genres, .playlists].contains(self.browser.view),
+                      ProcessInfo.processInfo.environment["WINEUP_AUTOPLAY"] == nil else { return }
+                self.restoredOnce = true
+                self.restoreSession(in: [])
+            }
         } else {
             browser.libraryChanged()
         }
