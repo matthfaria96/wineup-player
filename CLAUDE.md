@@ -17,6 +17,17 @@ Player de música nativo para macOS (Swift + SwiftUI), inspirado na identidade e
 - **Escopo visual**: o visual clássico é um modo/skin; a biblioteca moderna não precisa parecer presa a 2001
 <!-- GSD:project-end -->
 
+<!-- release-notes-start (manual) -->
+## Release e testes (manual)
+
+- Versão e build: `VERSION`/`BUILD` no topo de `scripts/build-app.sh` + `WineupCore.version` (teste em SmokeTests). Atual: 1.0.0 (2).
+- Build: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./scripts/build-app.sh` (universal; `UNIVERSAL=0` nativo, `SKIP_TESTS=1`, `VERIFY_LAUNCH=0`). Mínimo macOS 14; o binário fica com SDK 14 (visual compatível, sem Liquid Glass) de propósito.
+- Ícone: `swift scripts/make-icon.swift Resources/wineup_player.png <saida.iconset>` + `iconutil -c icns` → `Resources/WineUp.icns` (corpo 824/1024, superelipse n=5).
+- DMG: `~/Documents/witchmymac-release/make-dmg.sh "build/Wineup Player.app" WineupPlayer-<versão> ~/Documents/witchmymac-release/dist`.
+- README em inglês (`README.md`) + `README.pt-BR.md`; instalação por `curl -fsSL https://witchmymac.com/install.sh | bash -s wineup`. Licença GPL-3.0; créditos em `Resources/THIRD_PARTY_NOTICES.md` (todo clipe, fonte ou arte embutida precisa de fonte e licença lá).
+- Testes visuais sem atrapalhar o usuário: cópia do app com bundle id `app.wineup.player.check`, `open -g -n --env CFFIXED_USER_HOME=<pasta> --env WINEUP_MUTE=1`, biblioteca de demonstração via `wineup-demo <pasta>/Music` com o mesmo `CFFIXED_USER_HOME`, captura `screencapture -x -o -l <id>`. `WINEUP_OPEN_WINDOW=metadata|themes|about|videos` abre janelas. Nunca rodar `scripts/ui-test.sh` (cliques reais) nem testar com o bundle id real.
+<!-- release-notes-end -->
+
 <!-- GSD:stack-start source:research/STACK.md -->
 ## Technology Stack
 
