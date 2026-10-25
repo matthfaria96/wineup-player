@@ -125,7 +125,10 @@ struct SkinEditorView: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(skin.name).lineLimit(1)
                 HStack(spacing: 4) {
-                    if skin.id == activeID { Text("Em uso").foregroundStyle(Color.accentColor) }
+                    // Estilo hierárquico: na linha selecionada (fundo azul) o texto continua legível.
+                    if skin.id == activeID {
+                        Label("Em uso", systemImage: "checkmark").labelStyle(.titleAndIcon).foregroundStyle(.secondary)
+                    }
                     if store.isModifiedBuiltIn(skin.id) { Text("Ajustado").foregroundStyle(.secondary) }
                 }
                 .font(.caption2)

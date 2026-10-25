@@ -80,9 +80,13 @@ enum NavPlaces {
         UserDefaults.standard.set(urls.map(\.path), forKey: favoritesKey)
     }
 
+    /// Pasta pessoal (lida uma vez: a coluna Caminho dos Metadados chama isto a cada célula).
+    private static let homePath = FileManager.default.homeDirectoryForCurrentUser.path
+
     static func displayPath(_ url: URL) -> String {
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
-        return url.path.hasPrefix(home) ? "~" + url.path.dropFirst(home.count) : url.path
+        let path = url.path
+        guard path == homePath || path.hasPrefix(homePath + "/") else { return path }
+        return "~" + path.dropFirst(homePath.count)
     }
 }
 

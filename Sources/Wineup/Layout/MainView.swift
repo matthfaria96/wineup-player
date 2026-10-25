@@ -163,7 +163,12 @@ extension MainView {
             var frame = window.frame
             let top = frame.maxY
             frame.size.width = target
-            if mode == .compact { frame.size.height = max(frame.height, 820) }
+            // Compacto: alto o bastante para a lista mostrar várias faixas abaixo do player e do FX
+            // (sem passar da área útil da tela).
+            if mode == .compact {
+                let available = window.screen?.visibleFrame.height ?? 980
+                frame.size.height = min(max(frame.height, 980), max(available, mode.minSize.height))
+            }
             // Padrão e Completo: altura exata da coluna da capa, sem sobras acima e abaixo dela.
             else { frame.size.height = mode.minSize.height }
             frame.origin.y = top - frame.height

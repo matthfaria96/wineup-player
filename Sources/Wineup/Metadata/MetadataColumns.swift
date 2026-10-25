@@ -38,7 +38,7 @@ struct MetadataColumn {
                        content: .lyrics),
         MetadataColumn(id: "path", title: String(localized: "Caminho"), minWidth: 80, width: 150, maxWidth: 2000,
                        truncatesHead: true, sort: { KeyPathComparator(\.sortPath, order: $0) },
-                       content: .text { ($0.url.deletingLastPathComponent().path, false, $0.url.path) }),
+                       content: .text { (NavPlaces.displayPath($0.url.deletingLastPathComponent()), false, $0.url.path) }),
         field("title", String(localized: "Título"), 80, 160, sort: { KeyPathComparator(\.sortTitle, order: $0) }),
         field("artist", String(localized: "Artista"), 70, 130, sort: { KeyPathComparator(\.sortArtist, order: $0) }),
         field("album", String(localized: "Álbum"), 70, 140, sort: { KeyPathComparator(\.sortAlbum, order: $0) }),
