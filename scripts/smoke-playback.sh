@@ -5,7 +5,8 @@ cd "$(dirname "$0")/.."
 
 APP="${1:-build/Wineup Player.app}"
 APP_ABS="$(cd "$(dirname "$APP")" && pwd)/$(basename "$APP")"
-PATTERN="Wineup Player.app/Contents/MacOS/Wineup"
+# Só a instância aberta por este teste (nunca o Wineup que o usuário estiver usando).
+PATTERN="$APP_ABS/Contents/MacOS/Wineup"
 
 fail() { echo "ERRO: $1" >&2; exit 1; }
 
