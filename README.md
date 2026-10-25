@@ -69,6 +69,7 @@ It is built on open-source work, each under its own license (full list in [Resou
 - [SFBAudioEngine](https://github.com/sbooth/SFBAudioEngine) by Stephen F. Booth (MIT), with FLAC, Ogg, Vorbis, Opus, Speex, WavPack, Monkey's Audio (BSD) and libsndfile, mpg123, LAME, Musepack, TTA (LGPL, shipped as replaceable dynamic frameworks)
 - [GRDB.swift](https://github.com/groue/GRDB.swift) by Gwendal Roué (MIT)
 - [TagLib](https://taglib.org) (LGPL-2.1 / MPL-1.1)
+- Skins: all built-in skins and their artwork are original work by Matheus Faria, Wineup's author; only the fonts come from third parties
 - Skin fonts under the SIL Open Font License: VT323, Press Start 2P, Metal Mania, Orbitron
 - Built-in video clips from Wikimedia Commons and NASA (public domain and CC BY 3.0)
 

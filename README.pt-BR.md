@@ -69,6 +69,7 @@ Ele usa trabalhos de código aberto, cada um com a sua licença (lista completa 
 - [SFBAudioEngine](https://github.com/sbooth/SFBAudioEngine), de Stephen F. Booth (MIT), com FLAC, Ogg, Vorbis, Opus, Speex, WavPack, Monkey's Audio (BSD) e libsndfile, mpg123, LAME, Musepack, TTA (LGPL, embutidos como frameworks dinâmicos substituíveis)
 - [GRDB.swift](https://github.com/groue/GRDB.swift), de Gwendal Roué (MIT)
 - [TagLib](https://taglib.org) (LGPL-2.1 / MPL-1.1)
+- Skins: todos os skins embutidos e a arte deles são criação original de Matheus Faria, autor do Wineup; só as fontes vêm de terceiros
 - Fontes dos skins sob a SIL Open Font License: VT323, Press Start 2P, Metal Mania, Orbitron
 - Clipes de vídeo embutidos do Wikimedia Commons e da NASA (domínio público e CC BY 3.0)
 

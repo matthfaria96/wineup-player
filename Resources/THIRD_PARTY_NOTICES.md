@@ -39,6 +39,12 @@ Trechos de 10–20 s, sem som, reduzidos a 960 px. Cada um mantém a licença or
 Os clipes CC BY exigem crédito ao autor: os nomes completos estão nas páginas de origem.
 A categoria "Cidades" não traz clipe embutido (o usuário acopla a própria pasta de vídeos).
 
+## Arte dos skins
+
+Todos os skins embutidos (Musical, Retro, PixelArt 16bit, Sci-Fi, Neon Gótico e Emoboy), com as suas
+ilustrações e imagens, são criação original de Matheus Faria, autor do Wineup. Eles se inspiram em
+estilos clássicos, mas nenhum usa arte de terceiros. Só as fontes listadas abaixo vêm de terceiros.
+
 ## Skins embutidos "Musical", "Retro" e "PixelArt 16bit"
 
 | Item | Autor | Licença | Fonte |
