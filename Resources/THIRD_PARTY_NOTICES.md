@@ -37,6 +37,13 @@ Trechos de 10–20 s, sem som, reduzidos a 960 px. Cada um mantém a licença or
 
 Os clipes CC BY exigem crédito ao autor: os nomes completos estão nas páginas de origem.
 
+## Skins embutidos "Musical", "Retro" e "PixelArt 16bit"
+
+| Item | Autor | Licença | Fonte |
+|---|---|---|---|
+| VT323 (fonte de visor, skins Musical e Retro) | Peter Hull | SIL Open Font License 1.1 (texto em Skins/radio-retro/OFL-VT323.txt e Skins/classico/OFL-VT323.txt) | https://github.com/google/fonts/tree/main/ofl/vt323 |
+| Press Start 2P (fonte pixel, skin PixelArt 16bit) | CodeMan38 | SIL Open Font License 1.1 (texto em Skins/pixelart-16bit/OFL-PressStart2P.txt) | https://github.com/google/fonts/tree/main/ofl/pressstart2p |
+
 ## Skin embutido "Neon Gótico"
 
 | Item | Autor | Licença | Fonte |
