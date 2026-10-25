@@ -29,6 +29,7 @@ Trechos de 10–20 s, sem som, reduzidos a 960 px. Cada um mantém a licença or
 |---|---|---|---|---|
 | animacao/animacao-namakura.mp4 | Namakura Gatana (1917) | Jun'ichi Kōuchi | Domínio público | https://commons.wikimedia.org/wiki/File:Namakura_Gatana_with_music.webm |
 | cinema/cinema-hooligan.mp4 | Happy Hooligan: A Trip to the Moon (1917) | International Film Service | Domínio público | https://commons.wikimedia.org/wiki/File:Happy_Hooligan_-_A_Trip_To_The_Moon-1917.webm |
+| cinema/cinema-melies.mp4 | Le Voyage dans la Lune / A Trip to the Moon (1902) | Georges Méliès | Domínio público | https://commons.wikimedia.org/wiki/Category:A_Trip_to_the_Moon |
 | natureza/natureza-aurora.mp4 | May 2024 aurora timelapse near Calgary | ver página da fonte | CC BY 3.0 | https://commons.wikimedia.org/wiki/File:May_2024_aurora_timelapse_near_Calgary.webm |
 | natureza/natureza-floresta.mp4 | Lost Forest Research Natural Area | BLM Oregon & Washington | Domínio público (obra do governo dos EUA) | https://commons.wikimedia.org/wiki/File:Lost_Forest_Research_Natural_Area_(44359678475).webm |
 | natureza/natureza-praia.mp4 | Fujitsuka-hama Beach in Summer, Japan – Aerial Video | ver página da fonte | CC BY 3.0 | https://commons.wikimedia.org/wiki/File:Fujitsuka-hama_Beach_in_Summer,_Japan_-_Aerial_Video.webm |
@@ -36,6 +37,7 @@ Trechos de 10–20 s, sem som, reduzidos a 960 px. Cada um mantém a licença or
 | universo/universo-colisao.mp4 | Galaxy Collision Animation – James Webb Space Telescope Science | NASA/ESA/STScI (via Commons) | CC BY 3.0 | https://commons.wikimedia.org/wiki/File:Galaxy_Collision_Animation-_James_Webb_Space_Telescope_Science.webm |
 
 Os clipes CC BY exigem crédito ao autor: os nomes completos estão nas páginas de origem.
+A categoria "Cidades" não traz clipe embutido (o usuário acopla a própria pasta de vídeos).
 
 ## Skins embutidos "Musical", "Retro" e "PixelArt 16bit"
 

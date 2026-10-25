@@ -23,7 +23,7 @@ struct VideoCategory: Codable, Identifiable, Equatable {
         VideoCategory(id: "cinema", name: String(localized: "Séries e filmes"), symbol: "film", builtIn: true,
                       bundled: ["cinema-hooligan.mp4", "cinema-melies.mp4"]),
         VideoCategory(id: "cidades", name: String(localized: "Cidades"), symbol: "building.2", builtIn: true,
-                      bundled: ["cidade-nyc.mp4"]),
+                      bundled: []),
         VideoCategory(id: "natureza", name: String(localized: "Natureza"), symbol: "leaf", builtIn: true,
                       bundled: ["natureza-aurora.mp4", "natureza-floresta.mp4", "natureza-praia.mp4"]),
         VideoCategory(id: "animacao", name: String(localized: "Anime"), symbol: "sparkles.tv", builtIn: true,
