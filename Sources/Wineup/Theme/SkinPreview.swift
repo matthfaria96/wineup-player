@@ -25,9 +25,9 @@ struct SkinPreview: View {
                 Panel(title: "") {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Músicas").font(theme.titleFont(18, weight: .bold)).foregroundStyle(theme.text)
-                        row("Abertura do Vinho", "Os Taninos", current: false, selected: true, theme)
-                        row("Safra Antiga", "Os Taninos", current: true, selected: false, theme)
-                        row("Rolha Solta", "Os Taninos", current: false, selected: false, theme)
+                        row("Uncorked", "The Tannins", current: false, selected: true, theme)
+                        row("Old Vintage", "The Tannins", current: true, selected: false, theme)
+                        row("Loose Cork", "The Tannins", current: false, selected: false, theme)
                     }
                     .padding(10)
                 }
@@ -36,7 +36,7 @@ struct SkinPreview: View {
                     Panel(title: "Player") {
                         VStack(alignment: .leading, spacing: 6) {
                             HStack {
-                                Text("Safra Antiga").font(.system(size: 12, weight: .semibold)).foregroundStyle(theme.text)
+                                Text(verbatim: "Old Vintage").font(.system(size: 12, weight: .semibold)).foregroundStyle(theme.text)
                                 Spacer()
                                 SevenSegmentText(text: "-03:44", digitHeight: 18)
                             }

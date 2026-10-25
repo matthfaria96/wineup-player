@@ -290,24 +290,26 @@ for root in roots {
 
 let collections = CollectionsStore(database: db)
 func paths(_ titles: [String]) -> [String] { titles.compactMap { made[$0]?.standardizedFileURL.path } }
-for existing in try collections.playlists() where ["Para Dirigir", "Relax de Domingo", "Noite de Sexta"].contains(existing.name) {
+// Playlists e tags de cor: nomes em português na demo comum, em inglês na vitrine.
+let lists: [(String, [String])] = showcaseMode
+    ? [("Road Trip", ["Loose Cork", "Shortwave", "Weak Signal", "Uncorked", "Coffee at Three"]),
+       ("Sunday Chill", ["Decanter", "Uphill", "Blue Static", "Last Glass"]),
+       ("Friday Night", ["Neon Sky", "Avenue 80", "Spark", "Hologram", "White Noise", "Acid Rain"])]
+    : [("Para Dirigir", ["Rolha Solta", "Ondas Curtas", "Sinal Fraco", "Abertura do Vinho", "Café às Três"]),
+       ("Relax de Domingo", ["Decantar", "Ladeira", "Estática Azul", "Última Taça"])]
+for existing in try collections.playlists() where lists.contains(where: { $0.0 == existing.name }) {
     try collections.deletePlaylist(id: existing.id)
 }
-let drive = try collections.createPlaylist(named: "Para Dirigir")
-let added1 = try collections.append(paths: paths(["Rolha Solta", "Ondas Curtas", "Sinal Fraco", "Abertura do Vinho", "Café às Três"]), toPlaylist: drive.id)
-let relax = try collections.createPlaylist(named: "Relax de Domingo")
-let added2 = try collections.append(paths: paths(["Decantar", "Ladeira", "Estática Azul", "Última Taça"]), toPlaylist: relax.id)
-print("playlists: Para Dirigir (\(added1)), Relax de Domingo (\(added2))")
-if showcaseMode {
-    let friday = try collections.createPlaylist(named: "Noite de Sexta")
-    let added3 = try collections.append(paths: paths(["Céu de Neon", "Avenida 80", "Faísca", "Holograma", "Ruído Branco", "Chuva Ácida"]),
-                                        toPlaylist: friday.id)
-    print("playlist: Noite de Sexta (\(added3))")
+for (name, titles) in lists {
+    let list = try collections.createPlaylist(named: name)
+    print("playlist: \(name) (\(try collections.append(paths: paths(titles), toPlaylist: list.id)))")
 }
 
-let marks: [(String, String)] = [("Abertura do Vinho", "purple"), ("Última Taça", "purple"), ("Ondas Curtas", "blue"),
-                                  ("Café às Três", "yellow"), ("Ladeira", "green"), ("Céu de Neon", "orange"),
-                                  ("Varanda", "green"), ("Faísca", "red"), ("Holograma", "blue")]
+let marks: [(String, String)] = showcaseMode
+    ? [("Uncorked", "purple"), ("Last Glass", "purple"), ("Shortwave", "blue"), ("Coffee at Three", "yellow"),
+       ("Uphill", "green"), ("Neon Sky", "orange"), ("Porch Light", "green"), ("Spark", "red"), ("Hologram", "blue")]
+    : [("Abertura do Vinho", "purple"), ("Última Taça", "purple"), ("Ondas Curtas", "blue"),
+       ("Café às Três", "yellow"), ("Ladeira", "green")]
 for (title, color) in marks {
     if let path = paths([title]).first { try collections.setMark(path: path, color: color) }
 }

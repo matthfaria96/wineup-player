@@ -2,7 +2,7 @@ import AppKit
 import Foundation
 
 // Vitrine (wineup-demo --showcase <pasta>): biblioteca fictícia para as capturas do site.
-// Lançamentos inventados, faixas de 3 a 4 minutos, capas desenhadas aqui e letras sincronizadas (.lrc).
+// Lançamentos inventados, em inglês (o público do site é internacional), faixas de 3 a 4 minutos, capas desenhadas aqui e letras sincronizadas (.lrc).
 
 /// Ligado pelo argumento --showcase: troca o catálogo, as capas e grava as letras .lrc.
 nonisolated(unsafe) var showcaseMode = false
@@ -14,48 +14,49 @@ let showcaseCatalog: [DemoTrack] = {
                   root: root, tempo: tempo, format: format, lyrics: nil)
     }
     return [
-        t("Abertura do Vinho", "Os Taninos", "Noites de Vinho", "Rock", 1, "2024", 214, 220, 112, "flac"),
-        t("Safra Antiga", "Os Taninos", "Noites de Vinho", "Rock", 2, "2024", 187, 196, 96, "flac"),
-        t("Rolha Solta", "Os Taninos", "Noites de Vinho", "Rock", 3, "2024", 168, 247, 128, "flac"),
-        t("Decantar", "Os Taninos", "Noites de Vinho", "Rock", 4, "2024", 236, 174.6, 88, "m4a"),
-        t("Última Taça", "Os Taninos", "Noites de Vinho", "Rock", 5, "2024", 245, 207.7, 100, "m4a"),
-        t("Ondas Curtas", "Maré Sintética", "Frequências", "Eletrônica", 1, "2023", 222, 261.6, 124, "m4a"),
-        t("Estática Azul", "Maré Sintética", "Frequências", "Eletrônica", 2, "2023", 199, 293.7, 120, "flac"),
-        t("Sinal Fraco", "Maré Sintética", "Frequências", "Eletrônica", 3, "2023", 183, 329.6, 132, "flac"),
-        t("Fim de Transmissão", "Maré Sintética", "Frequências", "Eletrônica", 4, "2023", 251, 246.9, 110, "m4a"),
-        t("Céu de Neon", "Luna Vale", "Céu de Neon", "Synthpop", 1, "2025", 203, 277.2, 118, "m4a"),
-        t("Avenida 80", "Luna Vale", "Céu de Neon", "Synthpop", 2, "2025", 191, 311.1, 122, "m4a"),
-        t("Chuva Ácida", "Luna Vale", "Céu de Neon", "Synthpop", 3, "2025", 228, 233.1, 104, "flac"),
-        t("Holograma", "Luna Vale", "Céu de Neon", "Synthpop", 4, "2025", 176, 349.2, 126, "m4a"),
-        t("Varanda", "Bento Grave", "Varanda", "MPB", 1, "2022", 207, 196, 84, "flac"),
-        t("Ladeira", "Bento Grave", "Varanda", "MPB", 2, "2022", 194, 233.1, 92, "flac"),
-        t("Rede ao Sol", "Bento Grave", "Varanda", "MPB", 3, "2022", 219, 220, 78, "m4a"),
-        t("Ruído Branco", "Os Fósforos", "Ruído Branco", "Indie", 1, "2024", 172, 246.9, 138, "flac"),
-        t("Faísca", "Os Fósforos", "Ruído Branco", "Indie", 2, "2024", 158, 293.7, 144, "flac"),
-        t("Pavio Curto", "Os Fósforos", "Ruído Branco", "Indie", 3, "2024", 181, 261.6, 132, "m4a"),
-        t("Café às Três", "Lia Sol", nil, "Pop", 1, "2025", 196, 349.2, 104, "m4a"),
-        t("Demo Sem Nome", "Desconhecido do Porão", nil, nil, 1, "2021", 142, 277.2, 116, "flac"),
+        t("Uncorked", "The Tannins", "Wine Nights", "Rock", 1, "2024", 214, 220, 112, "flac"),
+        t("Old Vintage", "The Tannins", "Wine Nights", "Rock", 2, "2024", 187, 196, 96, "flac"),
+        t("Loose Cork", "The Tannins", "Wine Nights", "Rock", 3, "2024", 168, 247, 128, "flac"),
+        t("Decanter", "The Tannins", "Wine Nights", "Rock", 4, "2024", 236, 174.6, 88, "m4a"),
+        t("Last Glass", "The Tannins", "Wine Nights", "Rock", 5, "2024", 245, 207.7, 100, "m4a"),
+        t("Shortwave", "Synthetic Tide", "Frequencies", "Electronic", 1, "2023", 222, 261.6, 124, "m4a"),
+        t("Blue Static", "Synthetic Tide", "Frequencies", "Electronic", 2, "2023", 199, 293.7, 120, "flac"),
+        t("Weak Signal", "Synthetic Tide", "Frequencies", "Electronic", 3, "2023", 183, 329.6, 132, "flac"),
+        t("End of Transmission", "Synthetic Tide", "Frequencies", "Electronic", 4, "2023", 251, 246.9, 110, "m4a"),
+        t("Neon Sky", "Luna Vale", "Neon Sky", "Synthpop", 1, "2025", 203, 277.2, 118, "m4a"),
+        t("Avenue 80", "Luna Vale", "Neon Sky", "Synthpop", 2, "2025", 191, 311.1, 122, "m4a"),
+        t("Acid Rain", "Luna Vale", "Neon Sky", "Synthpop", 3, "2025", 228, 233.1, 104, "flac"),
+        t("Hologram", "Luna Vale", "Neon Sky", "Synthpop", 4, "2025", 176, 349.2, 126, "m4a"),
+        t("Porch Light", "Ben Graves", "Porch Light", "Folk", 1, "2022", 207, 196, 84, "flac"),
+        t("Uphill", "Ben Graves", "Porch Light", "Folk", 2, "2022", 194, 233.1, 92, "flac"),
+        t("Hammock in the Sun", "Ben Graves", "Porch Light", "Folk", 3, "2022", 219, 220, 78, "m4a"),
+        t("White Noise", "The Matches", "White Noise", "Indie", 1, "2024", 172, 246.9, 138, "flac"),
+        t("Spark", "The Matches", "White Noise", "Indie", 2, "2024", 158, 293.7, 144, "flac"),
+        t("Short Fuse", "The Matches", "White Noise", "Indie", 3, "2024", 181, 261.6, 132, "m4a"),
+        t("Coffee at Three", "Lia Sun", nil, "Pop", 1, "2025", 196, 349.2, 104, "m4a"),
+        t("Untitled Demo", "Basement Stranger", nil, nil, 1, "2021", 142, 277.2, 116, "flac"),
     ]
 }()
 
 /// Letras sincronizadas por título (uma linha a cada ~4 s, a partir de 2 s).
 let showcaseLyrics: [String: [String]] = [
-    "Última Taça": ["Última taça da noite", "O disco gira sem fim", "Guardo o som do teu riso",
-                    "Tocando dentro de mim", "A rua já está vazia", "Só o neon ficou aceso",
-                    "Mais uma volta na agulha", "E o tempo fica preso", "Brinda comigo de novo",
-                    "Que a manhã pode esperar", "Última taça da noite", "Ninguém quer ir pra casa"],
-    "Céu de Neon": ["Luzes rosas na janela", "A cidade aprende a brilhar", "Teu nome numa vitrine",
-                    "Piscando sem parar", "Céu de neon, me leva", "Pra onde a noite não tem fim",
-                    "Céu de neon, acende", "Tudo que existe em mim", "Carros cortam a avenida",
-                    "Como cometas no chão", "Céu de neon, me leva", "Dentro dessa canção"],
-    "Café às Três": ["Café às três da manhã", "A cidade dorme em paz", "Uma canção no rádio",
-                     "E nada mais", "A xícara ainda quente", "O vapor desenha o ar",
-                     "Tem uma estrela teimosa", "Que não quer se apagar", "Café às três da manhã",
-                     "Eu e o som do vinil", "Café às três da manhã", "O mundo inteiro sumiu"],
-    "Varanda": ["Rede balança devagar", "O sol desce no quintal", "Um violão na varanda",
-                "Toca um samba sem final", "Cheiro de terra molhada", "Chuva fina no telhado",
-                "A tarde vira poesia", "Com você aqui do lado"],
+    "Last Glass": ["Last glass of the night", "The record spins forever", "I keep the sound of your laugh",
+                   "Playing deep inside me", "The street is empty now", "Only the neon stayed awake",
+                   "One more turn of the needle", "And time stands still", "Raise your glass again",
+                   "The morning can wait", "Last glass of the night", "Nobody wants to go home"],
+    "Neon Sky": ["Pink lights on the window", "The city learns to shine", "Your name in a shop sign",
+                 "Blinking all night long", "Neon sky, take me", "Where the night never ends",
+                 "Neon sky, light up", "Everything inside me", "Cars cut through the avenue",
+                 "Like comets on the ground", "Neon sky, take me", "Into this song"],
+    "Coffee at Three": ["Coffee at three in the morning", "The city sleeps in peace", "A song on the radio",
+                        "And nothing more", "The cup is still warm", "Steam draws on the air",
+                        "One stubborn little star", "Refuses to go out", "Coffee at three in the morning",
+                        "Just me and the vinyl", "Coffee at three in the morning", "The whole world disappeared"],
+    "Porch Light": ["The hammock sways slowly", "The sun sets in the yard", "A guitar on the porch",
+                    "Plays a song with no end", "Smell of the wet ground", "Soft rain on the roof",
+                    "The afternoon turns to poetry", "With you right by my side"],
 ]
+
 
 /// Grava o .lrc ao lado da música (o Wineup lê a letra sincronizada dele).
 func writeShowcaseLyrics(for t: DemoTrack, audio: URL) throws {
@@ -76,15 +77,15 @@ func showcaseCover(for t: DemoTrack) -> Data? {
     let key = t.album ?? t.title
     return render(1000) { ctx, s in
         switch key {
-        case "Noites de Vinho": wine(ctx, s)
-        case "Frequências": synthSun(ctx, s)
-        case "Céu de Neon": neonBlobs(ctx, s)
-        case "Varanda": varanda(ctx, s)
-        case "Ruído Branco": stripes(ctx, s)
-        case "Café às Três": dots(ctx, s)
+        case "Wine Nights": wine(ctx, s)
+        case "Frequencies": synthSun(ctx, s)
+        case "Neon Sky": neonBlobs(ctx, s)
+        case "Porch Light": varanda(ctx, s)
+        case "White Noise": stripes(ctx, s)
+        case "Coffee at Three": dots(ctx, s)
         default: tape(ctx, s)
         }
-        label(key, by: t.artist, in: s, dark: key == "Varanda")
+        label(key, by: t.artist, in: s, dark: key == "Porch Light")
     }
 }
 
