@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import WineupCore
 
-@Test func coreVersionIsSet() { #expect(WineupCore.version == "0.1.0") }
+@Test func coreVersionIsSet() { #expect(WineupCore.version == "1.0.0") }
 
 @Test func confidenceIsOrdered() { #expect(Confidence.low < .high) }
 

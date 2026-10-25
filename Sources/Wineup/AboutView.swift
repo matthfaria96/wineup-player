@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import WineupCore
 
 /// Janela "Sobre o Wineup Player", no mesmo padrão dos outros apps witchmymac.
 struct AboutView: View {
@@ -9,7 +10,7 @@ struct AboutView: View {
 
     private var version: String {
         let info = Bundle.main.infoDictionary
-        let marketing = info?["CFBundleShortVersionString"] as? String ?? "0.1.0"
+        let marketing = info?["CFBundleShortVersionString"] as? String ?? WineupCore.version
         let build = info?["CFBundleVersion"] as? String ?? "1"
         return String(localized: "Versão \(marketing) (\(build))")
     }

@@ -47,22 +47,40 @@ COPY="$TMP/Wineup Player.app"
 trap 'pkill -f "$TMP/Wineup Player.app/Contents/MacOS/Wineup" || true; rm -rf "$TMP"' EXIT
 ditto "$APP" "$COPY"
 
-# 5. dyld direto
-"$COPY/Contents/MacOS/Wineup" >"$TMP/direct.log" 2>&1 &
-PID=$!
-sleep 3
-if ! kill -0 "$PID" 2>/dev/null; then
-    if grep -qE "Library not loaded|dyld" "$TMP/direct.log"; then
-        fail "dyld não resolveu frameworks"
-    fi
-else
-    kill "$PID" 2>/dev/null || true
-    wait "$PID" 2>/dev/null || true
-fi
+# 5 e 6 abrem o app de verdade: em segundo plano (sem roubar o foco), mudo, com biblioteca e pasta
+# temporárias (não lê nem grava a biblioteca do usuário). VERIFY_LAUNCH=0 pula essa parte.
+if [ "${VERIFY_LAUNCH:-1}" = "1" ]; then
+    mkdir -p "$TMP/empty"
+    export WINEUP_LIBRARY_PATH="$TMP/library.sqlite" WINEUP_DEFAULT_FOLDER="$TMP/empty" WINEUP_MUTE=1 WINEUP_NO_SCAN=1
 
-# 6. Abertura via LaunchServices
-open -n "$COPY"
-sleep 3
-pgrep -f "$TMP/Wineup Player.app/Contents/MacOS/Wineup" >/dev/null || fail "app não abriu fora de build/"
+    # 5. dyld direto
+    "$COPY/Contents/MacOS/Wineup" >"$TMP/direct.log" 2>&1 &
+    PID=$!
+    sleep 3
+    if ! kill -0 "$PID" 2>/dev/null; then
+        if grep -qE "Library not loaded|dyld" "$TMP/direct.log"; then
+            fail "dyld não resolveu frameworks"
+        fi
+    else
+        kill "$PID" 2>/dev/null || true
+        wait "$PID" 2>/dev/null || true
+    fi
+
+    # 6. Abertura via LaunchServices (-g: não ativa o app)
+    open -g -n --env WINEUP_LIBRARY_PATH="$WINEUP_LIBRARY_PATH" --env WINEUP_DEFAULT_FOLDER="$WINEUP_DEFAULT_FOLDER" \
+        --env WINEUP_MUTE=1 --env WINEUP_NO_SCAN=1 "$COPY"
+    sleep 3
+    pgrep -f "$TMP/Wineup Player.app/Contents/MacOS/Wineup" >/dev/null || fail "app não abriu fora de build/"
+else
+    # Sem abrir: cada framework precisa ter todas as arquiteturas do executável.
+    ARCHS="$(lipo -archs "$COPY/Contents/MacOS/Wineup")"
+    for fw in "$COPY"/Contents/Frameworks/*.framework; do
+        nome="$(basename "$fw" .framework)"
+        bin="$fw/Versions/Current/$nome"; [ -f "$bin" ] || bin="$fw/$nome"
+        for arch in $ARCHS; do
+            lipo -archs "$bin" | grep -qw "$arch" || fail "$nome.framework sem $arch"
+        done
+    done
+fi
 
 echo "Empacotamento OK"
