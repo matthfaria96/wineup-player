@@ -5,8 +5,8 @@ cd "$(dirname "$0")/.."
 
 APP="build/Wineup Player.app"
 # Versão pública (CFBundleShortVersionString) e número do build (CFBundleVersion).
-VERSION="1.1.0"
-BUILD="3"
+VERSION="1.1.1"
+BUILD="4"
 # Universal (Apple Silicon + Intel) por padrão; UNIVERSAL=0 compila só a arquitetura desta máquina (mais rápido).
 if [ "${UNIVERSAL:-1}" = "1" ]; then
     ARCH_FLAGS=(--arch arm64 --arch x86_64)
@@ -62,6 +62,11 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>LSMinimumSystemVersion</key><string>14.0</string>
     <key>NSHighResolutionCapable</key><true/>
     <key>NSHumanReadableCopyright</key><string>© 2026 Matheus Faria · GPL-3.0</string>
+    <key>SUFeedURL</key><string>https://witchmymac.com/appcast/wineup.xml</string>
+    <key>SUPublicEDKey</key><string>yhoDaYLDki5BV0c44pefouDhxbliuGqLKxXKXXK1Pb0=</string>
+    <key>SUEnableAutomaticChecks</key><true/>
+    <key>SUScheduledCheckInterval</key><integer>86400</integer>
+    <key>SUAutomaticallyUpdate</key><false/>
     <key>CFBundleDocumentTypes</key>
     <array>
         <dict>

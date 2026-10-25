@@ -59,6 +59,7 @@ struct WineupApp: App {
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button("Sobre o Wineup Player") { openWindow(id: "about") }
+                CheckForUpdatesButton()
             }
             CommandGroup(replacing: .newItem) {
                 Button("Abrir…") { state.presentOpenPanel() }
@@ -226,6 +227,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Medições: WINEUP_HANG_LOG=<arquivo> liga o vigia de travadas da thread principal.
         HangWatchdog.shared?.start()
+        // Atualizações (Sparkle): verificação diária e o item Verificar Atualizações….
+        MainActor.assumeIsolated { AppUpdater.shared.start() }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
             for window in NSApp.windows {
                 window.isRestorable = false

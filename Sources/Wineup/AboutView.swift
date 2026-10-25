@@ -46,6 +46,10 @@ struct AboutView: View {
                 .frame(maxWidth: 460)
                 .padding(.top, 14)
 
+            CheckForUpdatesButton()
+                .controlSize(.large)
+                .padding(.top, 22)
+
             HStack(spacing: 18) {
                 Link("witchmymac.com", destination: URL(string: "http://witchmymac.com")!)
                     .font(.system(size: 12))

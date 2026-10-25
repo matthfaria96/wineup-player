@@ -15,6 +15,8 @@ let package = Package(
         .package(url: "https://github.com/groue/GRDB.swift", from: "7.0.0"),
         // TagLib (LGPL/MPL) já resolvido pelo SFBAudioEngine; usado direto pelo shim WineupID3.
         .package(url: "https://github.com/sbooth/CXXTagLib", from: "2.3.2"),
+        // MIT. Atualizações dentro do app (feed em witchmymac.com/appcast/wineup.xml).
+        .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.10.0"),
     ],
     targets: [
         .executableTarget(
@@ -24,6 +26,7 @@ let package = Package(
                 "WineupLibrary",
                 "WineupAudio",
                 .product(name: "SFBAudioEngine", package: "SFBAudioEngine"),
+                .product(name: "Sparkle", package: "Sparkle"),
             ],
             path: "Sources/Wineup"
         ),

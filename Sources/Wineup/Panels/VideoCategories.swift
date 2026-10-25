@@ -75,7 +75,10 @@ final class VideoCategoryStore: ObservableObject {
         let saved = (try? Data(contentsOf: url)).flatMap { try? JSONDecoder().decode([VideoCategory].self, from: $0) } ?? []
         let byID = Dictionary(saved.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         // Embutidas: lista de clipes sempre a do app; o que o usuário mexeu (ligada, pasta, nome) vem do salvo.
-        let builtIns = VideoCategory.builtIns.map { b -> VideoCategory in
+        // Embutida sem nenhum clipe (Cidades) só aparece para quem já acoplou uma pasta de vídeos a ela.
+        let builtIns = VideoCategory.builtIns.filter { b in
+            !b.bundled.isEmpty || !(byID[b.id]?.folder ?? "").isEmpty
+        }.map { b -> VideoCategory in
             guard let s = byID[b.id] else { return b }
             var c = b; c.enabled = s.enabled; c.folder = s.folder
             if !VideoCategory.oldNames.contains(s.name) && !VideoCategory.sourceNames.contains(s.name) { c.name = s.name }

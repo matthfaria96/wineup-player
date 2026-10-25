@@ -19,6 +19,7 @@ Texto completo das licenças: https://github.com/sbooth/SFBAudioEngine/tree/main
 | Componente | Licença | Observação |
 |---|---|---|
 | GRDB.swift (Gwendal Roué) | MIT | Banco SQLite da biblioteca (migrations, FTS5) |
+| Sparkle (Andy Matuschak e colaboradores) | MIT | Atualizações dentro do app (Verificar Atualizações…). https://github.com/sparkle-project/Sparkle |
 | TagLib (CXXTagLib) | LGPL-2.1 / MPL-1.1 | Escrita de tags ID3; linkado estaticamente sob MPL-1.1. Fonte: https://taglib.org |
 
 ## Clipes de vídeo embutidos (painel visual, categorias de vídeo)
@@ -100,6 +101,7 @@ A ilustração "Fuga Espacial do Monstro Cósmico" (artwork.jpg, e o fundo backg
 | opus-binary-xcframework | 0.3.0 | https://github.com/sbooth/opus-binary-xcframework |
 | sfbaudioengine | 0.14.0 | https://github.com/sbooth/SFBAudioEngine |
 | sndfile-binary-xcframework | 0.1.2 | https://github.com/sbooth/sndfile-binary-xcframework |
+| sparkle | 2.10.0 | https://github.com/sparkle-project/Sparkle |
 | tta-cpp-binary-xcframework | 0.1.2 | https://github.com/sbooth/tta-cpp-binary-xcframework |
 | vorbis-binary-xcframework | 0.1.2 | https://github.com/sbooth/vorbis-binary-xcframework |
 | wavpack-binary-xcframework | 0.2.0 | https://github.com/sbooth/wavpack-binary-xcframework |
